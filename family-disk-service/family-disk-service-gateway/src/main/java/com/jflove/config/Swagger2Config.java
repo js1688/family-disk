@@ -1,17 +1,19 @@
 package com.jflove.config;
 
-import io.swagger.annotations.SwaggerDefinition;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
-import springfox.documentation.service.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.*;
+import org.springframework.http.HttpHeaders;
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.*;
 import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,6 +31,8 @@ public class Swagger2Config {
         return new Docket(DocumentationType.SWAGGER_2)
                 .enable("dev".equalsIgnoreCase(active) || "local".equalsIgnoreCase(active))
                 .apiInfo(apiInfo())
+                .securitySchemes(List.of(new ApiKey(HttpHeaders.AUTHORIZATION, HttpHeaders.AUTHORIZATION, "header")))//设置页面可以设置token到请求头部
+                .securityContexts(List.of(securityContexts()))//设置哪些url要带上token请求
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.jflove.controller"))
                 .paths(PathSelectors.any())
@@ -42,5 +46,18 @@ public class Swagger2Config {
         .contact(new Contact("jflove", "https://www.jflove.cn", "woshitanjun@icloud.com"))
         .version("0.0.1-SNAPSHOT")
         .build();
+    }
+
+    private SecurityContext securityContexts() {
+        return SecurityContext.builder()
+                .securityReferences(defaultAuth())
+                .build();
+    }
+
+    private List<SecurityReference> defaultAuth() {
+        AuthorizationScope authorizationScope = new AuthorizationScope("xxax", "描述信息");
+        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
+        authorizationScopes[0] = authorizationScope;
+        return Arrays.asList(new SecurityReference(HttpHeaders.AUTHORIZATION, authorizationScopes));
     }
 }

@@ -24,9 +24,30 @@
         <module>family-disk-service-gateway</module>
         <module>family-disk-service-model</module>
         <module>family-disk-service-api</module>
+        <module>family-disk-service-user</module>
     </modules>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>5.8.10</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>2.3.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt</artifactId>
+                <version>0.9.1</version>
+            </dependency>
+            <dependency>
+                <groupId>family-disk-service</groupId>
+                <artifactId>family-disk-service-api</artifactId>
+                <version>${version}</version>
+            </dependency>
             <dependency>
                 <groupId>family-disk-service</groupId>
                 <artifactId>family-disk-service-model</artifactId>

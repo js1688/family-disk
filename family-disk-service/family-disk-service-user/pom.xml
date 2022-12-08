@@ -9,25 +9,26 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>family-disk-service</groupId>
-    <artifactId>family-disk-service-model</artifactId>
+    <artifactId>family-disk-service-user</artifactId>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
     <dependencies>
         <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>family-disk-service</groupId>
+            <artifactId>family-disk-service-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <groupId>family-disk-service</groupId>
+            <artifactId>family-disk-service-model</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -1,27 +1,31 @@
 package com.jflove.user;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.IdType;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import java.io.Serializable;
+import java.io.Serial;
 
 
 /**
  * @author tanjun
- * @date Wed Dec 07 10:45:16 CST 2022
+ * @date Wed Dec 07 15:53:38 CST 2022
  * @describe 用户与空间关联关系
  */
 @Getter
 @Setter
+@ToString
 @TableName("user_space_rel")
 public class UserSpaceRelPO implements Serializable{
-
-	private static final long serialVersionUID =  3271141513638552805L;
+	@Serial
+	private static final long serialVersionUID =  6962775026110048702L;
 
   /**
    * null
    */
-  @TableId
+  @TableId(type = IdType.AUTO)
   private long id;
   /**
    * 空间的创建用户id

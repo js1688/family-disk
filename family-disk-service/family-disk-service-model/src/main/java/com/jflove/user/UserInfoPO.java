@@ -1,27 +1,33 @@
 package com.jflove.user;
+
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
+
+import java.io.Serial;
 import java.io.Serializable;
 
 
 /**
  * @author tanjun
- * @date Wed Dec 07 10:45:16 CST 2022
+ * @date Wed Dec 07 15:53:38 CST 2022
  * @describe 用户信息
  */
 @Getter
 @Setter
+@ToString
 @TableName("user_info")
 public class UserInfoPO implements Serializable{
-
-	private static final long serialVersionUID =  900768261691275673L;
+	@Serial
+	private static final long serialVersionUID =  3095257218662389664L;
 
   /**
    * 主键
    */
-  @TableId
+  @TableId(type = IdType.AUTO)
   private long id;
   /**
    * 用户邮箱

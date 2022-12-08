@@ -1,0 +1,35 @@
+server:
+  port: 8800
+spring:
+  servlet:
+    multipart:
+      enabled: true #开启文件上传
+      max-file-size: 10MB #限制文件上传大小为10M
+  application:
+    name: family-disk-gateway
+  profiles:
+    active: local
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  security:
+    jjwt:
+      # token 发布者
+      issuer: jflove.cn
+      # token生成后有效时长(单位:分钟)
+      ttlMinute: 60
+
+    ignored:
+      urls: #安全路径白名单
+        - /swagger-ui/index.html
+        - /swagger-ui/**
+        - /swagger-resources/**
+        - /v2/api-docs
+        - /user/info/emailPasswordLogin
+dubbo:
+  application:
+    name: dubbo-springboot-demo-consumer
+    qos-port: 1166
+  protocol:
+    name: dubbo
+    port: 2266
