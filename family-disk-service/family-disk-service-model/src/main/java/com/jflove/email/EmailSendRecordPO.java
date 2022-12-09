@@ -1,4 +1,4 @@
-package com.jflove.user;
+package com.jflove.email;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -13,16 +13,16 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Fri Dec 09 15:47:51 CST 2022
- * @describe 用户空间
+ * @date Fri Dec 09 15:48:00 CST 2022
+ * @describe 邮件发送记录
  */
 @Getter
 @Setter
 @ToString
-@TableName("user_space")
-public class UserSpacePO implements Serializable{
+@TableName("email_send_record")
+public class EmailSendRecordPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  8548008810979435717L;
+	private static final long serialVersionUID =  6611982305323124693L;
 
   /**
    * 主键
@@ -30,25 +30,25 @@ public class UserSpacePO implements Serializable{
   @TableId(type = IdType.AUTO)
   private long id;
   /**
-   * 最大空间大小(GB)
+   * 邮件主题
    */
-  private long maxSize;
+  private String subject;
   /**
-   * 空间编码
+   * 目的地邮箱号
    */
-  private String code;
+  private String recipient;
   /**
-   * 已使用空间大小(GB)
+   * 邮件内容
    */
-  private long useSize;
+  private String msgBody;
   /**
-   * 空间主题
+   * 下一次允许发送的时间戳
    */
-  private long title;
+  private long nextSendTime;
   /**
-   * 空间创建用户id
+   * 主题编码
    */
-  private long createUserId;
+  private String subjectCode;
   /**
    * 创建时间
    */

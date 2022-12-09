@@ -26,9 +26,13 @@ spring:
         - /swagger-resources/**
         - /v2/api-docs
         - /user/info/emailPasswordLogin
+        - /user/info/sendRegisterEmailCaptcha
 dubbo:
+  consumer:
+    timeout: 10000 # 超时时间
+    retries: 0 # 不重试
   application:
-    name: dubbo-springboot-demo-consumer
+    name: ${spring.application.name}
     qos-port: 1166
   protocol:
     name: dubbo

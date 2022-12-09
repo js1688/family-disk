@@ -1,19 +1,19 @@
 package com.jflove.user;
-
-import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.io.Serial;
 import java.io.Serializable;
+import java.io.Serial;
 
 
 /**
  * @author tanjun
- * @date Wed Dec 07 15:53:38 CST 2022
+ * @date Fri Dec 09 15:47:51 CST 2022
  * @describe 用户信息
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serializable;
 @TableName("user_info")
 public class UserInfoPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  3095257218662389664L;
+	private static final long serialVersionUID =  2960701882372804194L;
 
   /**
    * 主键
@@ -44,9 +44,11 @@ public class UserInfoPO implements Serializable{
   /**
    * 创建时间
    */
+  @TableField(fill = FieldFill.INSERT)
   private java.sql.Timestamp createTime;
   /**
    * 修改时间
    */
+  @TableField(fill = FieldFill.INSERT_UPDATE)
   private java.sql.Timestamp updateTime;
 }

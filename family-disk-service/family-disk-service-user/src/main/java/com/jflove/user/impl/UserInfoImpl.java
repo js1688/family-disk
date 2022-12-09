@@ -5,6 +5,7 @@ import com.jflove.user.UserInfoPO;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.mapper.UserInfoMapper;
+import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @describe
  */
 @DubboService
+@Log4j2
 public class UserInfoImpl implements IUserInfo {
 
     @Autowired
@@ -46,4 +48,6 @@ public class UserInfoImpl implements IUserInfo {
         BeanUtils.copyProperties(po,dto);
         return dto;
     }
+
+
 }

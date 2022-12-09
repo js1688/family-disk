@@ -25,6 +25,7 @@
         <module>family-disk-service-model</module>
         <module>family-disk-service-api</module>
         <module>family-disk-service-user</module>
+        <module>family-disk-service-email</module>
     </modules>
     <dependencyManagement>
         <dependencies>

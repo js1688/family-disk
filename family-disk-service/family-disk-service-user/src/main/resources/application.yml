@@ -1,6 +1,9 @@
 dubbo:
+  consumer:
+    timeout: 10000 # 超时时间
+    retries: 0 # 不重试
   application:
-    name: dubbo-springboot-demo-provider
+    name: family-disk-user
     qos-port: 1177
   protocol:
     name: dubbo

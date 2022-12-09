@@ -1,4 +1,4 @@
-package com.jflove.user.config;
+package com.jflove.email.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;

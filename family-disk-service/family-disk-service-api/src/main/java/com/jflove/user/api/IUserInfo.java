@@ -6,7 +6,7 @@ import com.jflove.user.dto.UserInfoDTO;
 /**
  * @author tanjun
  * @date 2022/12/7 11:54
- * @describe
+ * @describe 用户管理
  */
 public interface IUserInfo {
 

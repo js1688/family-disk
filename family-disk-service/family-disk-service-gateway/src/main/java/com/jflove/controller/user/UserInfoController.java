@@ -1,6 +1,7 @@
 package com.jflove.controller.user;
 
 import com.jflove.tool.JJwtTool;
+import com.jflove.user.api.IUserEmail;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.vo.ResponseHeadVO;
@@ -31,9 +32,17 @@ public class UserInfoController {
 
     @DubboReference
     private IUserInfo userInfo;
+    @DubboReference
+    private IUserEmail userEmail;
 
     @Autowired
     private JJwtTool jJwtTool;
+
+    @ApiOperation(value = "注册时发送邮箱验证码")
+    @PostMapping("/sendRegisterEmailCaptcha")
+    public ResponseHeadVO<String> sendRegisterEmailCaptcha(@RequestBody @Valid GetUserInfoByEmailParamVO param){
+        return new ResponseHeadVO<String>(true,userEmail.sendRegisterEmailCaptcha(param.getEmail()));
+    }
 
     @ApiOperation(value = "根据邮箱获取账号信息")
     @PostMapping("/getUserInfoByEmail")
