@@ -1,5 +1,6 @@
 package com.jflove.impl;
 
+import com.jflove.ResponseHeadDTO;
 import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
@@ -35,8 +36,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         Jws<Claims> jws = jJwtTool.parseJwt(token);
         Claims claims = jws.getBody();
         //token验证通过,返回用户信息
-        UserInfoDTO dto = userInfo.getUserInfoByEmail(claims.getId());
-        Assert.notNull(dto,"不存在该用户");
+        ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(claims.getId());
+        Assert.notNull(dto.getData(),dto.getMessage());
         return new UserDetails() {
             @Override
             public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -45,12 +46,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
             @Override
             public String getPassword() {
-                return dto.getPassword();
+                return dto.getData().getPassword();
             }
 
             @Override
             public String getUsername() {
-                return dto.getEmail();
+                return dto.getData().getEmail();
             }
 
             @Override

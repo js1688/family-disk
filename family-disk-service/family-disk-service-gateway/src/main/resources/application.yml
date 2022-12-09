@@ -27,6 +27,7 @@ spring:
         - /v2/api-docs
         - /user/info/emailPasswordLogin
         - /user/info/sendRegisterEmailCaptcha
+        - /user/info/createUserInfo
 dubbo:
   consumer:
     timeout: 10000 # 超时时间

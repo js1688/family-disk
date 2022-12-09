@@ -1,5 +1,6 @@
 package com.jflove.email.api;
 
+import com.jflove.ResponseHeadDTO;
 import com.jflove.email.dto.EmailDetailsDTO;
 
 /**
@@ -13,12 +14,12 @@ public interface IEmailService {
      * @param details
      * @return
      */
-    String sendSimpleMail(EmailDetailsDTO details);
+    ResponseHeadDTO<String> sendSimpleMail(EmailDetailsDTO details);
 
     /**
      * 此方法可用于将电子邮件连同附件一起发送给所需的收件人
      * @param details
      * @return
      */
-    String sendMailWithAttachment(EmailDetailsDTO details);
+    ResponseHeadDTO<String> sendMailWithAttachment(EmailDetailsDTO details);
 }

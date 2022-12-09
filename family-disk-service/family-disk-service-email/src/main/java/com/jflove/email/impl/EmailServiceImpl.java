@@ -1,6 +1,7 @@
 package com.jflove.email.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jflove.ResponseHeadDTO;
 import com.jflove.email.EmailSendRecordPO;
 import com.jflove.email.api.IEmailService;
 import com.jflove.email.dto.EmailDetailsDTO;
@@ -37,11 +38,11 @@ public class EmailServiceImpl implements IEmailService {
 
     @Override
     @Transactional
-    public String sendSimpleMail(EmailDetailsDTO details) {
+    public ResponseHeadDTO<String> sendSimpleMail(EmailDetailsDTO details) {
         try {
             String allow = allowSend(details);
             if(allow != null){
-                return allow;
+                return new ResponseHeadDTO<String>(false,allow);
             }
             log.debug("发送邮件:{}",details.toString());
             SimpleMailMessage mailMessage = new SimpleMailMessage();
@@ -52,20 +53,21 @@ public class EmailServiceImpl implements IEmailService {
             javaMailSender.send(mailMessage);
             String ret = String.format("邮件主题[%s],发送成功",details.getSubject().getName());
             saveRecord(details);
-            return ret;
+            return new ResponseHeadDTO<String>(true,ret);
         }catch (Exception e) {
-            log.error(String.format("邮件主题[%s],发送异常",details.getSubject().getName()),e);
-            return String.format("邮件主题[%s],发送失败",details.getSubject().getName());
+            String err = String.format("邮件主题[%s],发送失败",details.getSubject().getName());
+            log.error(err,e);
+            return new ResponseHeadDTO<String>(false,err);
         }
     }
 
     @Override
     @Transactional
-    public String sendMailWithAttachment(EmailDetailsDTO details) {
+    public ResponseHeadDTO<String> sendMailWithAttachment(EmailDetailsDTO details) {
         if(!StringUtils.hasLength(details.getAttachment())){
             return sendSimpleMail(details);
         }
-        return "暂不支持发送带附件的邮件";
+        return new ResponseHeadDTO<String>(false,"暂不支持发送带附件的邮件");
 //        // Creating a mime message
 //        MimeMessage mimeMessage
 //                = javaMailSender.createMimeMessage();

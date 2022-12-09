@@ -1,6 +1,7 @@
 package com.jflove.user.api;
 
 
+import com.jflove.ResponseHeadDTO;
 import com.jflove.user.dto.UserInfoDTO;
 
 /**
@@ -16,12 +17,22 @@ public interface IUserInfo {
      * @param password
      * @return
      */
-    UserInfoDTO emailPasswordLogin(String email,String password);
+    ResponseHeadDTO<UserInfoDTO> emailPasswordLogin(String email, String password);
 
     /**
      * 根据邮箱获取账号信息
      * @param email
      * @return
      */
-    UserInfoDTO getUserInfoByEmail(String email);
+    ResponseHeadDTO<UserInfoDTO> getUserInfoByEmail(String email);
+
+    /**
+     * 创建账号
+     * @param email
+     * @param password
+     * @param name
+     * @param captcha 验证码
+     * @return
+     */
+    ResponseHeadDTO<UserInfoDTO> createUserInfo(String email,String password,String name,String captcha);
 }

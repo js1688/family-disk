@@ -2,6 +2,7 @@ package com.jflove.user.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.jflove.ResponseHeadDTO;
 import com.jflove.email.api.IEmailService;
 import com.jflove.email.dto.EmailDetailsDTO;
 import com.jflove.email.em.EmailSubjectCodeENUM;
@@ -35,13 +36,13 @@ public class UserEmailImpl implements IUserEmail {
 
     @Override
     @Transactional
-    public String sendRegisterEmailCaptcha(String email) {
+    public ResponseHeadDTO<String> sendRegisterEmailCaptcha(String email) {
         EmailDetailsDTO dto = new EmailDetailsDTO();
         //查询账号是否已被注册
         if(userInfoMapper.selectCount(new LambdaQueryWrapper<UserInfoPO>()
                 .eq(UserInfoPO::getEmail,email)
         ) > 0){
-            return "发送注册验证码失败,邮箱已被注册";
+            return new ResponseHeadDTO<String>(false,"邮箱已被注册");
         }
         long thisTime = System.currentTimeMillis() / 1000;//只需要精确到秒
         //查询生成的验证码是否还未到期

@@ -1,5 +1,7 @@
 package com.jflove.user.api;
 
+import com.jflove.ResponseHeadDTO;
+
 /**
  * @author tanjun
  * @date 2022/12/9 14:10
@@ -13,5 +15,5 @@ public interface IUserEmail {
      * @param email
      * @return
      */
-    String sendRegisterEmailCaptcha(String email);
+    ResponseHeadDTO<String> sendRegisterEmailCaptcha(String email);
 }
