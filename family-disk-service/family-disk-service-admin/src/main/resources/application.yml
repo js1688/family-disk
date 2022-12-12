@@ -9,8 +9,8 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 dubbo:
   application:
-    name: family-disk-file
-    qos-port: 3399
+    name: family-disk-admin
+    qos-port: 3366
   protocol:
-    name: tri
-    port: 4499
+    name: dubbo
+    port: 4466

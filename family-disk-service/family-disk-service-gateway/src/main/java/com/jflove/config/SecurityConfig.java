@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -81,8 +82,15 @@ public class SecurityConfig{
         http
                 .cors().and()
                 .authorizeRequests()
-                .antMatchers(ignoreUrlsConfig.getStrings()).permitAll() //无需认证
+                .antMatchers(HttpMethod.OPTIONS).permitAll() //options 类型的请求,直接通过
+                .antMatchers(ignoreUrlsConfig.getUrlStrings()).permitAll() //无需认证
+                .antMatchers(ignoreUrlsConfig.getAdminStrings()).hasRole("admin") //设置需要管理员角色的路径
                 .antMatchers("/**").authenticated()//进行验证
+                .and()
+                //将权限和认证异常抛到全局异常处理
+                .exceptionHandling()
+                .authenticationEntryPoint((request,response,authenticationException)->resolver.resolveException(request,response,null,authenticationException))//没有认证
+                .accessDeniedHandler((request,response,accessDeniedException)->resolver.resolveException(request,response,null,accessDeniedException))//没有权限
                 .and()
                 .formLogin().disable()
                 .logout().disable()

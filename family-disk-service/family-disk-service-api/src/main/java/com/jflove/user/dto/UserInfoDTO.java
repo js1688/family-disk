@@ -43,4 +43,9 @@ public class UserInfoDTO implements Serializable {
      * 修改时间
      */
     private Date updateTime;
+
+    /**
+     * 账户角色
+     */
+    private String role;
 }

@@ -1,4 +1,4 @@
-package com.jflove.user;
+package com.jflove.file;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -13,16 +13,16 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Mon Dec 12 12:01:21 CST 2022
- * @describe 用户信息
+ * @date Mon Dec 12 16:00:01 CST 2022
+ * @describe 文件信息
  */
 @Getter
 @Setter
 @ToString
-@TableName("user_info")
-public class UserInfoPO implements Serializable{
+@TableName("file_info")
+public class FileInfoPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  2144879639085916545L;
+	private static final long serialVersionUID =  4370402083818618388L;
 
   /**
    * 主键
@@ -30,17 +30,17 @@ public class UserInfoPO implements Serializable{
   @TableId(type = IdType.AUTO)
   private long id;
   /**
-   * 用户邮箱
+   * 所属磁盘id
    */
-  private String email;
+  private long diskId;
   /**
-   * 用户名称
+   * 文件名称
    */
   private String name;
   /**
-   * 密码
+   * 文件类型
    */
-  private String password;
+  private String type;
   /**
    * 创建时间
    */
@@ -52,7 +52,27 @@ public class UserInfoPO implements Serializable{
   @TableField(fill = FieldFill.INSERT_UPDATE)
   private java.sql.Timestamp updateTime;
   /**
-   * 账户角色
+   * 创建用户id
    */
-  private String role;
+  private long createUserId;
+  /**
+   * 所属空间id
+   */
+  private long spaceId;
+  /**
+   * 文件md5值
+   */
+  private String md5;
+  /**
+   * 文件大小(B)
+   */
+  private long size;
+  /**
+   * 文件编码
+   */
+  private String code;
+  /**
+   * 文件来源(0=记事本,1=云盘)
+   */
+  private long source;
 }

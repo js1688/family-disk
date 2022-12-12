@@ -4,6 +4,8 @@ import com.jflove.vo.ResponseHeadVO;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.rpc.RpcException;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,7 +27,11 @@ public class GlobalExceptionConfig {
     @ExceptionHandler(value = Throwable.class)
     @ResponseBody
     public Object  handle(Throwable e) {
-        if(e instanceof RpcException){
+        if(e instanceof AuthenticationException){
+            return new ResponseHeadVO<String>(false,"没有认证");
+        }else if(e instanceof AccessDeniedException){
+            return new ResponseHeadVO<String>(false,"没有权限");
+        }else if(e instanceof RpcException){
             return new ResponseHeadVO<String>(false,"服务不稳定请稍后再试");
         }else if (e instanceof RuntimeException || e instanceof SecurityException) { //普通的运行异常以及认证异常
             return new ResponseHeadVO<String>(false,e.getMessage());

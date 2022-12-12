@@ -1,4 +1,4 @@
-package com.jflove.file;
+package com.jflove;
 
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;

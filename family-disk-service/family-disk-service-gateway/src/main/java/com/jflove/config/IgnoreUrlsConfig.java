@@ -24,12 +24,23 @@ import java.util.List;
 public class IgnoreUrlsConfig {
     private List<String> urls = new ArrayList();
 
-    public String [] getStrings(){
+    private List<String> admin = new ArrayList<>();
+
+    public String [] getUrlStrings(){
         if(urls == null){
             return null;
         }
         String [] a = new String[urls.size()];
         urls.toArray(a);
+        return a;
+    }
+
+    public String [] getAdminStrings(){
+        if(admin == null){
+            return null;
+        }
+        String [] a = new String[admin.size()];
+        admin.toArray(a);
         return a;
     }
 

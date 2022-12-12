@@ -1,4 +1,4 @@
-package com.jflove.user;
+package com.jflove.file;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -13,34 +13,34 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Mon Dec 12 12:01:21 CST 2022
- * @describe 用户信息
+ * @date Mon Dec 12 11:33:49 CST 2022
+ * @describe 可存储文件的磁盘配置
  */
 @Getter
 @Setter
 @ToString
-@TableName("user_info")
-public class UserInfoPO implements Serializable{
+@TableName("file_disk_config")
+public class FileDiskConfigPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  2144879639085916545L;
+	private static final long serialVersionUID =  3141618709424952290L;
 
   /**
-   * 主键
+   * null
    */
   @TableId(type = IdType.AUTO)
   private long id;
   /**
-   * 用户邮箱
+   * 磁盘类型(0=本地磁盘,1=HDFS,2=NAS)
    */
-  private String email;
+  private long type;
   /**
-   * 用户名称
+   * 磁盘总大小(GB)
    */
-  private String name;
+  private long maxSize;
   /**
-   * 密码
+   * 磁盘地址
    */
-  private String password;
+  private String path;
   /**
    * 创建时间
    */
@@ -52,7 +52,7 @@ public class UserInfoPO implements Serializable{
   @TableField(fill = FieldFill.INSERT_UPDATE)
   private java.sql.Timestamp updateTime;
   /**
-   * 账户角色
+   * 磁盘可用(GB)
    */
-  private String role;
+  private long usableSize;
 }
