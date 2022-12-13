@@ -32,12 +32,18 @@ public class StreamObserverWriteImpl implements StreamObserver<FileTransmissionD
     @Autowired
     private FileInfoMapper fileInfoMapper;
 
+    private FileTransmissionDTO ls;//存放一次的文件信息
+
     @Override
     public void onNext(FileTransmissionDTO data) {
         log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},分片个数:{},当前分片序号:{},流大小:{}",
                 data.getName(),data.getType(),data.getTotalSize(),data.getShardingNum(),data.getShardingSort(),data.getShardingStream().length);
         try {
             Files.write(Path.of(String.format("%s/%s-%s%s", tempPath, data.getCode(), String.valueOf(data.getShardingSort()),tempFileSuffix)),data.getShardingStream());
+            if(ls == null){
+                ls = data;
+                ls.setShardingStream(null);
+            }
         }catch (IOException e){
             log.error("写入文件流分片时发生异常",e);
         }
