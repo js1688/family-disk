@@ -4,15 +4,21 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.user.UserCaptchaPO;
 import com.jflove.user.UserInfoPO;
+import com.jflove.user.UserSpaceRelPO;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
+import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.user.mapper.UserCaptchaMapper;
 import com.jflove.user.mapper.UserInfoMapper;
+import com.jflove.user.mapper.UserSpaceRelMapper;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -29,6 +35,9 @@ public class UserInfoImpl implements IUserInfo {
     @Autowired
     private UserCaptchaMapper userCaptchaMapper;
 
+    @Autowired
+    private UserSpaceRelMapper userSpaceRelMapper;
+
     @Override
     public ResponseHeadDTO<UserInfoDTO> getUserInfoByEmail(String email) {
         UserInfoPO po = userInfoMapper.selectOne(new LambdaQueryWrapper<UserInfoPO>()
@@ -39,6 +48,12 @@ public class UserInfoImpl implements IUserInfo {
         }
         UserInfoDTO dto = new UserInfoDTO();
         BeanUtils.copyProperties(po,dto);
+        List<UserSpaceRelPO> spacesPO = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getUserId,po.getId())
+        );
+        List<UserSpaceRelDTO> spacesDTO = new ArrayList<>();
+        BeanUtils.copyProperties(spacesPO,spacesDTO);
+        dto.setSpaces(spacesDTO);
         return new ResponseHeadDTO<UserInfoDTO>(dto);
     }
 

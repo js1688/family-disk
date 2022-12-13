@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -60,7 +59,7 @@ public class SecurityConfig{
             protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
                 if (!ignoreUrlsConfig.isSkip(request.getServletPath())){
                     try {
-                        String token = request.getHeader(HttpHeaders.AUTHORIZATION);
+                        String token = request.getHeader(HttpConstantConfig.AUTHORIZATION);
                         Assert.hasLength(token,"token不能为空");
                         log.info("authenticated token:{}", token);
                         UserDetails userDetails = uds.loadUserByUsername(token);

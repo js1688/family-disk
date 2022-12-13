@@ -3,7 +3,6 @@ package com.jflove.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -31,7 +30,10 @@ public class Swagger2Config {
         return new Docket(DocumentationType.SWAGGER_2)
                 .enable("dev".equalsIgnoreCase(active) || "local".equalsIgnoreCase(active))
                 .apiInfo(apiInfo())
-                .securitySchemes(List.of(new ApiKey(HttpHeaders.AUTHORIZATION, HttpHeaders.AUTHORIZATION, "header")))//设置页面可以设置token到请求头部
+                .securitySchemes(List.of(
+                        new ApiKey(HttpConstantConfig.AUTHORIZATION, HttpConstantConfig.AUTHORIZATION, "header"),
+                        new ApiKey(HttpConstantConfig.USE_SPACE_ID, HttpConstantConfig.USE_SPACE_ID, "header")
+                ))//设置页面可以设置token到请求头部
                 .securityContexts(List.of(securityContexts()))//设置哪些url要带上token请求
                 .select()
                 .apis(RequestHandlerSelectors.basePackage("com.jflove.controller"))
@@ -58,6 +60,9 @@ public class Swagger2Config {
         AuthorizationScope authorizationScope = new AuthorizationScope("xxax", "描述信息");
         AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
         authorizationScopes[0] = authorizationScope;
-        return Arrays.asList(new SecurityReference(HttpHeaders.AUTHORIZATION, authorizationScopes));
+        return Arrays.asList(
+                new SecurityReference(HttpConstantConfig.AUTHORIZATION, authorizationScopes),
+                new SecurityReference(HttpConstantConfig.USE_SPACE_ID, authorizationScopes)
+        );
     }
 }

@@ -7,6 +7,7 @@
     - family-disk-service-admin 后台管理
     - family-disk-service-file 文件管理
     - family-disk-service-notebook 记事本
+    - family-disk-service-netdisk 网盘
     - family-disk-service-email 邮件发送服务
     - family-disk-service-model 数据库模型
     - family-disk-service-api rpc接口标准

@@ -7,6 +7,7 @@ import lombok.ToString;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -48,4 +49,9 @@ public class UserInfoDTO implements Serializable {
      * 账户角色
      */
     private String role;
+
+    /**
+     * 用户关联的空间
+     */
+    private List<UserSpaceRelDTO> spaces;
 }
