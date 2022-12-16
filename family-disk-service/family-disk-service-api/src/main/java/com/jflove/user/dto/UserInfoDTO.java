@@ -1,5 +1,6 @@
 package com.jflove.user.dto;
 
+import com.jflove.user.em.UserRoleENUM;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -48,7 +49,7 @@ public class UserInfoDTO implements Serializable {
     /**
      * 账户角色
      */
-    private String role;
+    private UserRoleENUM role;
 
     /**
      * 用户关联的空间

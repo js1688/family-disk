@@ -2,6 +2,7 @@ package com.jflove.file.api;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
+import com.jflove.file.em.FileSourceENUM;
 import org.apache.dubbo.common.stream.StreamObserver;
 
 /**
@@ -20,11 +21,20 @@ public interface IFileService {
     StreamObserver<FileTransmissionDTO> addFile(StreamObserver<Boolean> response);
 
     /**
+     * 标记删除文件
+     * @param md5
+     * @param spaceId
+     * @param source
+     * @return
+     */
+    ResponseHeadDTO<Boolean> delFile(String md5, long spaceId, FileSourceENUM source);
+
+    /**
      * 这个用户空间是否已经拥有了这个文件
      * @param md5
      * @param spaceId
      * @param source
      * @return
      */
-    ResponseHeadDTO<Boolean> isExist(String md5,long spaceId,long source);
+    ResponseHeadDTO<Boolean> isExist(String md5,long spaceId,FileSourceENUM source);
 }

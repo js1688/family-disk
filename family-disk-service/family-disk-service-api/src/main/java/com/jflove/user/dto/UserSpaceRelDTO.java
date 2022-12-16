@@ -1,5 +1,6 @@
 package com.jflove.user.dto;
 
+import com.jflove.user.em.UserSpaceRoleENUM;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -32,7 +33,7 @@ public class UserSpaceRelDTO implements Serializable {
      */
     private long userId;
     /**
-     * 空间权限(0只读,1读写)
+     * 空间权限
      */
-    private long role;
+    private UserSpaceRoleENUM role;
 }

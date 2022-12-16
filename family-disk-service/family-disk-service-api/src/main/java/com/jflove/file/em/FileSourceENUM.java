@@ -10,12 +10,12 @@ import lombok.Getter;
 @Getter
 public enum FileSourceENUM {
 
-    NOTEPAD(0,"记事本"),
-    CLOUDDISK(1,"云盘");
-    private long code;
+    NOTEPAD("NOTEPAD","记事本"),
+    CLOUDDISK("CLOUDDISK","云盘");
+    private String code;
     private String name;
 
-    FileSourceENUM(long code, String name) {
+    FileSourceENUM(String code, String name) {
         this.code = code;
         this.name = name;
     }

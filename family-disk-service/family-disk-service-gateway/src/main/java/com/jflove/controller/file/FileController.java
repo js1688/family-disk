@@ -8,12 +8,14 @@ import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
+import com.jflove.vo.file.DelFileParamVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.Arrays;
 
 /**
@@ -55,17 +58,32 @@ public class FileController {
 //        return new ResponseHeadVO<>(false,"还未实现");
 //    }
 
+    @ApiOperation(value = "删除文件")
+    @PostMapping("/delFile")
+    public ResponseHeadVO<Boolean> delFile(@RequestBody @Valid DelFileParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有删除权限");
+        }
+        ResponseHeadDTO<Boolean> dto = fileService.delFile(param.getFileMd5(),useSpaceId,FileSourceENUM.valueOf(param.getSource()));
+        ResponseHeadVO<Boolean> vo = new ResponseHeadVO<>();
+        BeanUtils.copyProperties(dto,vo);
+        return vo;
+    }
     @ApiOperation(value = "上传文件(完整文件,非分片)")
     @PostMapping("/addFile")
     public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
                                           @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘)") @RequestParam("s") String s){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Long useSpacerRole = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
         Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
-        if(useSpacerRole != UserSpaceRoleENUM.WRITE.getCode()){
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有写入权限");
         }
         //将文件分片后发送过去
@@ -105,7 +123,7 @@ public class FileController {
             String md5 = DigestUtils.md5DigestAsHex(f.getInputStream());
             dto.setFileMd5(md5);
             //判断该文件对于当前用户已存在了
-            ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource().getCode());
+            ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
             if(ex.getData()){
                 return new ResponseHeadVO<>(false,"文件上传失败,该文件已存在空间中,也许是文件名不一样");
             }

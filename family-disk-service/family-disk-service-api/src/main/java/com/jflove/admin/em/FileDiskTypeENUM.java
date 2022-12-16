@@ -9,13 +9,13 @@ import lombok.Getter;
  */
 @Getter
 public enum FileDiskTypeENUM {
-    LOCAL(0,"本地磁盘"),
-    HDFS(1,"HDFS"),
-    NAS(2,"NAS");
-    private long code;
+    LOCAL("LOCAL","本地磁盘"),
+    HDFS("HDFS","HDFS"),
+    NAS("NAS","NAS");
+    private String code;
     private String name;
 
-    FileDiskTypeENUM(long code, String name) {
+    FileDiskTypeENUM(String code, String name) {
         this.code = code;
         this.name = name;
     }

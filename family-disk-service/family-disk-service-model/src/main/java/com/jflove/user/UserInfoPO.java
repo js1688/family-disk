@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Mon Dec 12 12:01:21 CST 2022
+ * @date Fri Dec 16 16:35:24 CST 2022
  * @describe 用户信息
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("user_info")
 public class UserInfoPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  2144879639085916545L;
+	private static final long serialVersionUID =  604080445822010497L;
 
   /**
    * 主键

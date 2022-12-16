@@ -1,4 +1,4 @@
-package com.jflove.file;
+package com.jflove.netdisk;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -13,16 +13,16 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Fri Dec 16 16:35:04 CST 2022
- * @describe 可存储文件的磁盘配置
+ * @date Fri Dec 16 16:35:15 CST 2022
+ * @describe 网盘文件目录
  */
 @Getter
 @Setter
 @ToString
-@TableName("file_disk_config")
-public class FileDiskConfigPO implements Serializable{
+@TableName("netdisk_directory")
+public class NetdiskDirectoryPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  4188400721009352261L;
+	private static final long serialVersionUID =  1525147445788677980L;
 
   /**
    * null
@@ -30,17 +30,21 @@ public class FileDiskConfigPO implements Serializable{
   @TableId(type = IdType.AUTO)
   private long id;
   /**
-   * 磁盘类型(LOCAL,HDFS,NAS)
+   * 类型
    */
   private String type;
   /**
-   * 磁盘总大小(GB)
+   * 文件md5值
    */
-  private long maxSize;
+  private String fileMd5;
   /**
-   * 磁盘地址
+   * 目录的上级id
    */
-  private String path;
+  private long pid;
+  /**
+   * 所属空间id
+   */
+  private long spaceId;
   /**
    * 创建时间
    */
@@ -52,7 +56,7 @@ public class FileDiskConfigPO implements Serializable{
   @TableField(fill = FieldFill.INSERT_UPDATE)
   private java.sql.Timestamp updateTime;
   /**
-   * 磁盘可用(GB)
+   * 目录名称
    */
-  private long usableSize;
+  private String name;
 }

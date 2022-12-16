@@ -8,6 +8,8 @@ import com.jflove.user.UserSpaceRelPO;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserRoleENUM;
+import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.user.mapper.UserCaptchaMapper;
 import com.jflove.user.mapper.UserInfoMapper;
 import com.jflove.user.mapper.UserSpaceRelMapper;
@@ -55,9 +57,10 @@ public class UserInfoImpl implements IUserInfo {
         spacesPO.forEach(v->{
             UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
             BeanUtils.copyProperties(v,spacesDto);
+            spacesDto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
             spacesDTOs.add(spacesDto);
         });
-
+        dto.setRole(UserRoleENUM.valueOf(po.getRole()));
         dto.setSpaces(spacesDTOs);
         return new ResponseHeadDTO<UserInfoDTO>(dto);
     }
@@ -73,6 +76,7 @@ public class UserInfoImpl implements IUserInfo {
         }
         UserInfoDTO dto = new UserInfoDTO();
         BeanUtils.copyProperties(po,dto);
+        dto.setRole(UserRoleENUM.valueOf(po.getRole()));
         return new ResponseHeadDTO<UserInfoDTO>(dto);
     }
 
@@ -102,6 +106,7 @@ public class UserInfoImpl implements IUserInfo {
         userInfoMapper.insert(uip);
         UserInfoDTO dto = new UserInfoDTO();
         BeanUtils.copyProperties(uip,dto);
+        dto.setRole(UserRoleENUM.valueOf(uip.getRole()));
         return new ResponseHeadDTO<>(true,dto,"账号注册成功");
     }
 }

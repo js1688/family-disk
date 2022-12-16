@@ -1,12 +1,13 @@
 package com.jflove.file.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.jflove.file.mapper.FileDiskConfigMapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.FileDiskConfigPO;
 import com.jflove.file.FileInfoPO;
 import com.jflove.file.api.IFileService;
 import com.jflove.file.dto.FileTransmissionDTO;
+import com.jflove.file.em.FileSourceENUM;
+import com.jflove.file.mapper.FileDiskConfigMapper;
 import com.jflove.file.mapper.FileInfoMapper;
 import com.jflove.file.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
@@ -110,12 +111,30 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public ResponseHeadDTO<Boolean> isExist(String md5, long spaceId,long source) {
+    public ResponseHeadDTO<Boolean> isExist(String md5, long spaceId, FileSourceENUM source) {
         boolean ex = fileInfoMapper.exists(new LambdaQueryWrapper<FileInfoPO>()
                 .eq(FileInfoPO::getFileMd5,md5)
                 .eq(FileInfoPO::getSpaceId,spaceId)
                 .eq(FileInfoPO::getSource,source)
         );
         return new ResponseHeadDTO<>(ex);
+    }
+
+    @Override
+    public ResponseHeadDTO<Boolean> delFile(String md5, long spaceId, FileSourceENUM source) {
+        FileInfoPO po = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                .eq(FileInfoPO::getSource,source)
+                .eq(FileInfoPO::getFileMd5,md5)
+                .eq(FileInfoPO::getSpaceId,spaceId)
+                .eq(FileInfoPO::getMarkDelete,0)
+        );
+        if(po == null){
+            return new ResponseHeadDTO<>(false,"删除失败,不存在这个文件");
+        }
+        po.setMarkDelete(1);//标记删除
+        int after = 30;//三十天后删除
+        po.setDeleteTime((System.currentTimeMillis() / 1000) + (60 * 60 * 24 * after));
+        fileInfoMapper.updateById(po);
+        return new ResponseHeadDTO<>(true,true,"文件已删除,可以在回收站中找回或彻底删除.");
     }
 }
