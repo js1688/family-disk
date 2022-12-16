@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum UserSpaceRoleENUM {
 
     READ(0,"只读"),
-    write(1,"读写");
+    WRITE(1,"读写");
     private long code;
     private String name;
 

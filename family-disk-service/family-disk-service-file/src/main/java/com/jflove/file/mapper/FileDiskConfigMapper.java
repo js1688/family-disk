@@ -1,4 +1,4 @@
-package com.jflove.mapper;
+package com.jflove.file.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.jflove.file.FileDiskConfigPO;

@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Tue Dec 13 17:14:37 CST 2022
+ * @date Wed Dec 14 14:28:51 CST 2022
  * @describe 文件信息
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("file_info")
 public class FileInfoPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  6281653966922592643L;
+	private static final long serialVersionUID =  8294095624334515096L;
 
   /**
    * 主键
@@ -64,11 +64,11 @@ public class FileInfoPO implements Serializable{
    */
   private long size;
   /**
-   * 文件编码
-   */
-  private String code;
-  /**
    * 文件来源(0=记事本,1=云盘)
    */
   private long source;
+  /**
+   * 文件MD5值
+   */
+  private String fileMd5;
 }

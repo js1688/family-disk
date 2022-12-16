@@ -6,7 +6,6 @@ import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
-import com.jflove.user.em.UserSpaceRoleENUM;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -53,7 +52,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             if(!dto.getData().getSpaces().stream().map(UserSpaceRelDTO::getSpaceId).map(String::valueOf).toList().contains(useSpaceId)){
                 throw new SecurityException("该用没有使用当前空间的权限");
             }
-            UserSpaceRoleENUM em = dto.getData().getSpaces().stream().filter(e->String.valueOf(e.getSpaceId()).equals(useSpaceId)).toList().get(0).getRole();
+            Long em = dto.getData().getSpaces().stream().filter(e->String.valueOf(e.getSpaceId()).equals(useSpaceId)).toList().get(0).getRole();
             autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ROLE,em);
             autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ID,Long.parseLong(useSpaceId));
         }

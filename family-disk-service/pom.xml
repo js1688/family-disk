@@ -28,6 +28,8 @@
         <module>family-disk-service-email</module>
         <module>family-disk-service-admin</module>
         <module>family-disk-service-file</module>
+        <module>family-disk-service-notebook</module>
+        <module>family-disk-service-netdisk</module>
     </modules>
     <dependencyManagement>
         <dependencies>

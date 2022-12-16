@@ -1,10 +1,14 @@
 server:
   port: 8800
 spring:
+  jackson: # 统一的json转换处理
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
   servlet:
     multipart:
       enabled: true #开启文件上传
-      max-file-size: 10MB #限制文件上传大小为10M
+      max-file-size: 1024MB #单个文件上传限制
+      max-request-size: 1024MB #多个文件一起上传限制
   application:
     name: family-disk-gateway
   profiles:
@@ -17,7 +21,7 @@ spring:
       # token 发布者
       issuer: jflove.cn
       # token生成后有效时长(单位:分钟)
-      ttlMinute: 60
+      ttlMinute: 1440
 
     ignored:
       admin: #管理员角色的账号才能访问名单
@@ -25,6 +29,7 @@ spring:
       urls: #安全路径白名单
         - /swagger-ui/index.html
         - /swagger-ui/**
+        - /swagger-resources
         - /swagger-resources/**
         - /v2/api-docs
         - /user/info/emailPasswordLogin

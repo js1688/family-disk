@@ -1,6 +1,7 @@
 package com.jflove.controller.user;
 
 import com.jflove.ResponseHeadDTO;
+import com.jflove.config.HttpConstantConfig;
 import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserEmail;
 import com.jflove.user.api.IUserInfo;
@@ -15,11 +16,10 @@ import io.swagger.annotations.ApiOperation;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 /**
@@ -38,6 +38,8 @@ public class UserInfoController {
     private IUserEmail userEmail;
 
     @Autowired
+    private HttpServletRequest autowiredRequest;
+    @Autowired
     private JJwtTool jJwtTool;
 
     @ApiOperation(value = "注册时发送邮箱验证码")
@@ -49,10 +51,12 @@ public class UserInfoController {
         return vo;
     }
 
-    @ApiOperation(value = "根据邮箱获取账号信息")
-    @PostMapping("/getUserInfoByEmail")
-    public ResponseHeadVO<UserInfoVO> getUserInfoByEmail(@RequestBody @Valid GetUserInfoByEmailParamVO param){
-        ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(param.getEmail());
+    @ApiOperation(value = "获取当前登录账号信息")
+    @GetMapping("/getUserInfoByEmail")
+    public ResponseHeadVO<UserInfoVO> getUserInfoByEmail(){
+        String useUserEmail = (String)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_EMAIL);
+        Assert.hasLength(useUserEmail,"错误的请求:正在使用的用户邮箱不能为空");
+        ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(useUserEmail);
         ResponseHeadVO<UserInfoVO> vo = new ResponseHeadVO<>();
         BeanUtils.copyProperties(dto,vo);
         return vo;

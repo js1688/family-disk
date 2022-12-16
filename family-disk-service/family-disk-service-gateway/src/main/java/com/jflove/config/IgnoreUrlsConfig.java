@@ -62,7 +62,7 @@ public class IgnoreUrlsConfig {
         }
         A:for (String u:urls) {
             String [] uss = u.split("/");
-            if(us.length >= uss.length){
+            if(us.length >= uss.length){//用户访问地址长于或等于配置地址才需要比较,否则肯定是不匹配的
                 for (int i = 0; i < uss.length; i++) {
                     String config = uss[i];
                     String request = us[i];
@@ -70,6 +70,8 @@ public class IgnoreUrlsConfig {
                         continue A;
                     }
                 }
+            }else{
+                continue;
             }
             return true;
         }

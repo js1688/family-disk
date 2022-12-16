@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Fri Dec 09 15:47:51 CST 2022
+ * @date Wed Dec 14 11:01:50 CST 2022
  * @describe 用户空间
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("user_space")
 public class UserSpacePO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  8548008810979435717L;
+	private static final long serialVersionUID =  1126301540904665401L;
 
   /**
    * 主键
@@ -30,7 +30,7 @@ public class UserSpacePO implements Serializable{
   @TableId(type = IdType.AUTO)
   private long id;
   /**
-   * 最大空间大小(GB)
+   * 最大空间大小(MB)
    */
   private long maxSize;
   /**
@@ -38,13 +38,13 @@ public class UserSpacePO implements Serializable{
    */
   private String code;
   /**
-   * 已使用空间大小(GB)
+   * 已使用空间大小(MB)
    */
   private long useSize;
   /**
    * 空间主题
    */
-  private long title;
+  private String title;
   /**
    * 空间创建用户id
    */

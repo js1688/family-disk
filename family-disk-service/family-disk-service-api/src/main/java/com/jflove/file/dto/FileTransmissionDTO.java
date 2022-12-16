@@ -35,9 +35,9 @@ public class FileTransmissionDTO implements Serializable {
     private long totalSize;
 
     /**
-     * 文件编码
+     * 文件MD5
      */
-    private String code;
+    private String fileMd5;
 
     /**
      * 本次文件分片个数

@@ -1,5 +1,8 @@
 package com.jflove.user.api;
 
+import com.jflove.ResponseHeadDTO;
+import com.jflove.user.dto.UserSpaceDTO;
+
 /**
  * @author tanjun
  * @date 2022/12/9 16:42
@@ -7,4 +10,11 @@ package com.jflove.user.api;
  */
 public interface IUserSpace {
 
+    /**
+     * 创建空间
+     * @param createUserId
+     * @param title
+     * @return
+     */
+    ResponseHeadDTO<UserSpaceDTO> createSpace(Long createUserId,String title);
 }

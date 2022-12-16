@@ -51,9 +51,14 @@ public class UserInfoImpl implements IUserInfo {
         List<UserSpaceRelPO> spacesPO = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getUserId,po.getId())
         );
-        List<UserSpaceRelDTO> spacesDTO = new ArrayList<>();
-        BeanUtils.copyProperties(spacesPO,spacesDTO);
-        dto.setSpaces(spacesDTO);
+        List<UserSpaceRelDTO> spacesDTOs = new ArrayList<>(spacesPO.size());
+        spacesPO.forEach(v->{
+            UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
+            BeanUtils.copyProperties(v,spacesDto);
+            spacesDTOs.add(spacesDto);
+        });
+
+        dto.setSpaces(spacesDTOs);
         return new ResponseHeadDTO<UserInfoDTO>(dto);
     }
 
