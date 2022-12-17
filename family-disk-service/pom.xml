@@ -30,6 +30,7 @@
         <module>family-disk-service-file</module>
         <module>family-disk-service-notebook</module>
         <module>family-disk-service-netdisk</module>
+        <module>family-disk-service-plugins</module>
     </modules>
     <dependencyManagement>
         <dependencies>
