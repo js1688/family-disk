@@ -16,12 +16,12 @@ if [ ! $cmd ]; then
 fi
 
 array=(
-family-disk-service-email/target/family-disk-service-email-0.0.1-SNAPSHOT.jar
-family-disk-service-file/target/family-disk-service-file-0.0.1-SNAPSHOT.jar
-family-disk-service-netdisk/target/family-disk-service-netdisk-0.0.1-SNAPSHOT.jar
-family-disk-service-admin/target/family-disk-service-admin-0.0.1-SNAPSHOT.jar
-family-disk-service-user/target/family-disk-service-user-0.0.1-SNAPSHOT.jar
-family-disk-service-gateway/target/family-disk-service-gateway-0.0.1-SNAPSHOT.jar
+family-disk-service-email/target/family-disk-service-email.jar
+family-disk-service-file/target/family-disk-service-file.jar
+family-disk-service-netdisk/target/family-disk-service-netdisk.jar
+family-disk-service-admin/target/family-disk-service-admin.jar
+family-disk-service-user/target/family-disk-service-user.jar
+family-disk-service-gateway/target/family-disk-service-gateway.jar
 )
 # shellcheck disable=SC2068
 for app in ${array[@]};
