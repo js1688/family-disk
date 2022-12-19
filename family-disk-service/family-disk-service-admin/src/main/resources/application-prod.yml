@@ -15,4 +15,4 @@ dubbo:
     name: dubbo
     port: 4466
 logging:
-  config: ../../logback.xml
+  config: logback.xml

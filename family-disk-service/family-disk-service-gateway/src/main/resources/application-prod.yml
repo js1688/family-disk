@@ -46,4 +46,4 @@ dubbo:
     name: dubbo
     port: 2266
 logging:
-  config: ../../logback.xml
+  config: logback.xml

@@ -18,7 +18,7 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 logging:
-  config: ../../logback.xml
+  config: logback.xml
 user:
   space:
     init-size: 10240MB

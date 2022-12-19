@@ -20,7 +20,7 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 logging:
-  config: ../../logback.xml
+  config: logback.xml
 dubbo:
   application:
     name: family-disk-email

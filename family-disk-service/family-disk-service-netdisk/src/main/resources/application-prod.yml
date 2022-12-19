@@ -15,4 +15,4 @@ dubbo:
     name: dubbo
     port: 8877
 logging:
-  config: ../../logback.xml
+  config: logback.xml
