@@ -11,7 +11,8 @@ import lombok.Getter;
 public enum FileSourceENUM {
 
     NOTEPAD("NOTEPAD","记事本"),
-    CLOUDDISK("CLOUDDISK","云盘");
+    CLOUDDISK("CLOUDDISK","云盘"),
+    DIARY("DIARY","日记");
     private String code;
     private String name;
 

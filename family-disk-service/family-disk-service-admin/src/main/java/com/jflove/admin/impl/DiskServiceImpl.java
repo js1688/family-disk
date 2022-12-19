@@ -2,13 +2,14 @@ package com.jflove.admin.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.file.FileDiskConfigPO;
 import com.jflove.admin.api.IDiskService;
 import com.jflove.admin.em.FileDiskTypeENUM;
 import com.jflove.admin.mapper.FileDiskConfigMapper;
+import com.jflove.file.FileDiskConfigPO;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.unit.DataSize;
 
 import java.io.File;
 
@@ -42,16 +43,17 @@ public class DiskServiceImpl implements IDiskService {
                             return new ResponseHeadDTO<>(false,"添加失败,地址不可以重复添加");
                         }
                         //校验本地盘还剩多少可用
-                        long total = file.getTotalSpace()/1024/1024/1024;//返回磁盘大小字节 GB
-                        long usableSpace = file.getUsableSpace()/1024/1024/1024;//返回可用字节 GB
-                        if(usableSpace <= 1){
-                            return new ResponseHeadDTO<>(false,"添加失败,可使用空间不足1G");
+
+                        DataSize total = DataSize.ofBytes(file.getTotalSpace());
+                        DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());
+                        if(usableSpace.toGigabytes() <= 10){
+                            return new ResponseHeadDTO<>(false,"添加失败,可使用空间不足10G");
                         }
                         FileDiskConfigPO po = new FileDiskConfigPO();
                         po.setPath(path);
                         po.setType(type.getCode());
-                        po.setMaxSize(total);
-                        po.setUsableSize(usableSpace);
+                        po.setMaxSize(total.toGigabytes());
+                        po.setUsableSize(usableSpace.toGigabytes());
                         fileDiskConfigMapper.insert(po);
                         return new ResponseHeadDTO<>(true,po.getId(),
                                 String.format("添加磁盘路径成功,总大小(GB):%s,剩余可用(GB):%s",

@@ -76,7 +76,7 @@ public class FileController {
     @ApiOperation(value = "上传文件(完整文件,非分片)")
     @PostMapping("/addFile")
     public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
-                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘)") @RequestParam("s") String s){
+                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);

@@ -16,7 +16,9 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.util.unit.DataSize;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -28,10 +30,6 @@ import java.nio.file.Path;
 @DubboService
 @Log4j2
 public class FileServiceImpl implements IFileService {
-
-//    @Autowired
-//    @Qualifier("StreamObserverWriteImpl")
-//    private StreamObserver so;
 
     @Value("${file.storage.path.temp}")
     private String tempPath;//分片文件临时存放
@@ -77,12 +75,23 @@ public class FileServiceImpl implements IFileService {
                             //查找出文件可以存放到哪个磁盘上
                             FileDiskConfigPO selectd = fileDiskConfigMapper.selectOne(new LambdaQueryWrapper<FileDiskConfigPO>()
                                     .orderByDesc(FileDiskConfigPO::getUsableSize)//按可用空间降序,取最大的存储
-                                    .select(FileDiskConfigPO::getId,FileDiskConfigPO::getPath,FileDiskConfigPO::getType)
                                     .last(" limit 1")
                             );
+                            //判断是否还存的下
+                            DataSize ds = DataSize.ofBytes(data.getTotalSize());
+                            if(ds.toGigabytes() > selectd.getUsableSize() - 5){//留5G空间,不用满
+                                throw new RuntimeException("文件写盘失败,服务器存储空间已不足5GB.");
+                            }
                             IFileReadAndWrit fileReadAndWrit = applicationContext.getBean("FileReadAndWrit" + selectd.getType(),IFileReadAndWrit.class);
                             fileReadAndWrit.writ(data,selectd,tempFileSuffix,tempPath);//写盘
                             newPo.setDiskId(selectd.getId());
+                            //刷新磁盘可使用空间
+                            File file = new File(selectd.getPath());
+                            DataSize total = DataSize.ofBytes(file.getTotalSpace());
+                            DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());//直接从磁盘中读取剩余可用空间,更加准确
+                            selectd.setMaxSize(total.toGigabytes());
+                            selectd.setUsableSize(usableSpace.toGigabytes());
+                            fileDiskConfigMapper.updateById(selectd);
                         }
                         //清除临时文件
                         for (int i = 0; i <= data.getShardingNum(); i++) {

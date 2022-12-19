@@ -27,6 +27,8 @@ public class AsmrGay {
             .build();
 
     private static final String name = "步非烟";
+    private static final String storage = "C:\\Users\\Administrator\\Music\\asmr/%s/%s";
+    private static final String fileNameMatching = "点心";
 
     public static void main(String[] args) throws Exception{
         HttpRequest request = HttpRequest.newBuilder()
@@ -50,7 +52,7 @@ public class AsmrGay {
         List<String> downloadService = List.of(
                 "https://asmr.pipix.xyz%s","https://www.asmr.pw/d%s");
         fileUrls.forEach((k,v)->{
-            Path fp = Path.of(String.format("/Users/tanjun/Music/local/asmr/%s/%s",name,v));
+            Path fp = Path.of(String.format(storage,name,v));
             try {
                 if (Files.exists(fp) && Files.size(fp) > 2048) {
                     System.out.println(String.format("文件[%s]存在，跳过。",v));
@@ -117,9 +119,9 @@ public class AsmrGay {
                 dirFiles.forEach(v2 -> {
                     getFileUrl((JSONObject) v2,fileUrls,path);
                 });
-            } else {
-                System.out.println(String.format("添加下载地址:%s",pathUrl));
-                fileUrls.put(pathUrl,name);
+            } else if (fileNameMatching == null || pathUrl.indexOf(fileNameMatching) != -1){
+                System.out.println(String.format("添加下载地址:%s", pathUrl));
+                fileUrls.put(pathUrl, name);
             }
         }catch (Throwable e){
             e.printStackTrace();
