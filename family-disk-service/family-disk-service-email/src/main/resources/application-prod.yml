@@ -19,8 +19,8 @@ spring:
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-logback:
-  xml: logback.xml
+logging:
+  config: ../../logback.xml
 dubbo:
   application:
     name: family-disk-email
