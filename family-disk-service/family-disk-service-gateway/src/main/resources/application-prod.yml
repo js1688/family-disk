@@ -11,8 +11,6 @@ spring:
       max-request-size: 512MB #多个文件一起上传限制
   application:
     name: family-disk-gateway
-  profiles:
-    active: local
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher

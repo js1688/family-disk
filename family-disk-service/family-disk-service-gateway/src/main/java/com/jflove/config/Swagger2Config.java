@@ -1,6 +1,5 @@
 package com.jflove.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.ApiInfoBuilder;
@@ -22,13 +21,11 @@ import java.util.List;
 @Configuration
 @EnableSwagger2
 public class Swagger2Config {
-    @Value("${spring.profiles.active:NA}")
-    private String active;
 
     @Bean
     public Docket createRestApi() {
         return new Docket(DocumentationType.SWAGGER_2)
-                .enable("dev".equalsIgnoreCase(active) || "local".equalsIgnoreCase(active))
+                .enable(true)
                 .apiInfo(apiInfo())
                 .securitySchemes(List.of(
                         new ApiKey(HttpConstantConfig.AUTHORIZATION, HttpConstantConfig.AUTHORIZATION, "header"),
