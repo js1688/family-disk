@@ -45,3 +45,5 @@ dubbo:
   protocol:
     name: dubbo
     port: 2266
+logback:
+  xml: logback.xml
