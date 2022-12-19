@@ -7,6 +7,7 @@ JAVA_OPT="${JAVA_OPT} --add-opens java.base/java.math=ALL-UNNAMED"
 JAVA_OPT="${JAVA_OPT} --add-opens java.base/java.util=ALL-UNNAMED"
 JAVA_OPT="${JAVA_OPT} --add-opens java.base/sun.net.util=ALL-UNNAMED"
 JAVA_OPT="${JAVA_OPT} -Ddubbo.resolve.file=dubbo-resolve.properties"
+JAVA_OPT="${JAVA_OPT} -Ddubbo.consumer.check=false"
 
 cmd=$1
 
