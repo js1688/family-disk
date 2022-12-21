@@ -4,14 +4,30 @@
   </header>
   <body>
     <van-tabbar v-model="active">
-      <van-tabbar-item badge="3">
-        <span>自定义</span>
+      <van-tabbar-item>
+        <span>网盘</span>
         <template #icon="props">
-          <img :src="props.active ? icon.active : icon.inactive" />
+          <img :src="props.active ? icon.user1 : icon.user0" />
         </template>
       </van-tabbar-item>
-      <van-tabbar-item icon="search">标签</van-tabbar-item>
-      <van-tabbar-item icon="setting-o">标签</van-tabbar-item>
+      <van-tabbar-item>
+        <span>日记</span>
+        <template #icon="props">
+          <img :src="props.active ? icon.journal1 : icon.journal0" />
+        </template>
+      </van-tabbar-item>
+      <van-tabbar-item>
+        <span>记事本</span>
+        <template #icon="props">
+          <img :src="props.active ? icon.user1 : icon.user0" />
+        </template>
+      </van-tabbar-item>
+      <van-tabbar-item>
+        <span>用户</span>
+        <template #icon="props">
+          <img :src="props.active ? icon.user1 : icon.user0" />
+        </template>
+      </van-tabbar-item>
     </van-tabbar>
   </body>
 </template>
@@ -23,9 +39,10 @@ import { ref } from 'vue';
     setup() {
       const active = ref(0);
       const icon = {
-        active: 'https://fastly.jsdelivr.net/npm/@vant/assets/user-active.png',
-        inactive:
-            'https://fastly.jsdelivr.net/npm/@vant/assets/user-inactive.png',
+        user0: '/yonghu0.png',
+        user1: '/yonghu1.png',
+        journal0: '/riji0.png',
+        journal1: '/riji1.png'
       };
       return {
         icon,
