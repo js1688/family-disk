@@ -52,8 +52,8 @@ public class UserInfoController {
     }
 
     @ApiOperation(value = "获取当前登录账号信息")
-    @GetMapping("/getUserInfoByEmail")
-    public ResponseHeadVO<UserInfoVO> getUserInfoByEmail(){
+    @GetMapping("/getUserInfo")
+    public ResponseHeadVO<UserInfoVO> getUserInfo(){
         String useUserEmail = (String)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_EMAIL);
         Assert.hasLength(useUserEmail,"错误的请求:正在使用的用户邮箱不能为空");
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(useUserEmail);
