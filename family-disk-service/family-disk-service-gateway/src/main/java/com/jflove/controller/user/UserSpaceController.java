@@ -43,8 +43,11 @@ public class UserSpaceController {
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         ResponseHeadDTO<UserSpaceDTO> dto = userSpace.createSpace(useUserId,param.getTitle());
-        ResponseHeadVO<UserSpaceVO> vo = new ResponseHeadVO<>();
-        BeanUtils.copyProperties(dto,vo);
-        return vo;
+        if(dto.isResult()){
+            UserSpaceVO vo = new UserSpaceVO();
+            BeanUtils.copyProperties(dto.getData(),vo);
+            return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 }

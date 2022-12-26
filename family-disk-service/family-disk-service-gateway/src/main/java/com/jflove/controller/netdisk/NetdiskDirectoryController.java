@@ -57,9 +57,12 @@ public class NetdiskDirectoryController {
         dto.setSpaceId(useSpaceId);
         dto.setType(NetdiskDirectoryENUM.valueOf(param.getType()));
         ResponseHeadDTO<NetdiskDirectoryDTO> retDto = netdiskDirectory.addDirectory(dto);
-        ResponseHeadVO<AddDirectoryParamVO> retVo = new ResponseHeadVO<AddDirectoryParamVO>();
-        BeanUtils.copyProperties(retDto,retVo);
-        return retVo;
+        if(retDto.isResult()){
+            AddDirectoryParamVO vo = new AddDirectoryParamVO();
+            BeanUtils.copyProperties(retDto.getData(),vo);
+            return new ResponseHeadVO<>(retDto.isResult(),vo,retDto.getMessage());
+        }
+        return new ResponseHeadVO<>(retDto.isResult(),retDto.getMessage());
     }
 
     @ApiOperation(value = "删除目录")
@@ -89,8 +92,11 @@ public class NetdiskDirectoryController {
             throw new SecurityException("用户对该空间没有移动权限");
         }
         ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.moveDirectory(useSpaceId,param.getId(),param.getTargetDirId());
-        ResponseHeadVO<AddDirectoryParamVO> retVo = new ResponseHeadVO<AddDirectoryParamVO>();
-        BeanUtils.copyProperties(dto,retVo);
-        return retVo;
+        if(dto.isResult()){
+            AddDirectoryParamVO vo = new AddDirectoryParamVO();
+            BeanUtils.copyProperties(dto.getData(),vo);
+            return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 }

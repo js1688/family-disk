@@ -57,9 +57,12 @@ public class UserInfoController {
         String useUserEmail = (String)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_EMAIL);
         Assert.hasLength(useUserEmail,"错误的请求:正在使用的用户邮箱不能为空");
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(useUserEmail);
-        ResponseHeadVO<UserInfoVO> vo = new ResponseHeadVO<>();
-        BeanUtils.copyProperties(dto,vo);
-        return vo;
+        if(dto.isResult()){
+            UserInfoVO vo = new UserInfoVO();
+            BeanUtils.copyProperties(dto.getData(),vo);
+            return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
     @ApiOperation(value = "邮箱+密码登录")
@@ -77,8 +80,11 @@ public class UserInfoController {
     @PostMapping("/createUserInfo")
     public ResponseHeadVO<UserInfoVO> createUserInfo(@RequestBody @Valid CreateUserInfoParamVO param){
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.createUserInfo(param.getEmail(),param.getPassword(),param.getName(),param.getCaptcha());
-        ResponseHeadVO<UserInfoVO> vo = new ResponseHeadVO<>();
-        BeanUtils.copyProperties(dto,vo);
-        return vo;
+        if(dto.isResult()){
+            UserInfoVO vo = new UserInfoVO();
+            BeanUtils.copyProperties(dto.getData(),vo);
+            return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 }
