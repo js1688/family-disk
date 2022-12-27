@@ -58,10 +58,16 @@ public class UserInfoController {
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(useUserEmail);
         if(dto.isResult()){
             UserInfoVO vo = new UserInfoVO();
-            List<UserSpaceRelVO> usrList = new ArrayList<>();
-            BeanUtils.copyProperties(dto.getData().getSpaces(),usrList);
             BeanUtils.copyProperties(dto.getData(),vo);
-            vo.setSpaces(usrList);
+            if(dto.getData().getSpaces() != null) {
+                List<UserSpaceRelVO> usrList = new ArrayList<>(dto.getData().getSpaces().size());
+                dto.getData().getSpaces().forEach(v->{
+                    UserSpaceRelVO usr = new UserSpaceRelVO();
+                    BeanUtils.copyProperties(v, usr);
+                    usrList.add(usr);
+                });
+                vo.setSpaces(usrList);
+            }
             return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
