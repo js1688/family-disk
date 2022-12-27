@@ -37,6 +37,19 @@ public class UserSpaceImpl implements IUserSpace {
     private DataSize maxFileSize;//创建空间的大小
 
     @Override
+    public ResponseHeadDTO<UserSpaceDTO> getSpaceInfo(Long spaceId) {
+        UserSpacePO usp = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()
+                .eq(UserSpacePO::getId,spaceId)
+        );
+        if(usp == null){
+            return new ResponseHeadDTO<>(false,"空间id不存在");
+        }
+        UserSpaceDTO dto = new UserSpaceDTO();
+        BeanUtils.copyProperties(usp,dto);
+        return new ResponseHeadDTO<UserSpaceDTO>(dto);
+    }
+
+    @Override
     @Transactional
     public ResponseHeadDTO<UserSpaceDTO> createSpace(Long createUserId, String title) {
         //该用户是否已经创建过空间

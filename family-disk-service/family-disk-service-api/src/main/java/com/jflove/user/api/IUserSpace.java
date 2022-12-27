@@ -17,4 +17,11 @@ public interface IUserSpace {
      * @return
      */
     ResponseHeadDTO<UserSpaceDTO> createSpace(Long createUserId,String title);
+
+    /**
+     * 获取空间信息
+     * @param spaceId
+     * @return
+     */
+    ResponseHeadDTO<UserSpaceDTO> getSpaceInfo(Long spaceId);
 }

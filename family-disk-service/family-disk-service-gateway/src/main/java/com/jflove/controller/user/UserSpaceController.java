@@ -13,10 +13,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -36,6 +33,21 @@ public class UserSpaceController {
 
     @Autowired
     private HttpServletRequest autowiredRequest;
+
+
+    @ApiOperation(value = "获取正在使用的空间信息")
+    @GetMapping("/getSpaceInfo")
+    public ResponseHeadVO<UserSpaceVO> getSpaceInfo(){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
+        ResponseHeadDTO<UserSpaceDTO> dto = userSpace.getSpaceInfo(useSpaceId);
+        if(dto.isResult()){
+            UserSpaceVO vo = new UserSpaceVO();
+            BeanUtils.copyProperties(dto.getData(),vo);
+            return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
+    }
 
     @ApiOperation(value = "创建空间")
     @PostMapping("/createSpace")
