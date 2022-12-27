@@ -107,6 +107,7 @@ public class UserInfoImpl implements IUserInfo {
         uip.setName(name);
         uip.setEmail(email);
         uip.setPassword(password);
+        uip.setRole(UserRoleENUM.COMMON.getCode());
         userInfoMapper.insert(uip);
         UserInfoDTO dto = new UserInfoDTO();
         BeanUtils.copyProperties(uip,dto);
