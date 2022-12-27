@@ -7,10 +7,7 @@ import com.jflove.user.api.IUserEmail;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.vo.ResponseHeadVO;
-import com.jflove.vo.user.CreateUserInfoParamVO;
-import com.jflove.vo.user.EmailPasswordLoginParamVO;
-import com.jflove.vo.user.GetUserInfoByEmailParamVO;
-import com.jflove.vo.user.UserInfoVO;
+import com.jflove.vo.user.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -21,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -59,7 +58,10 @@ public class UserInfoController {
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(useUserEmail);
         if(dto.isResult()){
             UserInfoVO vo = new UserInfoVO();
+            List<UserSpaceRelVO> usrList = new ArrayList<>();
+            BeanUtils.copyProperties(dto.getData().getSpaces(),usrList);
             BeanUtils.copyProperties(dto.getData(),vo);
+            vo.setSpaces(usrList);
             return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
