@@ -11,19 +11,11 @@
         style="top: 100px"
         :src="logonPng"
     />
-    <p style="margin-top: 100px;">{{useSpaceName}}</p>
+    <p style="margin-top: 100px;">{{userName}}</p>
   </div>
-  <van-cell is-link title="切换空间" @click="switchShow = true" />
-  <van-action-sheet close-on-click-action v-model:show="switchShow" :actions="spaceActions" @select="switchOnSelect" />
 
-  <van-cell is-link title="邀请加入空间" @click="inviteShow = true" />
-  <van-action-sheet v-model:show="inviteShow" title="邀请用户加入空间">
-    <div class="content">
-      加入一个空间
-    </div>
-  </van-action-sheet>
 
-  <van-cell is-link title="登录" @click="logonShow = true" />
+  <van-cell is-link title="登录" @click="logonShow = true" v-if="notLoginShow == true"/>
   <van-action-sheet v-model:show="logonShow" title="用户登录">
     <div class="content">
       <van-form @submit="logon">
@@ -33,7 +25,7 @@
               v-model="email"
               name="邮箱"
               label="邮箱"
-              placeholder="邮箱"
+              placeholder="请输入邮箱"
               :rules="[{ required: true, message: '请输入邮箱' }]"
           />
           <van-field
@@ -42,7 +34,7 @@
               type="password"
               name="密码"
               label="密码"
-              placeholder="密码"
+              placeholder="请输入密码"
               :rules="[{ required: true, message: '请输入密码' }]"
           />
         </van-cell-group>
@@ -55,10 +47,10 @@
     </div>
   </van-action-sheet>
 
-  <van-cell is-link title="注册" @click="registerShow = true" />
+  <van-cell is-link title="注册" @click="registerShow = true" v-if="notLoginShow == true" />
   <van-action-sheet v-model:show="registerShow" title="用户注册">
     <div class="content">
-      <van-form @submit="">
+      <van-form @submit="register">
         <van-cell-group inset>
           <van-field required v-model="name"
                      :rules="[{ required: true, message: '请输入用户名' }]"
@@ -70,16 +62,16 @@
               v-model="email"
               name="邮箱"
               label="邮箱"
-              placeholder="邮箱"
+              placeholder="请输入邮箱"
               :rules="[{ required: true, message: '请输入邮箱' }]"
           />
           <van-field
               required
               v-model="pwd"
-              type="pwd"
+              type="password"
               name="密码"
               label="密码"
-              placeholder="密码"
+              placeholder="请输入密码"
               :rules="[{ required: true, message: '请输入密码' }]"
           />
           <van-field
@@ -88,7 +80,7 @@
               type="password"
               name="确认密码"
               label="确认密码"
-              placeholder="确认密码"
+              placeholder="请二次输入密码"
               :rules="[{ required: true, message: '请再次输入密码' },{ required: true, message: '两次密码不一致', pattern: new RegExp('^'+pwd + '$') }]"
           />
         </van-cell-group>
@@ -103,7 +95,7 @@
               :rules="[{ required: true, message: '请输入邮箱验证码' }]"
           >
             <template #button>
-              <van-button size="small" type="primary">发送验证码</van-button>
+              <van-button size="small" :disabled="sendyzm" type="primary" @click="sendCaptcha">{{sendyzmjs == 0 ? sendyzmName : sendyzmName+'(' + sendyzmjs +')'}}</van-button>
             </template>
           </van-field>
         </van-cell-group>
@@ -116,8 +108,18 @@
     </div>
   </van-action-sheet>
 
-  <van-cell is-link title="退出登录" @click="logoutShow = true" />
+  <van-cell is-link title="退出登录" @click="logoutShow = true" v-if="notLoginShow == false"/>
   <van-action-sheet close-on-click-action v-model:show="logoutShow" :actions="okActions" @select="logoutOnSelect" />
+
+  <van-cell is-link title="创建空间" @click="createSpaceShow = true" v-if="notLoginShow == false" />
+  <van-action-sheet close-on-click-action v-model:show="createSpaceShow" :actions="okActions" @select="createSpace" />
+
+  <van-cell is-link title="查看空间" @click="querySpaceShow = true" v-if="notLoginShow == false" />
+  <van-action-sheet v-model:show="querySpaceShow" title="查看空间信息">
+    <div class="content">
+
+    </div>
+  </van-action-sheet>
 </template>
 
 <script>
@@ -127,29 +129,17 @@ import { Cell, ActionSheet,Image,Form, Field, CellGroup,Button } from 'vant';
 import { Overlay,Loading } from 'vant';
 import axios from 'axios';
 import kg from "@/global/KeyGlobal";
+import { showConfirmDialog } from 'vant';
 
 export default {
   name: "User",
   setup() {
-    // 登录
     const logonShow = ref(false);
-
-    //注册
     const registerShow = ref(false);
-
-    //退出登录
     const logoutShow = ref(false);
+    const createSpaceShow = ref(false);
+    const querySpaceShow = ref(false);
 
-    //切换空间
-    const switchShow = ref(false);
-
-    //邀请加入空间
-    const inviteShow = ref(false);
-
-    const spaceActions = [
-      { name: '空间1' },
-      { name: '空间2' }
-    ];
     const okActions = [
       { name: '确定',code:1 },
       { name: '取消',code:0 }
@@ -159,10 +149,9 @@ export default {
       logoutShow,
       registerShow,
       logonShow,
-      switchShow,
-      spaceActions,
       okActions,
-      inviteShow
+      createSpaceShow,
+      querySpaceShow
     };
   },
   components: {
@@ -183,22 +172,106 @@ export default {
       email:"",
       password:"",
       pwd:"",
-      logonPng:"/logon0.png",
       captcha:"",
       name:"",
-      useSpaceName:"请先登录",
-      isOverlay:false
+      logonPng:localStorage.getItem(kg.data().authorization) == null ? "/logon0.png" : "/logon1.png",
+      userName: localStorage.getItem(kg.data().authorization) == null ? "请先登录" : localStorage.getItem(kg.data().userName),
+      isOverlay: false,
+      sendyzm:false,
+      sendyzmName:'发送验证码',
+      sendyzmjs:0,
+      notLoginShow: localStorage.getItem(kg.data().authorization) == null ? true : false,
     };
   },
   methods: {
-    switchOnSelect: function(item){
-      showToast(item.name);
+    //创建空间
+    createSpace: function(item){
+      if(item.code == 1){
+        this.isOverlay = true;
+        let self = this;
+        axios.post('/user/space/createSpace', {
+          title: localStorage.getItem(kg.data().userName) + "的空间"
+        }).then(function (response) {
+          if(response.data.result){
+            localStorage.setItem(kg.data().useSpaceId,response.data.data.id);
+            localStorage.setItem(kg.data().useSpaceRole,'WRITE');//自己创建的空间,权限是读写
+          }
+          showToast(response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        })
+      }
     },
+    //注册
+    register: function(){
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/user/info/createUserInfo', {
+        email: this.email,
+        name: this.name,
+        password: this.password,
+        captcha: this.captcha
+      }).then(function (response) {
+        if(response.data.result){
+          //注册成功,清除数据
+          self.email="";
+          self.name="";
+          self.password="";
+          self.captcha="";
+          self.registerShow=false;
+        }
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      })
+    },
+    //发送注册验证码
+    sendCaptcha: function(){
+      if(!this.email){
+        showToast("请先输入邮箱");
+      }else{
+        this.isOverlay = true;
+        let self = this;
+        axios.post('/user/info/sendRegisterEmailCaptcha', {
+          email: this.email
+        }).then(function (response) {
+          self.sendyzm = true;
+          showToast(response.data.message);
+          self.isOverlay = false;
+          self.sendyzmjs = 60;
+          let timer = setInterval(function (){
+            self.sendyzmjs--;
+            if(self.sendyzmjs == 0){
+              clearInterval(timer);
+              self.sendyzm = false;
+            }
+          }, 1000);
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        })
+      }
+    },
+    //退出登录
     logoutOnSelect: function(item){
       if(item.code == 1){
         this.logonPng = "/logon0.png";
+        this.notLoginShow = true;
+        this.userName = '请先登录';
+        //退出登录后移除本地存储的数据
+        localStorage.removeItem(kg.data().authorization);//移除token
+        localStorage.removeItem(kg.data().userName);
+        localStorage.removeItem(kg.data().userEmail);
+        localStorage.removeItem(kg.data().userId);
+        localStorage.removeItem(kg.data().useSpaceId);
+        localStorage.removeItem(kg.data().useSpaceRole);
       }
     },
+    //登录
     logon: function(){
       this.isOverlay = true;
       let self = this;
@@ -207,13 +280,25 @@ export default {
         password: this.password
       }).then(function (response) {
         if(response.data.result){//登录成功
-          localStorage.setItem(kg.data().authorization,response.data.data);
+          localStorage.setItem(kg.data().authorization,response.data.data);//将token存储
           //登录成功后获取用户信息
           axios.get('/user/info/getUserInfo').then(function (res){
             if(res.data.result){//获得信息成功
-              console.log(res.data.data);
-              self.useSpaceName = res.data.data.name;
-              //todo 做一系列动作
+              //登录后存储一堆数据到本地
+              localStorage.setItem(kg.data().userName,res.data.data.name);
+              localStorage.setItem(kg.data().userEmail,res.data.data.email);
+              localStorage.setItem(kg.data().userId,res.data.data.id);
+              if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
+                localStorage.setItem(kg.data().useSpaceId,res.data.data.spaces[0].spaceId);
+                localStorage.setItem(kg.data().useSpaceRole,res.data.data.spaces[0].role);
+              }
+              self.logonPng = "/logon1.png";
+              self.notLoginShow = false;
+              self.logonShow = false;
+              self.userName = res.data.data.name;
+              //登录成功后,清除字段值
+              self.email = "";
+              self.password = "";
             }
             self.isOverlay = false;
           }).catch(function (err){

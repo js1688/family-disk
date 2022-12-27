@@ -16,7 +16,7 @@ axios.interceptors.request.use(config => {//声明请求拦截器
     }
     let useSpaceId = localStorage.getItem(kg.data().useSpaceId);
     if(useSpaceId != null){//如果本地保存了正在使用的空间id,则在头部传送使用中空间id
-        config.headers.common[kg.data().useSpaceId] = useSpaceId;
+        config.headers[kg.data().useSpaceId] = useSpaceId;
     }
     return config;//一定要返回
 })

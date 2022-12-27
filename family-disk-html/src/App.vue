@@ -1,6 +1,6 @@
 <template>
   <router-view></router-view>
-  <van-tabbar v-model="active" route>
+  <van-tabbar route>
     <van-tabbar-item to="/disk">
       <span>网盘</span>
       <template #icon="props">
@@ -29,12 +29,10 @@
 </template>
 <script>
 import { Tabbar, TabbarItem } from 'vant';
-import { ref } from 'vue';
 
   export default {
     name: 'App',
     setup() {
-      const active = ref(0);
       const icon = {
         user0: '/yonghu0.png',
         user1: '/yonghu1.png',
@@ -46,8 +44,7 @@ import { ref } from 'vue';
         notepad1: '/notepad1.png'
       };
       return {
-        icon,
-        active,
+        icon
       }
     },
     components: {
@@ -55,6 +52,7 @@ import { ref } from 'vue';
       [TabbarItem.name]: TabbarItem
     },
     props: {
+
     },
     data: function() {
       return {
