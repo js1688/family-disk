@@ -9,6 +9,7 @@ import lombok.ToString;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -34,4 +35,6 @@ public class UserInfoVO implements Serializable {
     private Date createTime;
     @ApiModelProperty(value="修改日期")
     private Date updateTime;
+    @ApiModelProperty(value="用户关联的空间")
+    private List<UserSpaceRelVO> spaces;
 }

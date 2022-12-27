@@ -14,6 +14,7 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.util.UUID;
@@ -36,6 +37,7 @@ public class UserSpaceImpl implements IUserSpace {
     private DataSize maxFileSize;//创建空间的大小
 
     @Override
+    @Transactional
     public ResponseHeadDTO<UserSpaceDTO> createSpace(Long createUserId, String title) {
         //该用户是否已经创建过空间
         if(userSpaceMapper.selectCount(new LambdaQueryWrapper<UserSpacePO>()
