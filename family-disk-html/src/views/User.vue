@@ -114,10 +114,15 @@
   <van-cell is-link title="创建空间" @click="createSpaceShow = true" v-if="notLoginShow == false" />
   <van-action-sheet close-on-click-action v-model:show="createSpaceShow" :actions="okActions" @select="createSpace" />
 
-  <van-cell is-link title="查看空间" @click="querySpaceShow = true" v-if="notLoginShow == false" />
+  <van-cell is-link title="查看空间" @click="getSpaceInfo" v-if="notLoginShow == false" />
   <van-action-sheet v-model:show="querySpaceShow" title="查看空间信息">
     <div class="content">
-
+      <van-cell-group inset>
+        <van-field label="空间名：" label-align="top" :model-value="title" readonly  />
+        <van-field label="最大存储(MB)：" label-align="top" :model-value="maxSize" readonly  />
+        <van-field label="已使用存储(MB)：" label-align="top" :model-value="useSize" readonly  />
+        <van-field label="剩余存储(MB)：" label-align="top" :model-value="maxSize - useSize" readonly  />
+      </van-cell-group>
     </div>
   </van-action-sheet>
 </template>
@@ -181,9 +186,29 @@ export default {
       sendyzmName:'发送验证码',
       sendyzmjs:0,
       notLoginShow: localStorage.getItem(kg.data().authorization) == null ? true : false,
+      maxSize:0,
+      title:"",
+      useSize:0
     };
   },
   methods: {
+    //查看空间
+    getSpaceInfo: function(){
+      this.querySpaceShow = true;
+      this.isOverlay = true;
+      let self = this;
+      axios.get('/user/space/getSpaceInfo').then(function (res){
+        if(res.data.result){
+          self.title = res.data.data.title;
+          self.maxSize = res.data.data.maxSize;
+          self.useSize = res.data.data.useSize;
+        }
+        self.isOverlay = false;
+      }).catch(function (err){
+        self.isOverlay = false;
+        console.log(err);
+      });
+    },
     //创建空间
     createSpace: function(item){
       if(item.code == 1){
