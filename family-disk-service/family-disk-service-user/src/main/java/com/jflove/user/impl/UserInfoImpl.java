@@ -6,6 +6,7 @@ import com.jflove.user.UserCaptchaPO;
 import com.jflove.user.UserInfoPO;
 import com.jflove.user.UserSpaceRelPO;
 import com.jflove.user.api.IUserInfo;
+import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.user.em.UserRoleENUM;
@@ -39,6 +40,9 @@ public class UserInfoImpl implements IUserInfo {
 
     @Autowired
     private UserSpaceRelMapper userSpaceRelMapper;
+
+    @Autowired
+    private IUserSpace userSpace;
 
     @Override
     public ResponseHeadDTO<UserInfoDTO> getUserInfoByEmail(String email) {
@@ -107,6 +111,8 @@ public class UserInfoImpl implements IUserInfo {
         UserInfoDTO dto = new UserInfoDTO();
         BeanUtils.copyProperties(uip,dto);
         dto.setRole(UserRoleENUM.valueOf(uip.getRole()));
+        //自动创建空间,如果创建不成功可手动创建
+        userSpace.createSpace(uip.getId(),String.format("%s的空间",uip.getName()));
         return new ResponseHeadDTO<>(true,dto,"账号注册成功");
     }
 }
