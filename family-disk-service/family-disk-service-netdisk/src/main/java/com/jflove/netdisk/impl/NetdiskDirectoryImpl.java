@@ -48,6 +48,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         list.forEach(v->{
             NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
             BeanUtils.copyProperties(v,dto);
+            dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
             listDto.add(dto);
         });
         return new ResponseHeadDTO<>(listDto);

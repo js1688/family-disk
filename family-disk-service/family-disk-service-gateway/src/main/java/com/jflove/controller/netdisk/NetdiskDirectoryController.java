@@ -115,6 +115,7 @@ public class NetdiskDirectoryController {
             dto.getDatas().forEach(v->{
                 AddDirectoryParamVO vo = new AddDirectoryParamVO();
                 BeanUtils.copyProperties(v,vo);
+                vo.setType(v.getType().getCode());
                 vos.add(vo);
             });
             return new ResponseHeadVO<>(dto.isResult(),vos,dto.getMessage());
