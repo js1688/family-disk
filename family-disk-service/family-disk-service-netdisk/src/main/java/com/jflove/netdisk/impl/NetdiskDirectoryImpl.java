@@ -143,17 +143,16 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             return new ResponseHeadDTO<>(false,"移动失败,目标目录不是文件夹");
         }
         //一直递归查找目标id的父节id,直至查不到数据位置,看中间有没有出现过父id是dirId,如果出现则目标节点是dirId的子节点
-        while (true){
+        long checkPid = targetDirId;
+        while (checkPid != 0){
             NetdiskDirectoryPO pidPo = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
-                    .eq(NetdiskDirectoryPO::getId,targetDirId)
+                    .eq(NetdiskDirectoryPO::getId,checkPid)
                     .select(NetdiskDirectoryPO::getPid)
             );
-            if(pidPo == null){
-                break;
-            }
             if(pidPo.getPid() == dirId.longValue()){
                 return new ResponseHeadDTO<>(false,"移动失败,目标目录是被移动目录的子目录");
             }
+            checkPid = pidPo.getPid();
         }
         //检查同级别下文件名是否已存在
         if(netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
