@@ -18,6 +18,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -109,7 +110,8 @@ public class NetdiskDirectoryController {
     public ResponseHeadVO<AddDirectoryParamVO> findDirectory(@RequestBody @Valid FindDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
-        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(useSpaceId,param.getPid(),param.getKeyword());
+        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(useSpaceId,param.getPid(),param.getKeyword(),
+                StringUtils.hasLength(param.getType()) ? NetdiskDirectoryENUM.valueOf(param.getType()) : null);
         if(dto.isResult()){
             List<AddDirectoryParamVO> vos = new ArrayList<>(dto.getDatas().size());
             dto.getDatas().forEach(v->{

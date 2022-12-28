@@ -29,4 +29,7 @@ public class FindDirectoryParamVO implements Serializable {
 
     @ApiModelProperty(value="查找关键字")
     private String keyword;
+
+    @ApiModelProperty(value="类型(FOLDER=文件夹,FILE=文件)")
+    private String type;
 }

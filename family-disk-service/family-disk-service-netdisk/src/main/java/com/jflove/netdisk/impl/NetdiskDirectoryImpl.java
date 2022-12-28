@@ -38,8 +38,9 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
 
 
     @Override
-    public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid,String keyword) {
+    public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid,String keyword,NetdiskDirectoryENUM type) {
         List<NetdiskDirectoryPO> list = netdiskDirectoryMapper.selectList(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .eq(type != null,NetdiskDirectoryPO::getType,type.getCode())
                 .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
                 .eq(!StringUtils.hasLength(keyword),NetdiskDirectoryPO::getPid, Optional.ofNullable(pid).orElse(0l))
                 .like(StringUtils.hasLength(keyword),NetdiskDirectoryPO::getName,keyword)
@@ -120,6 +121,9 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @Override
     @Transactional
     public ResponseHeadDTO<NetdiskDirectoryDTO> moveDirectory(Long spaceId, Long dirId, Long targetDirId) {
+        if(dirId.longValue() == targetDirId.longValue()){
+            return new ResponseHeadDTO<>(false,"移动失败,不能移动到自己目录下");
+        }
         NetdiskDirectoryPO po = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                 .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
                 .eq(NetdiskDirectoryPO::getId,dirId)
@@ -131,11 +135,24 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
                 .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
                 .eq(NetdiskDirectoryPO::getId,targetDirId)
         );
-        if(ppo == null){
+        if(ppo == null && targetDirId.longValue() != 0){
             return new ResponseHeadDTO<>(false,"移动失败,目标目录不存在");
         }
         if(NetdiskDirectoryENUM.FILE.getCode().equals(ppo.getType())){
             return new ResponseHeadDTO<>(false,"移动失败,目标目录不是文件夹");
+        }
+        //一直递归查找目标id的父节id,直至查不到数据位置,看中间有没有出现过父id是dirId,如果出现则目标节点是dirId的子节点
+        while (true){
+            NetdiskDirectoryPO pidPo = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                    .eq(NetdiskDirectoryPO::getId,targetDirId)
+                    .select(NetdiskDirectoryPO::getPid)
+            );
+            if(pidPo == null){
+                break;
+            }
+            if(pidPo.getPid() == dirId.longValue()){
+                return new ResponseHeadDTO<>(false,"移动失败,目标目录是被移动目录的子目录");
+            }
         }
         //检查同级别下文件名是否已存在
         if(netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()

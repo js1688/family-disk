@@ -2,6 +2,7 @@ package com.jflove.netdisk.api;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
+import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 
 /**
  * @author tanjun
@@ -15,9 +16,10 @@ public interface INetdiskDirectory {
      * @param spaceId
      * @param pid
      * @param keyword
+     * @param type
      * @return
      */
-    ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId,Long pid,String keyword);
+    ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid, String keyword, NetdiskDirectoryENUM type);
 
     /**
      * 添加目录
