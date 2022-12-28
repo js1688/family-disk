@@ -74,6 +74,6 @@ public class UserSpaceImpl implements IUserSpace {
         userSpaceRelMapper.insert(usrp);
         UserSpaceDTO dto = new UserSpaceDTO();
         BeanUtils.copyProperties(usp,dto);
-        return new ResponseHeadDTO<>(dto);
+        return new ResponseHeadDTO<>(true,dto,"创建空间成功");
     }
 }

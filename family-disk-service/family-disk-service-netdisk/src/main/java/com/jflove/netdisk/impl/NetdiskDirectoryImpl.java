@@ -84,7 +84,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         po.setPid(dto.getPid());
         netdiskDirectoryMapper.insert(po);
         dto.setId(po.getId());
-        return new ResponseHeadDTO<>(dto);
+        return new ResponseHeadDTO<>(true,dto,"添加成功");
     }
 
     @Override
@@ -113,7 +113,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         }
         //删除自己
         int i = netdiskDirectoryMapper.deleteById(po.getId());
-        return new ResponseHeadDTO<>(i);
+        return new ResponseHeadDTO<>(true,i,"删除成功");
     }
 
     @Override
@@ -148,6 +148,6 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         netdiskDirectoryMapper.updateById(po);
         NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
         BeanUtils.copyProperties(po,dto);
-        return new ResponseHeadDTO<>(dto);
+        return new ResponseHeadDTO<>(true,dto,"移动成功");
     }
 }
