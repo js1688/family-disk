@@ -40,7 +40,8 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @Override
     public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid,String keyword,NetdiskDirectoryENUM type) {
         List<NetdiskDirectoryPO> list = netdiskDirectoryMapper.selectList(new LambdaQueryWrapper<NetdiskDirectoryPO>()
-                .eq(type != null,NetdiskDirectoryPO::getType,type.getCode())
+                .eq(type != null,NetdiskDirectoryPO::getType,
+                        Optional.ofNullable(type).orElse(NetdiskDirectoryENUM.FOLDER).getCode())
                 .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
                 .eq(!StringUtils.hasLength(keyword),NetdiskDirectoryPO::getPid, Optional.ofNullable(pid).orElse(0l))
                 .like(StringUtils.hasLength(keyword),NetdiskDirectoryPO::getName,keyword)
