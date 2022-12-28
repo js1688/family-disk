@@ -27,7 +27,7 @@ public class AddDirectoryParamVO implements Serializable {
     private static final long serialVersionUID = -5099078248599225553L;
 
     @ApiModelProperty(value="主键")
-    private int id;
+    private long id;
 
     @ApiModelProperty(value="类型(FOLDER=文件夹,FILE=文件)")
     @NotBlank(message = "目录类型不能为空")

@@ -11,6 +11,15 @@ import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 public interface INetdiskDirectory {
 
     /**
+     * 查找目录
+     * @param spaceId
+     * @param pid
+     * @param keyword
+     * @return
+     */
+    ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId,Long pid,String keyword);
+
+    /**
      * 添加目录
      * @param dto
      * @return

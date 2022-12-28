@@ -15,8 +15,11 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author tanjun
@@ -33,6 +36,22 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @DubboReference
     private IFileService fileService;
 
+
+    @Override
+    public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid,String keyword) {
+        List<NetdiskDirectoryPO> list = netdiskDirectoryMapper.selectList(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+                .eq(!StringUtils.hasLength(keyword),NetdiskDirectoryPO::getPid, Optional.ofNullable(pid).orElse(0l))
+                .like(StringUtils.hasLength(keyword),NetdiskDirectoryPO::getName,keyword)
+        );
+        List<NetdiskDirectoryDTO> listDto = new ArrayList<>(list.size());
+        list.forEach(v->{
+            NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
+            BeanUtils.copyProperties(v,dto);
+            listDto.add(dto);
+        });
+        return new ResponseHeadDTO<>(listDto);
+    }
 
     @Override
     @Transactional

@@ -9,6 +9,7 @@ import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.netdisk.AddDirectoryParamVO;
 import com.jflove.vo.netdisk.DelDirectoryParamVO;
+import com.jflove.vo.netdisk.FindDirectoryParamVO;
 import com.jflove.vo.netdisk.MoveDirectoryParamVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -60,6 +63,7 @@ public class NetdiskDirectoryController {
         if(retDto.isResult()){
             AddDirectoryParamVO vo = new AddDirectoryParamVO();
             BeanUtils.copyProperties(retDto.getData(),vo);
+            vo.setType(retDto.getData().getType().getCode());
             return new ResponseHeadVO<>(retDto.isResult(),vo,retDto.getMessage());
         }
         return new ResponseHeadVO<>(retDto.isResult(),retDto.getMessage());
@@ -96,6 +100,24 @@ public class NetdiskDirectoryController {
             AddDirectoryParamVO vo = new AddDirectoryParamVO();
             BeanUtils.copyProperties(dto.getData(),vo);
             return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "查询目录")
+    @PostMapping("/findDirectory")
+    public ResponseHeadVO<AddDirectoryParamVO> findDirectory(@RequestBody @Valid FindDirectoryParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(useSpaceId,param.getPid(),param.getKeyword());
+        if(dto.isResult()){
+            List<AddDirectoryParamVO> vos = new ArrayList<>(dto.getDatas().size());
+            dto.getDatas().forEach(v->{
+                AddDirectoryParamVO vo = new AddDirectoryParamVO();
+                BeanUtils.copyProperties(v,vo);
+                vos.add(vo);
+            });
+            return new ResponseHeadVO<>(dto.isResult(),vos,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
