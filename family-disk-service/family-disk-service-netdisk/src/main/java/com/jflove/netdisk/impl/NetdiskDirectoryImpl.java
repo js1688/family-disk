@@ -139,7 +139,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         if(ppo == null && targetDirId.longValue() != 0){
             return new ResponseHeadDTO<>(false,"移动失败,目标目录不存在");
         }
-        if(NetdiskDirectoryENUM.FILE.getCode().equals(ppo.getType())){
+        if(targetDirId.longValue() != 0 && NetdiskDirectoryENUM.FILE.getCode().equals(ppo.getType())){
             return new ResponseHeadDTO<>(false,"移动失败,目标目录不是文件夹");
         }
         //一直递归查找目标id的父节id,直至查不到数据位置,看中间有没有出现过父id是dirId,如果出现则目标节点是dirId的子节点
