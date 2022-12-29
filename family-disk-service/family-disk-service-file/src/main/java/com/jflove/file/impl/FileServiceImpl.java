@@ -64,7 +64,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public StreamObserver<FileTransmissionDTO> addFile(StreamObserver<Boolean> response) {
+    public StreamObserver<FileTransmissionDTO> addFile(StreamObserver<ResponseHeadDTO<String>> response) {
         return new StreamObserver<FileTransmissionDTO>() {
             @Override
             public void onNext(FileTransmissionDTO data) {
@@ -118,11 +118,11 @@ public class FileServiceImpl implements IFileService {
                         }
                         //将文件信息记录
                         fileInfoMapper.insert(newPo);
-                        response.onCompleted();//写盘成功
+                        response.onNext(new ResponseHeadDTO<>(true,data.getFileMd5(),"写盘成功"));
                     }
                 }catch (Exception e){
                     log.error("文件写盘时发生异常",e);
-                    response.onError(e);//写盘失败
+                    response.onNext(new ResponseHeadDTO<>(false,data.getFileMd5(),"写盘失败"));
                 }
             }
 

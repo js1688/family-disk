@@ -18,7 +18,7 @@ public interface IFileService {
      * @param response 处理响应
      * @return
      */
-    StreamObserver<FileTransmissionDTO> addFile(StreamObserver<Boolean> response);
+    StreamObserver<FileTransmissionDTO> addFile(StreamObserver<ResponseHeadDTO<String>> response);
 
     /**
      * 标记删除文件

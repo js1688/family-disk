@@ -99,24 +99,20 @@ public class FileController {
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
         //按分片读取数据,再将数据发送出去
-        StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<Boolean>() {
+        StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<ResponseHeadDTO<String>>() {
             @Override
-            public void onNext(Boolean data) {
-
+            public void onNext(ResponseHeadDTO<String> data) {
+                //利用websocket推送文件上传结果
+                String user = String.format("%s-%s", useUserId,useSpaceId);
+                messagingTemplate.convertAndSendToUser(user, "/add/file/result", JSONUtil.toJsonStr(new ResponseHeadVO<>(false,"文件写盘失败")));
             }
 
             @Override
             public void onError(Throwable throwable) {
-                //利用websocket推送文件上传结果
-                String user = String.format("%s-%s-%s", useUserId,useSpaceId);
-                messagingTemplate.convertAndSendToUser(user, "/add/file", JSONUtil.toJsonStr(new ResponseHeadVO<>(false,"文件写盘失败")));
             }
 
             @Override
             public void onCompleted() {
-                //利用websocket推送文件上传结果
-                String user = String.format("%s-%s-%s", useUserId,useSpaceId);
-                messagingTemplate.convertAndSendToUser(user, "/add/file", JSONUtil.toJsonStr(new ResponseHeadVO<>(true,"文件写盘成功")));
             }
         });
         try {
@@ -124,8 +120,8 @@ public class FileController {
             dto.setFileMd5(md5);
             //判断该文件对于当前用户已存在了
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
-            if(ex.getData()){
-                return new ResponseHeadVO<>(false,"文件上传失败,该文件已存在空间中,也许是文件名不一样");
+            if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
+                return new ResponseHeadVO<>(true,dto.getFileMd5(),"该文件已存在空间中,不需要重复上传.");
             }
             byte [] total = f.getInputStream().readAllBytes();
             int off = 0;
