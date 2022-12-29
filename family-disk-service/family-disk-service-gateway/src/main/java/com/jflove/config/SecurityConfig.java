@@ -82,7 +82,7 @@ public class SecurityConfig{
                 if (!ignoreUrlsConfig.isSkip(request.getServletPath())){
                     try {
                         String token = request.getHeader(HttpConstantConfig.AUTHORIZATION);
-                        Assert.hasLength(token,"请先登录");
+                        Assert.hasLength(token,String.format("请先登录,url:%s",request.getServletPath()));
                         log.info("authenticated token:{}", token);
                         UserDetails userDetails = uds.loadUserByUsername(token);
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, (Object) null, userDetails.getAuthorities());
