@@ -8,5 +8,5 @@ export default {
             userId:'USER_ID',
             useSpaceRole:'USE_SPACE_ROLE'
         };
-    },
+    }
 }

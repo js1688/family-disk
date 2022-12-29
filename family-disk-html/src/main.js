@@ -3,10 +3,12 @@ import App from './App.vue';
 import 'vant/lib/index.css';
 import router from "./router/index";
 import axios from 'axios';
-import kg from './global/KeyGlobal';
+import kg from '@/global/KeyGlobal';
 
+
+axios.defaults.withCredentials = false
 //全局配置axios的请求根路径
-axios.defaults.baseURL = 'http://api.jflove.cn/';
+axios.defaults.baseURL = 'http://127.0.0.1:8800/';
 
 //请求拦截设置头部
 axios.interceptors.request.use(config => {//声明请求拦截器

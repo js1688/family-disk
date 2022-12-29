@@ -26,7 +26,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry stompEndpointRegistry) {
         // 注册一个STOMP的endpoint,并指定使用SockJS协议
-        stompEndpointRegistry.addEndpoint("/cs/stomp")
+        stompEndpointRegistry.addEndpoint("/gateway/stomp")
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(new HandshakeInterceptor() {
                     @Override

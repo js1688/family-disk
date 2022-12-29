@@ -4,9 +4,11 @@
       <van-loading />
     </div>
   </van-overlay>
+
   <van-cell center icon="wap-home-o" >
     <a v-for="(item) in openPath" @click="jump(item)" >{{item.name}}</a>
   </van-cell>
+
   <van-search
       v-model="keyword"
       show-action
@@ -16,6 +18,7 @@
       <div @click="onLoad">搜索</div>
     </template>
   </van-search>
+
   <van-list
       v-model:loading="loading"
       :finished="finished"
@@ -31,10 +34,11 @@
       <template #right>
         <van-button square type="danger" @click="delDirectory(item)" text="删除" />
         <van-button square type="primary" @click="moveDirectory(item)" text="移动" />
-        <van-button square type="primary" @click="" text="重命名" />
+        <van-button square type="primary" @click="updateName(item)" text="重命名" />
       </template>
     </van-swipe-cell>
   </van-list>
+
   <div style="position: fixed;right: 25px;bottom: 200px;">
     <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
       <template #reference>
@@ -42,6 +46,7 @@
       </template>
     </van-popover>
   </div>
+
   <van-action-sheet v-model:show="showAddDirectory" title="添加目录">
     <div class="content">
       <van-form @submit="addDirectory">
@@ -86,6 +91,44 @@
       </div>
     </div>
   </van-action-sheet>
+
+  <van-action-sheet v-model:show="showUpdateName" title="重命名">
+    <div class="content">
+      <van-form @submit="updateName2">
+        <van-cell-group inset>
+          <van-field
+              required
+              v-model="directoryName"
+              name="目录名称"
+              label="目录名称"
+              placeholder="请输入新的目录名称"
+              :rules="[{ required: true, message: '请输入新的目录名称' }]"
+          />
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交
+          </van-button>
+        </div>
+      </van-form>
+    </div>
+  </van-action-sheet>
+
+  <van-action-sheet v-model:show="showUpload" title="上传文件">
+    <div class="content">
+      <div style="margin: 16px;">
+        <van-uploader :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+          <van-button block hairline icon="plus" type="default">选择文件</van-button>
+        </van-uploader>
+      </div>
+      <div style="margin: 16px;">
+        <van-button round block :disabled="uploadDisabled" type="primary" @click="submitUpload" native-type="submit">
+          开始上传
+        </van-button>
+      </div>
+    </div>
+  </van-action-sheet>
+
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
@@ -94,8 +137,10 @@ import {Search, List, Cell, Tag, NavBar, showToast,BackTop,Popover,Button,Action
 import { Overlay,Loading } from 'vant';
 import {ref} from "vue";
 import axios from "axios";
-import { SwipeCell } from 'vant';
+import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
+import gws from "@/global/WebSocket";
+
 
 export default {
   name: "Disk",
@@ -114,7 +159,8 @@ export default {
     [CellGroup.name]: CellGroup,
     [Overlay.name]: Overlay,
     [Loading.name]: Loading,
-    [SwipeCell.name]:SwipeCell
+    [SwipeCell.name]:SwipeCell,
+    [Uploader.name]: Uploader
   },
   setup() {
     const addActions = [
@@ -133,6 +179,7 @@ export default {
       keyword:"",
       directoryName:"",
       pid:0,
+      id:0,
       loading:false,
       finished:false,
       moveLoading:false,
@@ -143,13 +190,53 @@ export default {
       showAddDirectory:false,
       isOverlay: false,
       showMove: false,
+      uploadDisabled:false,
       list:[],
+      showUpdateName:false,
+      showUpload:false,
+      uploadFiles:[],
       openPath:[
           {name:'/',id:0}
       ]
     }
   },
   methods:{
+    //提交上传
+    submitUpload: function(){
+      //设置禁用
+      this.uploadDisabled = true;
+      //开始循环上传文件
+      for (let i = 0; i < this.uploadFiles.length; i++) {
+        this.uploadFiles[i].status = "uploading";
+        this.uploadFiles[i].message = "上传中";
+      }
+      //全部上传完毕后取消禁用
+      this.uploadDisabled = false;
+      gws.methods.wsConnection();
+    },
+    //修改名称
+    updateName2:function(){
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/netdisk/updateName', {
+        name: this.directoryName,
+        id:this.id
+      }).then(function (response) {
+        if(response.data.result){
+          self.showUpdateName = false;
+          self.onLoad();
+        }
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    updateName: function (item) {
+      this.showUpdateName = true;
+      this.id = item.id;
+    },
     //确定移动
     moveDirectory2: function (){
       this.isOverlay = true;
@@ -272,7 +359,17 @@ export default {
           this.showAddDirectory = true;
           break;
         case 'addFile':
-          showToast("添加文件");
+          this.showUpload = true;
+          //如果上传列表中全是上传成功,已经上传完了且用户不需要太关心每个文件的状态,需要清除掉上传列表
+          let clean = true;
+          for (let i = 0; i < this.uploadFiles.length; i++) {
+            if(this.uploadFiles[i].status != "done"){
+              clean = false;
+            }
+          }
+          if(clean){
+            this.uploadFiles = [];
+          }
           break;
         case 'photograph':
           showToast("拍照上传");
