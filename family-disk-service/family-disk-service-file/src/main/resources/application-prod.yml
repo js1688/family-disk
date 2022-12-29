@@ -20,4 +20,4 @@ logging:
 file:
   storage:
     path:
-      temp: F:\\temp
+      temp: /home/family/app/temp
