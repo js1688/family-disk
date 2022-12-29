@@ -36,6 +36,32 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @DubboReference
     private IFileService fileService;
 
+    @Override
+    @Transactional
+    public ResponseHeadDTO updateName(Long spaceId, Long id, String name) {
+        NetdiskDirectoryPO po = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+                .eq(NetdiskDirectoryPO::getId,id)
+        );
+        if(po == null){
+            return new ResponseHeadDTO(false,"没有这个目录");
+        }
+        if(netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .eq(NetdiskDirectoryPO::getPid,po.getPid())
+                .eq(NetdiskDirectoryPO::getName,name)
+                .ne(NetdiskDirectoryPO::getId,id)
+        )){
+            return new ResponseHeadDTO(false,"目录名称重复");
+        }
+        po.setName(name);
+        po.setUpdateTime(null);
+        netdiskDirectoryMapper.updateById(po);
+        //如果是文件,还需要修改文件名
+        if(NetdiskDirectoryENUM.FILE.getCode().equals(po.getType())){
+            fileService.updateName(po.getFileMd5(),spaceId,name,FileSourceENUM.CLOUDDISK);
+        }
+        return new ResponseHeadDTO<>(true,"修改成功");
+    }
 
     @Override
     public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid,String keyword,NetdiskDirectoryENUM type) {
@@ -163,6 +189,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             return new ResponseHeadDTO<>(false,"移动失败,目标目录下已存在被移动的目录名");
         }
         po.setPid(targetDirId);
+        po.setUpdateTime(null);
         netdiskDirectoryMapper.updateById(po);
         NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
         BeanUtils.copyProperties(po,dto);

@@ -37,4 +37,14 @@ public interface IFileService {
      * @return
      */
     ResponseHeadDTO<Boolean> isExist(String md5,long spaceId,FileSourceENUM source);
+
+    /**
+     * 修改文件名称
+     * @param md5
+     * @param spaceId
+     * @param name
+     * @param source
+     * @return
+     */
+    ResponseHeadDTO updateName(String md5,long spaceId,String name,FileSourceENUM source);
 }

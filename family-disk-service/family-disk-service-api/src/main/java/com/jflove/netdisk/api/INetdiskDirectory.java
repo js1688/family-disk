@@ -12,6 +12,15 @@ import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 public interface INetdiskDirectory {
 
     /**
+     * 修改目录名称
+     * @param spaceId
+     * @param id
+     * @param name
+     * @return
+     */
+    ResponseHeadDTO updateName(Long spaceId, Long id,String name);
+
+    /**
      * 查找目录
      * @param spaceId
      * @param pid

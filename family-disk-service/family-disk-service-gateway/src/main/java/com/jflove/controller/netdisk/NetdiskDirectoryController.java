@@ -7,10 +7,7 @@ import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
-import com.jflove.vo.netdisk.AddDirectoryParamVO;
-import com.jflove.vo.netdisk.DelDirectoryParamVO;
-import com.jflove.vo.netdisk.FindDirectoryParamVO;
-import com.jflove.vo.netdisk.MoveDirectoryParamVO;
+import com.jflove.vo.netdisk.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.log4j.Log4j2;
@@ -123,5 +120,21 @@ public class NetdiskDirectoryController {
             return new ResponseHeadVO<>(dto.isResult(),vos,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "修改名称")
+    @PostMapping("/updateName")
+    public ResponseHeadVO updateName(@RequestBody @Valid UpdateDirectoryNameParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有修改权限");
+        }
+        ResponseHeadDTO dto = netdiskDirectory.updateName(useSpaceId,param.getId(),param.getName());
+        ResponseHeadVO vo = new ResponseHeadVO();
+        BeanUtils.copyProperties(dto,vo);
+        return vo;
     }
 }

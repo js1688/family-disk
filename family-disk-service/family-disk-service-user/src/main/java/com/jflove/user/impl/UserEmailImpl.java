@@ -58,6 +58,7 @@ public class UserEmailImpl implements IUserEmail {
             captcha = oldCaptcha.getCaptcha();
             //重新刷新有效期
             oldCaptcha.setCaptchaExpireTime(expTime);
+            oldCaptcha.setUpdateTime(null);
             userCaptchaMapper.updateById(oldCaptcha);
         }else{
             userCaptchaMapper.delete(new LambdaUpdateWrapper<UserCaptchaPO>().eq(UserCaptchaPO::getEmail,email));//删除掉以前的验证码

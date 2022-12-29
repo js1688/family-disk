@@ -16,6 +16,7 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
@@ -44,6 +45,23 @@ public class FileServiceImpl implements IFileService {
 
     @Autowired
     private FileInfoMapper fileInfoMapper;
+
+    @Override
+    @Transactional
+    public ResponseHeadDTO updateName(String md5, long spaceId, String name, FileSourceENUM source) {
+        FileInfoPO po = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                .eq(FileInfoPO::getFileMd5,md5)
+                .eq(FileInfoPO::getSpaceId,spaceId)
+                .eq(FileInfoPO::getSource,source.getCode())
+        );
+        if(po == null){
+            return new ResponseHeadDTO(false,"文件不存在");
+        }
+        po.setName(name);
+        po.setUpdateTime(null);
+        fileInfoMapper.updateById(po);
+        return new ResponseHeadDTO(true,"修改成功");
+    }
 
     @Override
     public StreamObserver<FileTransmissionDTO> addFile(StreamObserver<Boolean> response) {
@@ -91,6 +109,7 @@ public class FileServiceImpl implements IFileService {
                             DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());//直接从磁盘中读取剩余可用空间,更加准确
                             selectd.setMaxSize(total.toGigabytes());
                             selectd.setUsableSize(usableSpace.toGigabytes());
+                            selectd.setUpdateTime(null);
                             fileDiskConfigMapper.updateById(selectd);
                         }
                         //清除临时文件
@@ -130,6 +149,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO<Boolean> delFile(String md5, long spaceId, FileSourceENUM source) {
         FileInfoPO po = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
                 .eq(FileInfoPO::getSource,source)
@@ -143,6 +163,7 @@ public class FileServiceImpl implements IFileService {
         po.setMarkDelete(1);//标记删除
         int after = 30;//三十天后删除
         po.setDeleteTime((System.currentTimeMillis() / 1000) + (60 * 60 * 24 * after));
+        po.setUpdateTime(null);
         fileInfoMapper.updateById(po);
         return new ResponseHeadDTO<>(true,true,"文件已删除,可以在回收站中找回或彻底删除.");
     }
