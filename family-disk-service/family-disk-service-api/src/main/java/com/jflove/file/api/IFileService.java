@@ -2,6 +2,7 @@ package com.jflove.file.api;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
+import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
 import org.apache.dubbo.common.stream.StreamObserver;
 
@@ -18,7 +19,7 @@ public interface IFileService {
      * @param response 处理响应
      * @return
      */
-    StreamObserver<FileTransmissionDTO> addFile(StreamObserver<ResponseHeadDTO<String>> response);
+    StreamObserver<FileTransmissionDTO> addFile(StreamObserver<FileTransmissionRepDTO> response);
 
     /**
      * 标记删除文件

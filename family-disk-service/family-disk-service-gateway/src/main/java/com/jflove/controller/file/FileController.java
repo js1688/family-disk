@@ -5,6 +5,7 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileService;
 import com.jflove.file.dto.FileTransmissionDTO;
+import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
@@ -99,9 +100,9 @@ public class FileController {
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
         //按分片读取数据,再将数据发送出去
-        StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<ResponseHeadDTO<String>>() {
+        StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<FileTransmissionRepDTO>() {
             @Override
-            public void onNext(ResponseHeadDTO<String> data) {
+            public void onNext(FileTransmissionRepDTO data) {
                 //利用websocket推送文件上传结果
                 String user = String.format("%s-%s", useUserId,useSpaceId);
                 messagingTemplate.convertAndSendToUser(user, "/add/file/result", JSONUtil.toJsonStr(data));

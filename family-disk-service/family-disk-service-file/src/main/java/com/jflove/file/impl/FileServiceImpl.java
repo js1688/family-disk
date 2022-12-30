@@ -6,6 +6,7 @@ import com.jflove.file.FileDiskConfigPO;
 import com.jflove.file.FileInfoPO;
 import com.jflove.file.api.IFileService;
 import com.jflove.file.dto.FileTransmissionDTO;
+import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.file.mapper.FileDiskConfigMapper;
 import com.jflove.file.mapper.FileInfoMapper;
@@ -64,7 +65,7 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
-    public StreamObserver<FileTransmissionDTO> addFile(StreamObserver<ResponseHeadDTO<String>> response) {
+    public StreamObserver<FileTransmissionDTO> addFile(StreamObserver<FileTransmissionRepDTO> response) {
         return new StreamObserver<FileTransmissionDTO>() {
             @Override
             public void onNext(FileTransmissionDTO data) {
@@ -118,11 +119,11 @@ public class FileServiceImpl implements IFileService {
                         }
                         //将文件信息记录
                         fileInfoMapper.insert(newPo);
-                        response.onNext(new ResponseHeadDTO<>(true,data.getFileMd5(),"写盘成功"));
+                        response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),true,"文件写盘成功"));
                     }
                 }catch (Exception e){
                     log.error("文件写盘时发生异常",e);
-                    response.onNext(new ResponseHeadDTO<>(false,data.getFileMd5(),"写盘失败"));
+                    response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),true,"文件写盘失败"));
                 }
             }
 
