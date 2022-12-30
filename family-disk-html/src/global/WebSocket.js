@@ -1,37 +1,54 @@
 import SockJS from  'sockjs-client/dist/sockjs.min.js';
 import Stomp from "stompjs";
-import kg from "@/global/KeyGlobal";
+import {key} from "@/global/KeyGlobal";
 export default {
     data:function(){
         return {
-            socket:null,
             stompClient:null
         }
     },
     methods: {
+        //创建socket连接
         wsConnection:function(){
-            //建立连接对象
-            this.socket = new SockJS('http://127.0.0.1:8800/gateway/stomp');
-            //获取STOMP子协议的客户端对象
-            this.stompClient = Stomp.over(this.socket);
-            // 向服务器发起websocket连接
-            this.stompClient.connect({},(frame) => {
-                console.log("ws建立连接成功")
-            }, (err) => {
-                // 连接发生错误时的处理函数
-                console.log(err);
-            });
+            if(this.stompClient == null){
+                //建立连接对象
+                let token = localStorage.getItem(key().authorization);
+                let socket = new SockJS(key().baseURL + 'gateway/stomp?Authorization=' + (token == null ? '' : token));
+                //获取STOMP子协议的客户端对象
+                this.stompClient = Stomp.over(socket);
+                // 向服务器发起websocket连接
+                this.stompClient.connect({"Authorization":"asds"},(frame) => {
+                    console.log("ws建立连接成功")
+                }, (err) => {
+                    // 连接发生错误时的处理函数
+                    console.log(err);
+                });
+            }
         },
+        //断开socket连接
         wsDisconnect:function(){
-
+            if(this.stompClient != null){
+                this.stompClient.disconnect(()=>{
+                    this.stompClient = null;
+                    console.log("ws断开连接");
+                });
+            }
         },
-        wsSubscribe:function (){
-            let topic = "/user/";
-            topic += localStorage.getItem(kg.data().userId) + "-" + localStorage.getItem(kg.data().useSpaceId);
-            topic += "/add/file/result";
-            this.stompClient.subscribe(topic, (msg) => { // 订阅服务端提供的某个topic
-                console.log(msg.body);  // msg.body存放的是服务端发送给我们的信息
+        //订阅一个主题
+        wsSubscribe:function (topic,callback){
+            if(this.stompClient == null){
+                return null;
+            }
+            return this.stompClient.subscribe(topic, (msg) => { // 订阅服务端提供的某个topic
+                callback(msg);
             });
+        },
+        //取消订阅一个主题
+        wsUnsubscribe: function (id){
+            if(this.stompClient == null){
+                return null;
+            }
+            return this.stompClient.unsubscribe(id);
         }
     }
 };

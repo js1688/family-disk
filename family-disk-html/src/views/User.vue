@@ -133,8 +133,8 @@ import {showToast} from 'vant';
 import { Cell, ActionSheet,Image,Form, Field, CellGroup,Button } from 'vant';
 import { Overlay,Loading } from 'vant';
 import axios from 'axios';
-import kg from "@/global/KeyGlobal";
-import { showConfirmDialog } from 'vant';
+import gws from "@/global/WebSocket";
+import {key} from "@/global/KeyGlobal";
 
 export default {
   name: "User",
@@ -179,13 +179,13 @@ export default {
       pwd:"",
       captcha:"",
       name:"",
-      logonPng:localStorage.getItem(kg.data().authorization) == null ? "/logon0.png" : "/logon1.png",
-      userName: localStorage.getItem(kg.data().authorization) == null ? "请先登录" : localStorage.getItem(kg.data().userName),
+      logonPng:localStorage.getItem(key().authorization) == null ? "/logon0.png" : "/logon1.png",
+      userName: localStorage.getItem(key().authorization) == null ? "请先登录" : localStorage.getItem(key().userName),
       isOverlay: false,
       sendyzm:false,
       sendyzmName:'发送验证码',
       sendyzmjs:0,
-      notLoginShow: localStorage.getItem(kg.data().authorization) == null ? true : false,
+      notLoginShow: localStorage.getItem(key().authorization) == null ? true : false,
       maxSize:0,
       title:"",
       useSize:0
@@ -215,11 +215,11 @@ export default {
         this.isOverlay = true;
         let self = this;
         axios.post('/user/space/createSpace', {
-          title: localStorage.getItem(kg.data().userName) + "的空间"
+          title: localStorage.getItem(key().userName) + "的空间"
         }).then(function (response) {
           if(response.data.result){
-            localStorage.setItem(kg.data().useSpaceId,response.data.data.id);
-            localStorage.setItem(kg.data().useSpaceRole,'WRITE');//自己创建的空间,权限是读写
+            localStorage.setItem(key().useSpaceId,response.data.data.id);
+            localStorage.setItem(key().useSpaceRole,'WRITE');//自己创建的空间,权限是读写
           }
           showToast(response.data.message);
           self.isOverlay = false;
@@ -288,12 +288,13 @@ export default {
         this.notLoginShow = true;
         this.userName = '请先登录';
         //退出登录后移除本地存储的数据
-        localStorage.removeItem(kg.data().authorization);//移除token
-        localStorage.removeItem(kg.data().userName);
-        localStorage.removeItem(kg.data().userEmail);
-        localStorage.removeItem(kg.data().userId);
-        localStorage.removeItem(kg.data().useSpaceId);
-        localStorage.removeItem(kg.data().useSpaceRole);
+        localStorage.removeItem(key().authorization);//移除token
+        localStorage.removeItem(key().userName);
+        localStorage.removeItem(key().userEmail);
+        localStorage.removeItem(key().userId);
+        localStorage.removeItem(key().useSpaceId);
+        localStorage.removeItem(key().useSpaceRole);
+        gws.methods.wsDisconnect();//断开socket
       }
     },
     //登录
@@ -305,18 +306,19 @@ export default {
         password: this.password
       }).then(function (response) {
         if(response.data.result){//登录成功
-          localStorage.setItem(kg.data().authorization,response.data.data);//将token存储
+          localStorage.setItem(key().authorization,response.data.data);//将token存储
           //登录成功后获取用户信息
           axios.get('/user/info/getUserInfo').then(function (res){
             if(res.data.result){//获得信息成功
               //登录后存储一堆数据到本地
-              localStorage.setItem(kg.data().userName,res.data.data.name);
-              localStorage.setItem(kg.data().userEmail,res.data.data.email);
-              localStorage.setItem(kg.data().userId,res.data.data.id);
+              localStorage.setItem(key().userName,res.data.data.name);
+              localStorage.setItem(key().userEmail,res.data.data.email);
+              localStorage.setItem(key().userId,res.data.data.id);
               if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
-                localStorage.setItem(kg.data().useSpaceId,res.data.data.spaces[0].spaceId);
-                localStorage.setItem(kg.data().useSpaceRole,res.data.data.spaces[0].role);
+                localStorage.setItem(key().useSpaceId,res.data.data.spaces[0].spaceId);
+                localStorage.setItem(key().useSpaceRole,res.data.data.spaces[0].role);
               }
+              gws.methods.wsConnection();//连接socket
               self.logonPng = "/logon1.png";
               self.notLoginShow = false;
               self.logonShow = false;

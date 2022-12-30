@@ -117,7 +117,7 @@
   <van-action-sheet v-model:show="showUpload" title="上传文件">
     <div class="content">
       <div style="margin: 16px;">
-        <van-uploader :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+        <van-uploader :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
         </van-uploader>
       </div>
@@ -140,6 +140,7 @@ import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
+import {key} from "@/global/KeyGlobal";
 
 
 export default {
@@ -197,22 +198,79 @@ export default {
       uploadFiles:[],
       openPath:[
           {name:'/',id:0}
-      ]
+      ],
+      subscribeAddFile:null
     }
   },
   methods:{
+    //订阅文件上传结果
+    subscribe:function (){
+      if(this.subscribeAddFile == null){
+        let topic = "/user/";
+        topic += localStorage.getItem(key().userId) + "-" + localStorage.getItem(key().useSpaceId);
+        topic += "/add/file/result";
+        this.subscribeAddFile = gws.methods.wsSubscribe(topic,function(msg){//订阅文件上传真实的写盘结果
+          //可以根据文件名称来判断,因为上传的时候,校验了文件名称在本批次必须是唯一的
+          //如果正在上传的文件列表,每一个都不是上传中状态,则代表上传结束了
+          //全部上传完毕后取消禁用
+          this.uploadDisabled = false;
+          console.log(msg);
+        });
+      }
+    },
+    //选择文件前校验
+    beforeRead: function (files){
+      if(this.uploadFiles == null || this.uploadFiles.length == 0){
+        return true;
+      }
+      B:for (let j = 0; j < this.uploadFiles.length; j++) {
+        let oldFile = this.uploadFiles[j];
+        if(files.length){
+          A:for (let i = 0; i < files.length; i++) {
+            let nowFile = files[i];
+            if(nowFile.name == oldFile.file.name){
+              showToast("重复文件名:" + nowFile.name);
+              return false;
+            }
+          }
+        }else{
+          if(files.name == oldFile.file.name){
+            showToast("重复文件名:" + files.name);
+            return false;
+          }
+        }
+      }
+      return true;
+    },
     //提交上传
     submitUpload: function(){
       //设置禁用
       this.uploadDisabled = true;
+      this.subscribe();
       //开始循环上传文件
       for (let i = 0; i < this.uploadFiles.length; i++) {
-        this.uploadFiles[i].status = "uploading";
-        this.uploadFiles[i].message = "上传中";
+        let f = this.uploadFiles[i];
+        f.status = "uploading";
+        f.message = "上传中";
+        let data = new FormData();
+        data.append('f', f.file);
+        data.append('s', 'CLOUDDISK');
+        axios.post("/file/addFile", data, {
+          header:{
+            'Content-Type': 'multipart/form-data'
+          }
+        }).then((res) => {
+          //这个结果如果是成功的不作为真正上传成功
+          if(!res.data.result){
+            f.status = "failed";
+            f.message = "失败";
+          }
+        }).catch((error) => {
+          console.log(error);
+          f.status = "failed";
+          f.message = "失败";
+        });
       }
-      //全部上传完毕后取消禁用
-      this.uploadDisabled = false;
-      gws.methods.wsConnection();
     },
     //修改名称
     updateName2:function(){

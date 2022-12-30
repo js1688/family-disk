@@ -5,10 +5,10 @@ import User from "@/views/User.vue";
 import Disk from "@/views/Disk.vue";
 import Notepad from "@/views/Notepad.vue";
 import Journal from "@/views/Journal.vue";
-import kg from "@/global/KeyGlobal";
+import {key} from "@/global/KeyGlobal";
 
 const routes = [
-    { path: '/', redirect: localStorage.getItem(kg.data().authorization) == null ? '/user' : '/disk'},//路由默认路径,看是否已登录
+    { path: '/', redirect: localStorage.getItem(key().authorization) == null ? '/user' : '/disk'},//路由默认路径,看是否已登录
     { path: '/user', component: User },
     { path: '/disk', component: Disk },
     { path: '/notepad', component: Notepad },

@@ -3,22 +3,21 @@ import App from './App.vue';
 import 'vant/lib/index.css';
 import router from "./router/index";
 import axios from 'axios';
-import kg from '@/global/KeyGlobal';
+import {isSpace, isToken, key} from '@/global/KeyGlobal';
+import gws from "@/global/WebSocket";
 
 
-axios.defaults.withCredentials = false
+axios.defaults.withCredentials = true
 //全局配置axios的请求根路径
-axios.defaults.baseURL = 'http://127.0.0.1:8800/';
+axios.defaults.baseURL = key().baseURL;
 
 //请求拦截设置头部
 axios.interceptors.request.use(config => {//声明请求拦截器
-    let token = localStorage.getItem(kg.data().authorization);
-    if(token != null){//如果本地保存了token,则在头部传送token
-        config.headers.Authorization = token;
+    if(isToken()){//如果本地保存了token,则在头部传送token
+        config.headers.Authorization = localStorage.getItem(key().authorization);
     }
-    let useSpaceId = localStorage.getItem(kg.data().useSpaceId);
-    if(useSpaceId != null){//如果本地保存了正在使用的空间id,则在头部传送使用中空间id
-        config.headers[kg.data().useSpaceId] = useSpaceId;
+    if(isSpace()){//如果本地保存了正在使用的空间id,则在头部传送使用中空间id
+        config.headers[key().useSpaceId] = localStorage.getItem(key().useSpaceId);
     }
     return config;//一定要返回
 });
@@ -26,13 +25,18 @@ axios.interceptors.request.use(config => {//声明请求拦截器
 axios.interceptors.response.use(response => {
     if(response.data.result == false && response.data.message == 'token已过期'){
         //token失效了,清空token存储
-        localStorage.removeItem(kg.data().authorization);
+        localStorage.removeItem(key().authorization);
+        gws.methods.wsDisconnect();//断开socket
     }
     return response;
 }, error => {
     return error;
 });
 
+//如果有token,则自动发起连接websocket
+if(isToken()){
+    gws.methods.wsConnection();
+}
 
 const app = createApp(App);
 app.use(router);
