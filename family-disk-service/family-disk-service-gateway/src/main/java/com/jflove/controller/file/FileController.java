@@ -104,7 +104,7 @@ public class FileController {
             public void onNext(ResponseHeadDTO<String> data) {
                 //利用websocket推送文件上传结果
                 String user = String.format("%s-%s", useUserId,useSpaceId);
-                messagingTemplate.convertAndSendToUser(user, "/add/file/result", JSONUtil.toJsonStr(new ResponseHeadVO<>(false,"文件写盘失败")));
+                messagingTemplate.convertAndSendToUser(user, "/add/file/result", JSONUtil.toJsonStr(data));
             }
 
             @Override
