@@ -99,13 +99,13 @@ public class FileController {
         dto.setType(dto.getName().substring(dto.getName().lastIndexOf(".")));
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
+        String topic = String.format("%s-%s", useUserId,useSpaceId);
         //按分片读取数据,再将数据发送出去
         StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<FileTransmissionRepDTO>() {
             @Override
             public void onNext(FileTransmissionRepDTO data) {
                 //利用websocket推送文件上传结果
-                String user = String.format("%s-%s", useUserId,useSpaceId);
-                messagingTemplate.convertAndSendToUser(user, "/add/file/result", JSONUtil.toJsonStr(data));
+                messagingTemplate.convertAndSendToUser(topic, "/add/file/result", JSONUtil.toJsonStr(data));
             }
 
             @Override
@@ -123,8 +123,7 @@ public class FileController {
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
             if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
                 //利用websocket推送文件上传结果
-                String user = String.format("%s-%s", useUserId,useSpaceId);
-                messagingTemplate.convertAndSendToUser(user, "/add/file/result",
+                messagingTemplate.convertAndSendToUser(topic, "/add/file/result",
                         JSONUtil.toJsonStr(new FileTransmissionRepDTO(dto.getName(),dto.getFileMd5(),true,"该文件已存在空间中,可以直接引用.")));
             }else {
                 byte[] total = f.getInputStream().readAllBytes();
