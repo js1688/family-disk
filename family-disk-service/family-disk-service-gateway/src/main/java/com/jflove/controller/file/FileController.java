@@ -122,22 +122,26 @@ public class FileController {
             //判断该文件对于当前用户已存在了
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
             if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
-                return new ResponseHeadVO<>(true,dto.getFileMd5(),"该文件已存在空间中,不需要重复上传.");
-            }
-            byte [] total = f.getInputStream().readAllBytes();
-            int off = 0;
-            for (int i = 0; i < shardingNum; i++) {
-                byte [] b = Arrays.copyOfRange(total,off,off + (int)shardingConfigSize);
-                dto.setShardingSort(i);
+                //利用websocket推送文件上传结果
+                String user = String.format("%s-%s", useUserId,useSpaceId);
+                messagingTemplate.convertAndSendToUser(user, "/add/file/result",
+                        JSONUtil.toJsonStr(new FileTransmissionRepDTO(dto.getName(),dto.getFileMd5(),true,"该文件已存在空间中,可以直接引用.")));
+            }else {
+                byte[] total = f.getInputStream().readAllBytes();
+                int off = 0;
+                for (int i = 0; i < shardingNum; i++) {
+                    byte[] b = Arrays.copyOfRange(total, off, off + (int) shardingConfigSize);
+                    dto.setShardingSort(i);
+                    dto.setShardingStream(b);
+                    request.onNext(dto);
+                    off += b.length;
+                }
+                //发送最后一片
+                byte[] b = Arrays.copyOfRange(total, off, off + (shardingConfigSize <= 0 ? (int) totalSize : (int) (totalSize % shardingConfigSize)));
+                dto.setShardingSort(shardingNum);
                 dto.setShardingStream(b);
                 request.onNext(dto);
-                off += b.length;
             }
-            //发送最后一片
-            byte [] b = Arrays.copyOfRange(total,off,off + (shardingConfigSize <= 0 ? (int)totalSize : (int)(totalSize % shardingConfigSize)));
-            dto.setShardingSort(shardingNum);
-            dto.setShardingStream(b);
-            request.onNext(dto);
         }catch (Exception e){
             log.error("文件上传发生异常",e);
             return new ResponseHeadVO<>(false,"文件上传失败");
