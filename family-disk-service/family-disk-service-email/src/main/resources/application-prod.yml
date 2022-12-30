@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: family-disk-email
   mail:
     host: smtp.qq.com
     port: 587
@@ -23,7 +25,7 @@ logging:
   config: logback.xml
 dubbo:
   application:
-    name: family-disk-email
+    name: ${spring.application.name}
     qos-port: 3377
   protocol:
     name: dubbo

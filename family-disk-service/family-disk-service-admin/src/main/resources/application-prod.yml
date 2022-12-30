@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: family-disk-admin
   datasource:
     url: jdbc:mysql://cdb-akyx5pzj.gz.tencentcdb.com:10048/family?useUnicode=true&characterEncoding=UTF-8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
     username: family
@@ -9,7 +11,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 dubbo:
   application:
-    name: family-disk-admin
+    name: ${spring.application.name}
     qos-port: 3366
   protocol:
     name: dubbo

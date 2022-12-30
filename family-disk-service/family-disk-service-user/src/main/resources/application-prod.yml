@@ -3,12 +3,14 @@ dubbo:
     timeout: 10000 # 超时时间
     retries: 0 # 不重试
   application:
-    name: family-disk-user
+    name: ${spring.application.name}
     qos-port: 1177
   protocol:
     name: dubbo
     port: 2277
 spring:
+  application:
+    name: family-disk-user
   datasource:
     url: jdbc:mysql://cdb-akyx5pzj.gz.tencentcdb.com:10048/family?useUnicode=true&characterEncoding=UTF-8&useSSL=false&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
     username: family
