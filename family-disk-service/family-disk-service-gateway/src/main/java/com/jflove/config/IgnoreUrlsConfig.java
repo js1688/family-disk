@@ -22,9 +22,28 @@ import java.util.List;
 @Setter
 @ToString
 public class IgnoreUrlsConfig {
+    /**
+     * 白名单请求地址
+     */
     private List<String> urls = new ArrayList();
 
+    /**
+     * 需要admin角色权限可以访问的地址
+     */
     private List<String> admin = new ArrayList<>();
+    /**
+     * 跨域允许访问地址
+     */
+    private List<String> origins = new ArrayList<>();
+
+    public String [] getOriginsStrings(){
+        if(origins == null){
+            return null;
+        }
+        String [] a = new String[origins.size()];
+        origins.toArray(a);
+        return a;
+    }
 
     public String [] getUrlStrings(){
         if(urls == null){

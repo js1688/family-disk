@@ -61,8 +61,8 @@ public class SecurityConfig{
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(false);
-        configuration.setAllowedOrigins(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setAllowedOrigins(ignoreUrlsConfig.getOrigins());
         configuration.setAllowedMethods(Arrays.asList("*"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setMaxAge(Duration.ofHours(1));
@@ -82,7 +82,7 @@ public class SecurityConfig{
                 if (!ignoreUrlsConfig.isSkip(request.getServletPath())){
                     try {
                         String token = request.getHeader(HttpConstantConfig.AUTHORIZATION);
-                        Assert.hasLength(token,String.format("请先登录,url:%s",request.getServletPath()));
+                        Assert.hasLength(token,"请先登录");
                         log.info("authenticated token:{}", token);
                         UserDetails userDetails = uds.loadUserByUsername(token);
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, (Object) null, userDetails.getAuthorities());

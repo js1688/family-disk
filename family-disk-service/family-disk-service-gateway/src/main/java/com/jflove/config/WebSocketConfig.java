@@ -1,10 +1,16 @@
 package com.jflove.config;
 
+import com.jflove.tool.JJwtTool;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.util.StringUtils;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -22,16 +28,30 @@ import java.util.Map;
 @Configuration
 @Log4j2
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @Autowired
+    private IgnoreUrlsConfig ignoreUrlsConfig;
+    @Autowired
+    private JJwtTool jJwtTool;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry stompEndpointRegistry) {
         // 注册一个STOMP的endpoint,并指定使用SockJS协议
         stompEndpointRegistry.addEndpoint("/gateway/stomp")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(ignoreUrlsConfig.getOriginsStrings())
                 .addInterceptors(new HandshakeInterceptor() {
                     @Override
                     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-                        return true;//是否允许连接,可以做身份验证
+                        String token = ((ServletServerHttpRequest) request).getServletRequest().getParameter(HttpConstantConfig.AUTHORIZATION);
+                        log.info("websocket authenticated token:{}", token);
+                        if(!StringUtils.hasLength(token)){//没有token,无法验证身份
+                            return false;
+                        }
+                        try {
+                            Jws<Claims> jws = jJwtTool.parseJwt(token);
+                        }catch (SecurityException e){
+                            return false;//token 验证异常
+                        }
+                        return true;//身份验证成功,允许连接
                     }
 
                     @Override
