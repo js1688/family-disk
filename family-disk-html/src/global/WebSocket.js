@@ -17,13 +17,19 @@ export default {
                 //获取STOMP子协议的客户端对象
                 this.stompClient = Stomp.over(socket);
                 // 向服务器发起websocket连接
-                this.stompClient.connect({"Authorization":"asds"},(frame) => {
+                this.stompClient.connect({},(frame) => {
                     console.log("ws建立连接成功")
                 }, (err) => {
-                    // 连接发生错误时的处理函数
-                    console.log(err);
+                    this.wsReConnection();
                 });
             }
+        },
+        //重连
+        wsReConnection:function (){
+            console.log("ws开始重连");
+            this.wsDisconnect();
+            this.stompClient = null;
+            this.wsConnection();
         },
         //断开socket连接
         wsDisconnect:function(){
