@@ -27,7 +27,7 @@ public class GlobalExceptionConfig {
     @ExceptionHandler(value = Throwable.class)
     @ResponseBody
     public Object  handle(Throwable e) {
-        log.error(e);
+        log.error("错误拦截:",e);
         if(e instanceof AuthenticationException){
             return new ResponseHeadVO<String>(false,"没有认证");
         }else if(e instanceof AccessDeniedException){
