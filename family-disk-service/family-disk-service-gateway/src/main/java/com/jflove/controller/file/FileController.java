@@ -96,7 +96,7 @@ public class FileController {
         dto.setTotalSize(totalSize);
         dto.setShardingNum(shardingNum);
         dto.setSource(FileSourceENUM.valueOf(s));
-        dto.setType(dto.getName().substring(dto.getName().lastIndexOf(".")));
+        dto.setType(dto.getName().lastIndexOf(".") != -1 ? dto.getName().substring(dto.getName().lastIndexOf(".")) : "");
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
         String topic = String.format("%s-%s", useUserId,useSpaceId);
