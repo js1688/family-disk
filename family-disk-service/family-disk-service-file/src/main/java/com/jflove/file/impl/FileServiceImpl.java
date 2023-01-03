@@ -123,7 +123,7 @@ public class FileServiceImpl implements IFileService {
                     }
                 }catch (Exception e){
                     log.error("文件写盘时发生异常",e);
-                    response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),true,"文件写盘失败"));
+                    response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),false,"文件写盘失败"));
                 }
             }
 
