@@ -58,7 +58,7 @@ public class NetdiskDirectoryController {
         dto.setSpaceId(useSpaceId);
         dto.setType(NetdiskDirectoryENUM.valueOf(param.getType()));
         ResponseHeadDTO<NetdiskDirectoryDTO> retDto = netdiskDirectory.addDirectory(dto);
-        if(retDto.isResult()){
+        if(retDto.isResult() && retDto.getData() != null){
             AddDirectoryParamVO vo = new AddDirectoryParamVO();
             BeanUtils.copyProperties(retDto.getData(),vo);
             vo.setType(retDto.getData().getType().getCode());
