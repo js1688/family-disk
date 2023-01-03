@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -62,6 +63,7 @@ public class FileServiceImpl implements IFileService {
                 .eq(FileInfoPO::getFileMd5,md5)
                 .eq(FileInfoPO::getSpaceId,spaceId)
                 .eq(FileInfoPO::getSource,source.getCode())
+                .eq(FileInfoPO::getMarkDelete,0)
         );
         if(po == null){
             return new ResponseHeadDTO(false,"文件不存在");
@@ -86,53 +88,78 @@ public class FileServiceImpl implements IFileService {
                         log.info("dubbo文件传输本次完毕");
                         //检查用户是否还可以存储
                         DataSize ds = DataSize.ofBytes(data.getTotalSize());
-                        userSpace.useSpaceByte(data.getSpaceId(),ds.toMegabytes());
-                        //匹配库中是否已存在这个文件,如果存在则不执行写盘,直接引用已存在的文件以及磁盘id
-                        FileInfoPO fip = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                        ResponseHeadDTO use = userSpace.useSpaceByte(data.getSpaceId(),ds.toMegabytes());
+                        if(!use.isResult()){
+                            response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),false,"用户存储空间不足"));
+                            return;
+                        }
+                        //检查这个文件是否已经在用户的垃圾箱
+                        FileInfoPO delFile = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
                                 .eq(FileInfoPO::getFileMd5,data.getFileMd5())
+                                .eq(FileInfoPO::getSpaceId,data.getSpaceId())
+                                .eq(FileInfoPO::getSource,data.getSource().getCode())
+                                .eq(FileInfoPO::getMarkDelete,1)
                         );
-                        FileInfoPO newPo = new FileInfoPO();
-                        newPo.setName(data.getName());
-                        newPo.setType(data.getType());
-                        newPo.setSource(data.getSource().getCode());
-                        newPo.setSpaceId(data.getSpaceId());
-                        newPo.setCreateUserId(data.getCreateUserId());
-                        newPo.setSize(data.getTotalSize());
-                        newPo.setFileMd5(data.getFileMd5());
-                        if(fip != null){//文件已存在了,直接做关系绑定
-                            newPo.setDiskId(fip.getDiskId());//磁盘使用旧的磁盘id
-                        }else {
-                            //查找出文件可以存放到哪个磁盘上
-                            FileDiskConfigPO selectd = fileDiskConfigMapper.selectOne(new LambdaQueryWrapper<FileDiskConfigPO>()
-                                    .orderByDesc(FileDiskConfigPO::getUsableSize)//按可用空间降序,取最大的存储
+                        if(delFile != null){
+                            delFile.setDeleteTime(0);
+                            delFile.setMarkDelete(0);
+                            delFile.setUpdateTime(null);
+                            fileInfoMapper.updateById(delFile);
+                        }else{
+                            //匹配库中是否已存在这个文件,如果存在则不执行写盘,直接引用已存在的文件以及磁盘id
+                            FileInfoPO fip = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                                    .eq(FileInfoPO::getFileMd5,data.getFileMd5())
                                     .last(" limit 1")
                             );
-                            //判断是否还存的下
-                            if(ds.toGigabytes() > selectd.getUsableSize() - tempSpace.toGigabytes()){
-                                throw new RuntimeException(String.format("文件写盘失败,服务器存储空间已不足%sGB.",String.valueOf(tempSpace.toGigabytes())));
+                            FileInfoPO newPo = new FileInfoPO();
+                            newPo.setName(data.getName());
+                            newPo.setType(data.getType());
+                            newPo.setSource(data.getSource().getCode());
+                            newPo.setSpaceId(data.getSpaceId());
+                            newPo.setCreateUserId(data.getCreateUserId());
+                            newPo.setSize(data.getTotalSize());
+                            newPo.setFileMd5(data.getFileMd5());
+                            if(fip != null){//文件已存在了,直接做关系绑定
+                                newPo.setDiskId(fip.getDiskId());//磁盘使用旧的磁盘id
+                            }else {
+                                //查找出文件可以存放到哪个磁盘上
+                                FileDiskConfigPO selectd = fileDiskConfigMapper.selectOne(new LambdaQueryWrapper<FileDiskConfigPO>()
+                                        .orderByDesc(FileDiskConfigPO::getUsableSize)//按可用空间降序,取最大的存储
+                                        .last(" limit 1")
+                                );
+                                //判断是否还存的下
+                                if(ds.toGigabytes() > selectd.getUsableSize() - tempSpace.toGigabytes()){
+                                    throw new RuntimeException(String.format("文件写盘失败,服务器存储空间已不足%sGB.",String.valueOf(tempSpace.toGigabytes())));
+                                }
+                                IFileReadAndWrit fileReadAndWrit = applicationContext.getBean("FileReadAndWrit" + selectd.getType(),IFileReadAndWrit.class);
+                                fileReadAndWrit.writ(data,selectd,tempFileSuffix,tempPath);//写盘
+                                newPo.setDiskId(selectd.getId());
+                                //刷新磁盘可使用空间
+                                File file = new File(selectd.getPath());
+                                DataSize total = DataSize.ofBytes(file.getTotalSpace());
+                                DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());//直接从磁盘中读取剩余可用空间,更加准确
+                                selectd.setMaxSize(total.toGigabytes());
+                                selectd.setUsableSize(usableSpace.toGigabytes());
+                                selectd.setUpdateTime(null);
+                                fileDiskConfigMapper.updateById(selectd);
                             }
-                            IFileReadAndWrit fileReadAndWrit = applicationContext.getBean("FileReadAndWrit" + selectd.getType(),IFileReadAndWrit.class);
-                            fileReadAndWrit.writ(data,selectd,tempFileSuffix,tempPath);//写盘
-                            newPo.setDiskId(selectd.getId());
-                            //刷新磁盘可使用空间
-                            File file = new File(selectd.getPath());
-                            DataSize total = DataSize.ofBytes(file.getTotalSpace());
-                            DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());//直接从磁盘中读取剩余可用空间,更加准确
-                            selectd.setMaxSize(total.toGigabytes());
-                            selectd.setUsableSize(usableSpace.toGigabytes());
-                            selectd.setUpdateTime(null);
-                            fileDiskConfigMapper.updateById(selectd);
+                            //将文件信息记录
+                            fileInfoMapper.insert(newPo);
                         }
                         //清除临时文件
                         for (int i = 0; i <= data.getShardingNum(); i++) {
                             Files.deleteIfExists(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(i), tempFileSuffix)));
                         }
-                        //将文件信息记录
-                        fileInfoMapper.insert(newPo);
                         response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),true,"文件写盘成功"));
                     }
                 }catch (Exception e){
                     log.error("文件写盘时发生异常",e);
+                    //清除临时文件
+                    for (int i = 0; i <= data.getShardingNum(); i++) {
+                        try {
+                            Files.deleteIfExists(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(i), tempFileSuffix)));
+                        }catch (IOException e1){}
+                    }
                     response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),false,"文件写盘失败"));
                 }
             }
@@ -155,6 +182,7 @@ public class FileServiceImpl implements IFileService {
                 .eq(FileInfoPO::getFileMd5,md5)
                 .eq(FileInfoPO::getSpaceId,spaceId)
                 .eq(FileInfoPO::getSource,source)
+                .eq(FileInfoPO::getMarkDelete,0)
         );
         return new ResponseHeadDTO<>(ex);
     }
