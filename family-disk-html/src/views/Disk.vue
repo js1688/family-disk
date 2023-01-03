@@ -199,18 +199,18 @@ export default {
       openPath:[
           {name:'/',id:0}
       ],
-      subscribeAddFile:null
+      isSubscribe:false
     }
   },
   methods:{
     //订阅文件上传结果
     subscribe:function (){
-      if(this.subscribeAddFile == null){
+      if(!this.isSubscribe){
         let topic = "/user/";
         topic += localStorage.getItem(key().userId) + "-" + localStorage.getItem(key().useSpaceId);
         topic += "/add/file/result";
         let self = this;
-        this.subscribeAddFile = gws.methods.wsSubscribe(topic,function(msg){//订阅文件上传真实的写盘结果
+        gws.methods.wsSubscribe(topic,function(msg){//订阅文件上传真实的写盘结果
           let ret = JSON.parse(msg.body);
           for (let i = 0; i < self.uploadFiles.length; i++) {
             let oldFile = self.uploadFiles[i];
@@ -260,6 +260,7 @@ export default {
             }
           }
         });
+        this.isSubscribe = true;
       }
     },
     //检查文件是否都上传完毕

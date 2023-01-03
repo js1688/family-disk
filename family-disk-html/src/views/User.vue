@@ -318,7 +318,7 @@ export default {
                 localStorage.setItem(key().useSpaceId,res.data.data.spaces[0].spaceId);
                 localStorage.setItem(key().useSpaceRole,res.data.data.spaces[0].role);
               }
-              gws.methods.wsConnection();//连接socket
+              gws.methods.wsConnection(null);//连接socket
               self.logonPng = "/logon1.png";
               self.notLoginShow = false;
               self.logonShow = false;

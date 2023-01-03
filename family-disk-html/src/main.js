@@ -35,7 +35,7 @@ axios.interceptors.response.use(response => {
 
 //如果有token,则自动发起连接websocket
 if(isToken()){
-    gws.methods.wsConnection();
+    gws.methods.wsConnection(null);
 }
 
 const app = createApp(App);
