@@ -91,7 +91,11 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
                 .eq(NetdiskDirectoryPO::getSpaceId,dto.getSpaceId())
                 .eq(NetdiskDirectoryPO::getName,dto.getName())
         )){
-            return new ResponseHeadDTO<>(false,"添加失败,同级下目录名已存在");
+            if(NetdiskDirectoryENUM.FILE == dto.getType()){//如果是文件,则不报重复,直接忽略即可,因为文件本身就会覆盖
+                return new ResponseHeadDTO<>(true, "文件名重复,文件已覆盖");
+            }else {
+                return new ResponseHeadDTO<>(false, "添加失败,同级下目录名已存在");
+            }
         }
         if(dto.getPid() != 0) {
             NetdiskDirectoryPO ppo = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
