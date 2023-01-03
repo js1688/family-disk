@@ -5,6 +5,7 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.file.FileDiskConfigPO;
 import com.jflove.file.FileInfoPO;
 import com.jflove.file.api.IFileService;
+import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
@@ -55,6 +56,40 @@ public class FileServiceImpl implements IFileService {
 
     @Value("${file.storage.space}")
     private DataSize tempSpace;//临时空间占用大小
+
+    @Override
+    public StreamObserver<FileReadReqDTO> getFile(StreamObserver<FileTransmissionDTO> response) {
+        return new StreamObserver<FileReadReqDTO>() {
+            @Override
+            public void onNext(FileReadReqDTO data) {
+                FileInfoPO po = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                        .eq(FileInfoPO::getFileMd5,data.getFileMd5())
+                        .eq(FileInfoPO::getSpaceId,data.getSpaceId())
+                        .eq(FileInfoPO::getSource,data.getSource().getCode())
+                );
+                if(po == null){
+                    response.onError(new RuntimeException("文件不存在"));
+                    return;
+                }
+                data.setType(po.getType());
+                data.setName(po.getName());
+                //查找磁盘
+                FileDiskConfigPO selectd = fileDiskConfigMapper.selectById(po.getDiskId());
+                IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(),IFileReadAndWrit.class);
+                fileReadAndWrit.read(data,selectd,response);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        };
+    }
 
     @Override
     @Transactional
@@ -131,7 +166,7 @@ public class FileServiceImpl implements IFileService {
                                 if(ds.toGigabytes() > selectd.getUsableSize() - tempSpace.toGigabytes()){
                                     throw new RuntimeException(String.format("文件写盘失败,服务器存储空间已不足%sGB.",String.valueOf(tempSpace.toGigabytes())));
                                 }
-                                IFileReadAndWrit fileReadAndWrit = applicationContext.getBean("FileReadAndWrit" + selectd.getType(),IFileReadAndWrit.class);
+                                IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(),IFileReadAndWrit.class);
                                 fileReadAndWrit.writ(data,selectd,tempFileSuffix,tempPath);//写盘
                                 newPo.setDiskId(selectd.getId());
                                 //刷新磁盘可使用空间

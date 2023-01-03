@@ -1,6 +1,7 @@
 package com.jflove.file.api;
 
 import com.jflove.ResponseHeadDTO;
+import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
@@ -12,6 +13,13 @@ import org.apache.dubbo.common.stream.StreamObserver;
  * @describe 文件管理,官方推荐IDL方式编写api接口标准,效率和性能更高,但是为了代码可读性选择StreamObserver方式
  */
 public interface IFileService {
+
+    /**
+     * 双向流
+     * 分片方式返回文件流
+     * @param response
+     */
+    StreamObserver<FileReadReqDTO> getFile(StreamObserver<FileTransmissionDTO> response);
 
     /**
      * 双向流

@@ -4,12 +4,14 @@ import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileService;
+import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.file.DelFileParamVO;
+import com.jflove.vo.file.GetFileParamVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -19,6 +21,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
@@ -27,8 +30,11 @@ import org.springframework.util.unit.DataUnit;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -74,6 +80,50 @@ public class FileController {
         BeanUtils.copyProperties(dto,vo);
         return vo;
     }
+
+    @ApiOperation(value = "下载文件")
+    @PostMapping("/getFile")
+    public void getFile(HttpServletResponse response,@RequestBody @Valid GetFileParamVO param){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        String topic = String.format("%s-%s", useUserId,useSpaceId);
+        String destination = "/get/file/error";
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + param.getName() + "\"");
+        // 响应类型,编码
+        response.setHeader(HttpHeaders.CONTENT_TYPE,"application/octet-stream;");
+        StreamObserver<FileReadReqDTO> request = fileService.getFile(new StreamObserver<FileTransmissionDTO>() {
+            @Override
+            public void onNext(FileTransmissionDTO data) {
+                try {
+                    ServletOutputStream sos = response.getOutputStream();
+                    if(data == null){
+                        log.info("文件流传输结束关闭流");
+                        sos.close();
+                        return;
+                    }
+                    sos.write(data.getShardingStream());
+                }catch (IOException e){
+                    log.error("返回文件流发生异常",e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                //利用websocket推送文件下载错误
+                messagingTemplate.convertAndSendToUser(topic,destination, throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        });
+        request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource())));
+    }
+
     @ApiOperation(value = "上传文件(完整文件,非分片)")
     @PostMapping("/addFile")
     public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
@@ -100,12 +150,13 @@ public class FileController {
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
         String topic = String.format("%s-%s", useUserId,useSpaceId);
+        String destination = "/add/file/result";
         //按分片读取数据,再将数据发送出去
         StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<FileTransmissionRepDTO>() {
             @Override
             public void onNext(FileTransmissionRepDTO data) {
                 //利用websocket推送文件上传结果
-                messagingTemplate.convertAndSendToUser(topic, "/add/file/result", JSONUtil.toJsonStr(data));
+                messagingTemplate.convertAndSendToUser(topic,destination , JSONUtil.toJsonStr(data));
             }
 
             @Override
@@ -123,7 +174,7 @@ public class FileController {
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
             if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
                 //利用websocket推送文件上传结果
-                messagingTemplate.convertAndSendToUser(topic, "/add/file/result",
+                messagingTemplate.convertAndSendToUser(topic, destination,
                         JSONUtil.toJsonStr(new FileTransmissionRepDTO(dto.getName(),dto.getFileMd5(),true,"该文件已存在空间中,可以直接引用.")));
             }else {
                 byte[] total = f.getInputStream().readAllBytes();

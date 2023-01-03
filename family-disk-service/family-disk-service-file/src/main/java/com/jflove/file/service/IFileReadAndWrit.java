@@ -1,7 +1,9 @@
 package com.jflove.file.service;
 
 import com.jflove.file.FileDiskConfigPO;
+import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
+import org.apache.dubbo.common.stream.StreamObserver;
 
 /**
  * @author tanjun
@@ -10,8 +12,10 @@ import com.jflove.file.dto.FileTransmissionDTO;
  */
 public interface IFileReadAndWrit {
 
+    String BEAN_PREFIX = "FileReadAndWrit_";
+
     /**
-     * 写盘
+     * 写入
      * @param data 文件信息
      * @param selectd 选择的磁盘信息
      * @param tempFileSuffix 临时文件后缀
@@ -19,4 +23,13 @@ public interface IFileReadAndWrit {
      * @return
      */
     boolean writ(FileTransmissionDTO data, FileDiskConfigPO selectd,String  tempFileSuffix,String tempPath);
+
+
+    /**
+     * 读取
+     * @param dto 文件信息
+     * @param selectd 选择的磁盘信息
+     * @param response 文件流分片传输对象
+     */
+    void read(FileReadReqDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response);
 }
