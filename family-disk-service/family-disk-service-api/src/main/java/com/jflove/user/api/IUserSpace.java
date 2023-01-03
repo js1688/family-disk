@@ -24,4 +24,12 @@ public interface IUserSpace {
      * @return
      */
     ResponseHeadDTO<UserSpaceDTO> getSpaceInfo(Long spaceId);
+
+    /**
+     * 使用用户空间
+     * @param spaceId
+     * @param useMb
+     * @return
+     */
+    ResponseHeadDTO useSpaceByte(Long spaceId,long useMb);
 }

@@ -11,8 +11,10 @@ import com.jflove.file.em.FileSourceENUM;
 import com.jflove.file.mapper.FileDiskConfigMapper;
 import com.jflove.file.mapper.FileInfoMapper;
 import com.jflove.file.service.IFileReadAndWrit;
+import com.jflove.user.api.IUserSpace;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.common.stream.StreamObserver;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +49,12 @@ public class FileServiceImpl implements IFileService {
     @Autowired
     private FileInfoMapper fileInfoMapper;
 
+    @DubboReference
+    private IUserSpace userSpace;
+
+    @Value("${file.storage.space}")
+    private DataSize tempSpace;//临时空间占用大小
+
     @Override
     @Transactional
     public ResponseHeadDTO updateName(String md5, long spaceId, String name, FileSourceENUM source) {
@@ -76,6 +84,9 @@ public class FileServiceImpl implements IFileService {
                     //判断是否是最后一个分片
                     if(data.getShardingSort() == data.getShardingNum()){
                         log.info("dubbo文件传输本次完毕");
+                        //检查用户是否还可以存储
+                        DataSize ds = DataSize.ofBytes(data.getTotalSize());
+                        userSpace.useSpaceByte(data.getSpaceId(),ds.toMegabytes());
                         //匹配库中是否已存在这个文件,如果存在则不执行写盘,直接引用已存在的文件以及磁盘id
                         FileInfoPO fip = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
                                 .eq(FileInfoPO::getFileMd5,data.getFileMd5())
@@ -97,9 +108,8 @@ public class FileServiceImpl implements IFileService {
                                     .last(" limit 1")
                             );
                             //判断是否还存的下
-                            DataSize ds = DataSize.ofBytes(data.getTotalSize());
-                            if(ds.toGigabytes() > selectd.getUsableSize() - 5){//留5G空间,不用满
-                                throw new RuntimeException("文件写盘失败,服务器存储空间已不足5GB.");
+                            if(ds.toGigabytes() > selectd.getUsableSize() - tempSpace.toGigabytes()){
+                                throw new RuntimeException(String.format("文件写盘失败,服务器存储空间已不足%sGB.",String.valueOf(tempSpace.toGigabytes())));
                             }
                             IFileReadAndWrit fileReadAndWrit = applicationContext.getBean("FileReadAndWrit" + selectd.getType(),IFileReadAndWrit.class);
                             fileReadAndWrit.writ(data,selectd,tempFileSuffix,tempPath);//写盘

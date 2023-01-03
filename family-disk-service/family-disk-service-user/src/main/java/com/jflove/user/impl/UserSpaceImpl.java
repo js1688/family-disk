@@ -36,6 +36,27 @@ public class UserSpaceImpl implements IUserSpace {
     @Value("${user.space.init-size}")
     private DataSize maxFileSize;//创建空间的大小
 
+
+    @Override
+    public ResponseHeadDTO useSpaceByte(Long spaceId, long useMb) {
+        ResponseHeadDTO<UserSpaceDTO> info = getSpaceInfo(spaceId);
+        if(!info.isResult()){
+            return new ResponseHeadDTO(info.isResult(),info.getMessage());
+        }
+        //使用大小+1mb,因为计算会忽略小数
+        useMb+=1;
+        UserSpaceDTO usd = info.getData();
+        if(!((usd.getMaxSize() - usd.getUseSize()) >= useMb)){
+            return new ResponseHeadDTO(false,"用户空间不足");
+        }
+        UserSpacePO po = new UserSpacePO();
+        BeanUtils.copyProperties(usd,po);
+        po.setUseSize(po.getUseSize() + useMb);
+        po.setUpdateTime(null);
+        userSpaceMapper.updateById(po);
+        return new ResponseHeadDTO(true,"用户空间使用成功");
+    }
+
     @Override
     public ResponseHeadDTO<UserSpaceDTO> getSpaceInfo(Long spaceId) {
         UserSpacePO usp = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()

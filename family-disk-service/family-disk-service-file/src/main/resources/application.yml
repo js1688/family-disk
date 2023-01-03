@@ -21,3 +21,4 @@ file:
   storage:
     path:
       temp: F:\\temp
+    space: 10GB
