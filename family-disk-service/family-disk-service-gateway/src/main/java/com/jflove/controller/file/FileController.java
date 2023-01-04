@@ -1,6 +1,5 @@
 package com.jflove.controller.file;
 
-import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileService;
@@ -21,7 +20,9 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
@@ -30,12 +31,12 @@ import org.springframework.util.unit.DataUnit;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author tanjun
@@ -83,37 +84,29 @@ public class FileController {
 
     @ApiOperation(value = "下载文件")
     @PostMapping("/getFile")
-    public void getFile(HttpServletResponse response,@RequestBody @Valid GetFileParamVO param){
+    public ResponseEntity<Resource> getFile(@RequestBody @Valid GetFileParamVO param) throws Exception{
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
-        String topic = String.format("%s-%s", useUserId,useSpaceId);
-        String destination = "/get/file/error";
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + param.getName() + "\"");
-        // 响应类型,编码
-        response.setHeader(HttpHeaders.CONTENT_TYPE,"application/octet-stream;");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment().build());
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        AtomicBoolean ab = new AtomicBoolean(false);
         StreamObserver<FileReadReqDTO> request = fileService.getFile(new StreamObserver<FileTransmissionDTO>() {
             @Override
             public void onNext(FileTransmissionDTO data) {
-                try {
-                    ServletOutputStream sos = response.getOutputStream();
-                    if(data == null){
-                        log.info("文件流传输结束关闭流");
-                        sos.close();
-                        return;
-                    }
-                    sos.write(data.getShardingStream());
-                }catch (IOException e){
-                    log.error("返回文件流发生异常",e);
+                if(data.getShardingSort() == data.getShardingNum()){//是最后一片
+                    ab.set(true);
                 }
+                baos.writeBytes(data.getShardingStream());
             }
 
             @Override
             public void onError(Throwable throwable) {
-                //利用websocket推送文件下载错误
-                messagingTemplate.convertAndSendToUser(topic,destination, throwable.getMessage());
+                ab.set(true);
             }
 
             @Override
@@ -121,13 +114,21 @@ public class FileController {
 
             }
         });
-        request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource())));
+        request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource()),useSpaceId));
+        while (true){
+            TimeUnit.SECONDS.sleep(1);
+            if(ab.get()){
+                break;
+            }
+        }
+        Resource file = new ByteArrayResource(baos.toByteArray());
+        return new ResponseEntity<>(file, headers, HttpStatus.OK);
     }
 
     @ApiOperation(value = "上传文件(完整文件,非分片)")
     @PostMapping("/addFile")
     public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
-                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s){
+                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
@@ -149,14 +150,16 @@ public class FileController {
         dto.setType(dto.getName().lastIndexOf(".") != -1 ? dto.getName().substring(dto.getName().lastIndexOf(".")) : "");
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
-        String topic = String.format("%s-%s", useUserId,useSpaceId);
-        String destination = "/add/file/result";
+        AtomicBoolean ab = new AtomicBoolean(false);
+        ResponseHeadVO<String> ret = new ResponseHeadVO<String>();
         //按分片读取数据,再将数据发送出去
         StreamObserver<FileTransmissionDTO> request = fileService.addFile(new StreamObserver<FileTransmissionRepDTO>() {
             @Override
             public void onNext(FileTransmissionRepDTO data) {
-                //利用websocket推送文件上传结果
-                messagingTemplate.convertAndSendToUser(topic,destination , JSONUtil.toJsonStr(data));
+                ret.setResult(data.isResult());
+                ret.setData(data.getFileMd5());
+                ret.setMessage(data.getMessage());
+                ab.set(true);
             }
 
             @Override
@@ -173,9 +176,10 @@ public class FileController {
             //判断该文件对于当前用户已存在了
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
             if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
-                //利用websocket推送文件上传结果
-                messagingTemplate.convertAndSendToUser(topic, destination,
-                        JSONUtil.toJsonStr(new FileTransmissionRepDTO(dto.getName(),dto.getFileMd5(),true,"该文件已存在空间中,可以直接引用.")));
+                ret.setResult(true);
+                ret.setData(dto.getFileMd5());
+                ret.setMessage("该文件已存在空间中,可以直接引用.");
+                ab.set(true);
             }else {
                 byte[] total = f.getInputStream().readAllBytes();
                 int off = 0;
@@ -196,6 +200,12 @@ public class FileController {
             log.error("文件上传发生异常",e);
             return new ResponseHeadVO<>(false,"文件上传失败");
         }
-        return new ResponseHeadVO<String>(true,dto.getFileMd5(),"文件已上传到服务器,正在写入到磁盘,稍后通知写入结果,请勿重复上传.");
+        while (true){
+            TimeUnit.SECONDS.sleep(1);
+            if(ab.get()){
+                break;
+            }
+        }
+        return ret;
     }
 }

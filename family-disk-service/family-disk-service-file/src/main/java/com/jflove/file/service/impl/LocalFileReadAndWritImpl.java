@@ -1,13 +1,13 @@
 package com.jflove.file.service.impl;
 
 import com.jflove.file.FileDiskConfigPO;
-import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.common.stream.StreamObserver;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,20 +25,27 @@ import java.nio.file.Path;
 public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
 
     @Override
-    public void read(FileReadReqDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response) {
+    public void read(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response) {
         RandomAccessFile raf = null;
         try {
             String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
             raf = new RandomAccessFile(new File(path), "r");
-            byte [] b = new byte[1024 * 1024 * 1024 * 3];//3mb
-            while (raf.read(b) > 0) {
-                FileTransmissionDTO repDto = new FileTransmissionDTO();
-                BeanUtils.copyProperties(dto,repDto);
-                repDto.setShardingStream(b);
-                response.onNext(repDto);
+            long shardingConfigSize = DataSize.of(3, DataUnit.MEGABYTES).toBytes();//如果被分片,每片最多是3mb
+            int shardingNum = shardingConfigSize <= 0 ? 0 : (int) (dto.getTotalSize() / shardingConfigSize);//本次分片个数
+            dto.setShardingNum(shardingNum);
+            for (int i = 0; i < shardingNum; i++) {
+                byte [] b = new byte[(int) shardingConfigSize];
+                raf.read(b);
+                dto.setShardingSort(i);
+                dto.setShardingStream(b);
+                response.onNext(dto);
             }
-            //读取结束,发送一个空流过去,提示已经结束了
-            response.onNext(null);
+            //发送最后一片
+            byte[] b = new byte[shardingConfigSize <= 0 ? (int) dto.getTotalSize() : (int) (dto.getTotalSize() % shardingConfigSize)];
+            raf.read(b);
+            dto.setShardingSort(shardingNum);
+            dto.setShardingStream(b);
+            response.onNext(dto);
         }catch (IOException e){
             log.error("读取文件异常",e);
             response.onError(new RuntimeException("文件读取错误"));
@@ -58,7 +65,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
             //文件传输完毕,开始执行临时分片合并
             String path = String.format("%s/%s%s", selectd.getPath(), data.getFileMd5(), data.getType());
             Files.deleteIfExists(Path.of(path));//先删除历史数据
-            raf = new RandomAccessFile(new File(path), "w");
+            raf = new RandomAccessFile(new File(path), "rw");
             for (int i = 0; i <= data.getShardingNum(); i++) {
                 byte [] f = Files.readAllBytes(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(i), tempFileSuffix)));
                 raf.write(f);//支持追加写入

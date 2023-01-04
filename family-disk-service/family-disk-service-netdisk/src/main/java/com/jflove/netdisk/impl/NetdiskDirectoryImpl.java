@@ -140,9 +140,6 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             });
         }else{//是文件,通知文件删除
             ResponseHeadDTO<Boolean> ret = fileService.delFile(po.getFileMd5(),spaceId, FileSourceENUM.CLOUDDISK);
-            if(!ret.isResult()){
-                throw new RuntimeException(ret.getMessage());
-            }
         }
         //删除自己
         int i = netdiskDirectoryMapper.deleteById(po.getId());

@@ -1,7 +1,6 @@
 package com.jflove.file.service;
 
 import com.jflove.file.FileDiskConfigPO;
-import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import org.apache.dubbo.common.stream.StreamObserver;
 
@@ -31,5 +30,5 @@ public interface IFileReadAndWrit {
      * @param selectd 选择的磁盘信息
      * @param response 文件流分片传输对象
      */
-    void read(FileReadReqDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response);
+    void read(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response);
 }

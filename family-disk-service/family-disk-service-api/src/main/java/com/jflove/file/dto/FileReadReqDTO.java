@@ -23,9 +23,10 @@ public class FileReadReqDTO implements Serializable {
     public FileReadReqDTO() {
     }
 
-    public FileReadReqDTO(String fileMd5, FileSourceENUM source) {
+    public FileReadReqDTO(String fileMd5, FileSourceENUM source, long spaceId) {
         this.fileMd5 = fileMd5;
         this.source = source;
+        this.spaceId = spaceId;
     }
 
     /**

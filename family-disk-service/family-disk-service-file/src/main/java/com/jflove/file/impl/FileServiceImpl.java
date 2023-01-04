@@ -17,6 +17,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -71,12 +72,15 @@ public class FileServiceImpl implements IFileService {
                     response.onError(new RuntimeException("文件不存在"));
                     return;
                 }
-                data.setType(po.getType());
-                data.setName(po.getName());
+                FileTransmissionDTO repDto = new FileTransmissionDTO();
+                BeanUtils.copyProperties(data,repDto);
+                repDto.setType(po.getType());
+                repDto.setName(po.getName());
+                repDto.setTotalSize(po.getSize());
                 //查找磁盘
                 FileDiskConfigPO selectd = fileDiskConfigMapper.selectById(po.getDiskId());
                 IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(),IFileReadAndWrit.class);
-                fileReadAndWrit.read(data,selectd,response);
+                fileReadAndWrit.read(repDto,selectd,response);
             }
 
             @Override
