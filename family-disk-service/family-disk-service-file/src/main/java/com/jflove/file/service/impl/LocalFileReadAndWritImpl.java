@@ -26,10 +26,8 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
 
     @Override
     public void read(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response) {
-        RandomAccessFile raf = null;
-        try {
-            String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
-            raf = new RandomAccessFile(new File(path), "r");
+        String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
+        try(RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
             dto.setTotalSize(raf.length());
             long shardingConfigSize = DataSize.of(3, DataUnit.MEGABYTES).toBytes();//如果被分片,每片最多是3mb
             int shardingNum = shardingConfigSize <= 0 ? 0 : (int) (dto.getTotalSize() / shardingConfigSize);//本次分片个数
@@ -50,35 +48,23 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
         }catch (IOException e){
             log.error("读取文件异常",e);
             response.onError(new RuntimeException("文件读取错误"));
-        }finally {
-            if(raf != null){
-                try {
-                    raf.close();
-                }catch (IOException e){}
-            }
         }
     }
 
     @Override
     public boolean writ(FileTransmissionDTO data, FileDiskConfigPO selectd,String  tempFileSuffix,String tempPath) {
-        RandomAccessFile raf = null;
-        try {
-            //文件传输完毕,开始执行临时分片合并
-            String path = String.format("%s/%s%s", selectd.getPath(), data.getFileMd5(), data.getType());
+        String path = String.format("%s/%s%s", selectd.getPath(), data.getFileMd5(), data.getType());
+        try{
             Files.deleteIfExists(Path.of(path));//先删除历史数据
-            raf = new RandomAccessFile(new File(path), "rw");
+        }catch (IOException e){}
+        try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){
+            //文件传输完毕,开始执行临时分片合并
             for (int i = 0; i <= data.getShardingNum(); i++) {
                 byte [] f = Files.readAllBytes(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(i), tempFileSuffix)));
                 raf.write(f);//支持追加写入
             }
         }catch (IOException e){
             log.error("文件合并异常",e);
-        }finally {
-            if(raf != null){
-                try {
-                    raf.close();
-                }catch (IOException e){}
-            }
         }
         return false;
     }

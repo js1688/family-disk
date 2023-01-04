@@ -34,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -93,36 +94,39 @@ public class FileController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.attachment().build());
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        AtomicBoolean ab = new AtomicBoolean(false);
-        StreamObserver<FileReadReqDTO> request = fileService.getFile(new StreamObserver<FileTransmissionDTO>() {
-            @Override
-            public void onNext(FileTransmissionDTO data) {
-                if(data.getShardingSort() == data.getShardingNum()){//是最后一片
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+            AtomicBoolean ab = new AtomicBoolean(false);
+            StreamObserver<FileReadReqDTO> request = fileService.getFile(new StreamObserver<FileTransmissionDTO>() {
+                @Override
+                public void onNext(FileTransmissionDTO data) {
+                    if(data.getShardingSort() == data.getShardingNum()){//是最后一片
+                        ab.set(true);
+                    }
+                    baos.writeBytes(data.getShardingStream());
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
                     ab.set(true);
                 }
-                baos.writeBytes(data.getShardingStream());
-            }
 
-            @Override
-            public void onError(Throwable throwable) {
-                ab.set(true);
-            }
+                @Override
+                public void onCompleted() {
 
-            @Override
-            public void onCompleted() {
-
+                }
+            });
+            request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource()),useSpaceId));
+            while (true){
+                TimeUnit.SECONDS.sleep(1);
+                if(ab.get()){
+                    break;
+                }
             }
-        });
-        request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource()),useSpaceId));
-        while (true){
-            TimeUnit.SECONDS.sleep(1);
-            if(ab.get()){
-                break;
-            }
+            Resource file = new ByteArrayResource(baos.toByteArray());
+            return new ResponseEntity<>(file, headers, HttpStatus.OK);
+        }catch (Exception e){
+            throw e;
         }
-        Resource file = new ByteArrayResource(baos.toByteArray());
-        return new ResponseEntity<>(file, headers, HttpStatus.OK);
     }
 
     @ApiOperation(value = "上传文件(完整文件,非分片)")
@@ -140,7 +144,7 @@ public class FileController {
         }
         //将文件分片后发送过去
         long totalSize = f.getSize();//文件总大小
-        long shardingConfigSize = DataSize.of((long)(maxFileSize.toMegabytes() * 0.01), DataUnit.MEGABYTES).toBytes();//如果被分片,每一片大小最多是最大允许上传的1%
+        long shardingConfigSize = DataSize.of((long)(maxFileSize.toMegabytes() * 0.1), DataUnit.MEGABYTES).toBytes();//如果被分片,每一片大小最多是最大允许上传的10%
         int shardingNum = shardingConfigSize <= 0 ? 0 : (int) (totalSize / shardingConfigSize);//本次分片个数
         FileTransmissionDTO dto = new FileTransmissionDTO();
         dto.setName(f.getOriginalFilename());
@@ -170,8 +174,8 @@ public class FileController {
             public void onCompleted() {
             }
         });
-        try {
-            String md5 = DigestUtils.md5DigestAsHex(f.getInputStream());
+        try(InputStream stream = f.getInputStream()) {
+            String md5 = DigestUtils.md5DigestAsHex(stream);
             dto.setFileMd5(md5);
             //判断该文件对于当前用户已存在了
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
@@ -181,7 +185,7 @@ public class FileController {
                 ret.setMessage("该文件已存在空间中,可以直接引用.");
                 ab.set(true);
             }else {
-                byte[] total = f.getInputStream().readAllBytes();
+                byte[] total = stream.readAllBytes();
                 int off = 0;
                 for (int i = 0; i < shardingNum; i++) {
                     byte[] b = Arrays.copyOfRange(total, off, off + (int) shardingConfigSize);
