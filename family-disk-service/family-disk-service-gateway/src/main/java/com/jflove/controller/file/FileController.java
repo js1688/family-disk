@@ -34,7 +34,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -174,8 +173,8 @@ public class FileController {
             public void onCompleted() {
             }
         });
-        try(InputStream stream = f.getInputStream()) {
-            String md5 = DigestUtils.md5DigestAsHex(stream);
+        try {
+            String md5 = DigestUtils.md5DigestAsHex(f.getInputStream());
             dto.setFileMd5(md5);
             //判断该文件对于当前用户已存在了
             ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
@@ -185,7 +184,7 @@ public class FileController {
                 ret.setMessage("该文件已存在空间中,可以直接引用.");
                 ab.set(true);
             }else {
-                byte[] total = stream.readAllBytes();
+                byte[] total = f.getInputStream().readAllBytes();
                 int off = 0;
                 for (int i = 0; i < shardingNum; i++) {
                     byte[] b = Arrays.copyOfRange(total, off, off + (int) shardingConfigSize);
@@ -203,6 +202,8 @@ public class FileController {
         }catch (Exception e){
             log.error("文件上传发生异常",e);
             return new ResponseHeadVO<>(false,"文件上传失败");
+        }finally {
+            f.getInputStream().close();
         }
         while (true){
             TimeUnit.SECONDS.sleep(1);
