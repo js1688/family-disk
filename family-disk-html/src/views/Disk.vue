@@ -117,7 +117,7 @@
   <van-action-sheet v-model:show="showUpload" title="上传文件">
     <div class="content">
       <div style="margin: 16px;">
-        <van-uploader :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+        <van-uploader :max-size="1024 * 1024 * 64" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
         </van-uploader>
       </div>
@@ -170,9 +170,15 @@ export default {
       { text: '拍照上传', icon: 'photograph',name:'photograph'}
     ];
     const showPopover = ref(false);
+
+    const onOversize = (file) => {
+      showToast('文件大小不能超过 64MB');
+    };
+
     return {
       addActions,
-      showPopover
+      showPopover,
+      onOversize
     };
   },
   data: function (){
