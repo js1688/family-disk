@@ -203,66 +203,6 @@ export default {
     }
   },
   methods:{
-    //订阅文件上传结果
-    subscribe:function (){
-      if(!this.isSubscribe){
-        let topic = "/user/";
-        topic += localStorage.getItem(key().userId) + "-" + localStorage.getItem(key().useSpaceId);
-        topic += "/add/file/result";
-        let self = this;
-        gws.methods.wsSubscribe(topic,function(msg){//订阅文件上传真实的写盘结果
-          let ret = JSON.parse(msg.body);
-          for (let i = 0; i < self.uploadFiles.length; i++) {
-            let oldFile = self.uploadFiles[i];
-            if (oldFile.file.name == ret.fileName) {//可以根据文件名称来判断,因为上传的时候,校验了文件名称在本批次必须是唯一的
-              if (ret.result) {
-                //将文件与网盘目录建立关系
-                axios.post('/netdisk/addDirectory', {
-                  name: ret.fileName,
-                  pid: self.pid,
-                  fileMd5: ret.fileMd5,
-                  type:"FILE"
-                }).then(function (response) {
-                  if(response.data.result){
-                    if(response.data.data){
-                      self.list.push(response.data.data);
-                    }
-                    oldFile.status = "done";
-                    oldFile.message = "完成";
-                  }else{
-                    oldFile.status = "failed";
-                    oldFile.message = response.data.message;
-                  }
-                  if(self.checkEnd()){
-                    showToast("文件全部上传完毕");
-                    //全部上传完毕后取消禁用
-                    self.uploadDisabled = false;
-                  }
-                }).catch(function (error) {
-                  oldFile.status = "failed";
-                  oldFile.message = "失败";
-                  if(self.checkEnd()){
-                    showToast("文件全部上传完毕");
-                    //全部上传完毕后取消禁用
-                    self.uploadDisabled = false;
-                  }
-                  console.log(error);
-                });
-              } else {
-                oldFile.status = "failed";
-                oldFile.message = "失败";
-                if(self.checkEnd()){
-                  showToast("文件全部上传完毕");
-                  //全部上传完毕后取消禁用
-                  self.uploadDisabled = false;
-                }
-              }
-            }
-          }
-        });
-        this.isSubscribe = true;
-      }
-    },
     //检查文件是否都上传完毕
     checkEnd:function (){
       for (let i = 0; i < this.uploadFiles.length; i++) {
@@ -301,7 +241,6 @@ export default {
     submitUpload: function(){
       //设置禁用
       this.uploadDisabled = true;
-      this.subscribe();
       //开始循环上传文件
       for (let i = 0; i < this.uploadFiles.length; i++) {
         let f = this.uploadFiles[i];
@@ -316,10 +255,42 @@ export default {
             'Content-Type': 'multipart/form-data'
           }
         }).then((res) => {
-          //这个结果如果是成功的不作为真正上传成功
-          if(!res.data.result){
+          if(res.data.result){
+            //将文件与网盘目录建立关系
+            axios.post('/netdisk/addDirectory', {
+              name: f.file.name,
+              pid: self.pid,
+              fileMd5: res.data.data,
+              type:"FILE"
+            }).then(function (response) {
+              if(response.data.result){
+                if(response.data.data){
+                  self.list.push(response.data.data);
+                }
+                f.status = "done";
+                f.message = "完成";
+              }else{
+                f.status = "failed";
+                f.message = response.data.message;
+              }
+              if(self.checkEnd()){
+                showToast("文件全部上传完毕");
+                //全部上传完毕后取消禁用
+                self.uploadDisabled = false;
+              }
+            }).catch(function (error) {
+              f.status = "failed";
+              f.message = "失败";
+              if(self.checkEnd()){
+                showToast("文件全部上传完毕");
+                //全部上传完毕后取消禁用
+                self.uploadDisabled = false;
+              }
+              console.log(error);
+            });
+          }else{
             f.status = "failed";
-            f.message = "失败";
+            f.message = res.data.message;
             if(self.checkEnd()){
               showToast("文件全部上传完毕");
               //全部上传完毕后取消禁用
@@ -453,8 +424,36 @@ export default {
         //将打开的目录追加到路径中
         this.openPath.push({name:item.name + "/",id:item.id});
       }else{//文件
-
+        this.openFile(item);
       }
+    },
+    //打开文件
+    openFile:function (item) {
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/file/getFile', {
+        fileMd5: item.fileMd5,
+        name: item.name,
+        source:"CLOUDDISK"
+      },{
+        responseType:"blob"
+      }).then(function (response) {
+        const { data, headers } = response;
+        const blob = new Blob([data], {type: headers['content-type']});
+        let dom = document.createElement('a')
+        let url = window.URL.createObjectURL(blob);
+        dom.href = url;
+        dom.download = decodeURI(item.name);
+        dom.style.display = 'none'
+        document.body.appendChild(dom);
+        dom.click();
+        dom.parentNode.removeChild(dom);
+        window.URL.revokeObjectURL(url);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
     },
     //添加目录
     addDirectory:function (){
