@@ -30,6 +30,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
         try {
             String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
             raf = new RandomAccessFile(new File(path), "r");
+            dto.setTotalSize(raf.length());
             long shardingConfigSize = DataSize.of(3, DataUnit.MEGABYTES).toBytes();//如果被分片,每片最多是3mb
             int shardingNum = shardingConfigSize <= 0 ? 0 : (int) (dto.getTotalSize() / shardingConfigSize);//本次分片个数
             dto.setShardingNum(shardingNum);
