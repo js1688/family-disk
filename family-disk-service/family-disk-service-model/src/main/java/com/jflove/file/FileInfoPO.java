@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Fri Dec 16 16:47:04 CST 2022
+ * @date Thu Jan 05 14:03:09 CST 2023
  * @describe 文件信息
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("file_info")
 public class FileInfoPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  1512940729162111348L;
+	private static final long serialVersionUID =  5493477279302426680L;
 
   /**
    * 主键
@@ -79,4 +79,8 @@ public class FileInfoPO implements Serializable{
    * 执行删除时间
    */
   private long deleteTime;
+  /**
+   * 文件多媒体类型
+   */
+  private String mediaType;
 }

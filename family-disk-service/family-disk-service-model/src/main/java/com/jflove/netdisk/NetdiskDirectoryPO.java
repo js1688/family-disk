@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Fri Dec 16 16:35:15 CST 2022
+ * @date Thu Jan 05 14:03:01 CST 2023
  * @describe 网盘文件目录
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("netdisk_directory")
 public class NetdiskDirectoryPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  1525147445788677980L;
+	private static final long serialVersionUID =  5991701900534856184L;
 
   /**
    * null
@@ -59,4 +59,8 @@ public class NetdiskDirectoryPO implements Serializable{
    * 目录名称
    */
   private String name;
+  /**
+   * 文件多媒体类型
+   */
+  private String mediaType;
 }

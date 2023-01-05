@@ -53,4 +53,9 @@ public class NetdiskDirectoryDTO implements Serializable{
    * 目录名称
    */
   private String name;
+
+  /**
+   * 文件多媒体类型
+   */
+  private String mediaType;
 }

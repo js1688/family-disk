@@ -110,11 +110,8 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             }
         }
         NetdiskDirectoryPO po = new NetdiskDirectoryPO();
-        po.setName(dto.getName());
+        BeanUtils.copyProperties(dto,po);
         po.setType(dto.getType().getCode());
-        po.setSpaceId(dto.getSpaceId());
-        po.setFileMd5(dto.getFileMd5());
-        po.setPid(dto.getPid());
         netdiskDirectoryMapper.insert(po);
         dto.setId(po.getId());
         return new ResponseHeadDTO<>(true,dto,"添加成功");

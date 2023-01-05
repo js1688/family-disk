@@ -131,7 +131,9 @@ public class FileController {
     @ApiOperation(value = "上传文件(完整文件,非分片)")
     @PostMapping("/addFile")
     public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
-                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s) throws Exception{
+                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s,
+                                          @ApiParam("文件多媒体类型") @RequestParam("m") String m
+    ) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
@@ -148,6 +150,7 @@ public class FileController {
         FileTransmissionDTO dto = new FileTransmissionDTO();
         dto.setName(f.getOriginalFilename());
         dto.setTotalSize(totalSize);
+        dto.setMediaType(m);
         dto.setShardingNum(shardingNum);
         dto.setSource(FileSourceENUM.valueOf(s));
         dto.setType(dto.getName().lastIndexOf(".") != -1 ? dto.getName().substring(dto.getName().lastIndexOf(".")) : "");

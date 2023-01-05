@@ -52,4 +52,7 @@ public class AddDirectoryParamVO implements Serializable {
     @ApiModelProperty(value="目录名称")
     @NotBlank(message = "目录名称不能为空")
     private String name;
+
+    @ApiModelProperty(value="文件多媒体类型")
+    private String mediaType;
 }

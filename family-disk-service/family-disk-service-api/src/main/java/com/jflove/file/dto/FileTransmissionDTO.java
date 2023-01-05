@@ -68,4 +68,9 @@ public class FileTransmissionDTO implements Serializable {
      * 所属空间id
      */
     private Long spaceId;
+
+    /**
+     * 文件多媒体类型
+     */
+    private String mediaType;
 }

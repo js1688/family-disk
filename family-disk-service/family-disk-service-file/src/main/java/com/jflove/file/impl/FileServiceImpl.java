@@ -77,6 +77,7 @@ public class FileServiceImpl implements IFileService {
                 repDto.setType(po.getType());
                 repDto.setName(po.getName());
                 repDto.setTotalSize(po.getSize());
+                repDto.setMediaType(po.getMediaType());
                 //查找磁盘
                 FileDiskConfigPO selectd = fileDiskConfigMapper.selectById(po.getDiskId());
                 IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(),IFileReadAndWrit.class);
