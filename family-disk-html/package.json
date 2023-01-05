@@ -17,6 +17,7 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.0.0",
     "vant": "^4.0.3",
+    "video.js": "^7.20.3",
     "vite": "^4.0.0"
   }
 }

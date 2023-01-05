@@ -10,6 +10,10 @@ export function key(){
     };
 }
 
+/**
+ * 是否存在token
+ * @returns {boolean}
+ */
 export function isToken(){
     let token = localStorage.getItem(key().authorization);
     if(token != null){//如果本地保存了token,则在头部传送token
@@ -18,6 +22,10 @@ export function isToken(){
     return false;
 }
 
+/**
+ * 是否存在空间id
+ * @returns {boolean}
+ */
 export function isSpace(){
     let useSpaceId = localStorage.getItem(key().useSpaceId);
     if(useSpaceId != null){//如果本地保存了正在使用的空间id,则在头部传送使用中空间id

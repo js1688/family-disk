@@ -26,15 +26,16 @@
       @load="onLoad"
   >
     <van-swipe-cell v-for="item in list">
-      <van-cell is-link :arrow-direction="item.type == 'FOLDER' ? 'right' : 'down'"
+      <van-cell is-link arrow-direction="right"
                 :title="item.name"
                 @click="open(item)">
         <van-tag plain type="primary">{{item.type == 'FOLDER' ? '目录':'文件'}}</van-tag>
       </van-cell>
       <template #right>
-        <van-button square type="danger" @click="delDirectory(item)" text="删除" />
-        <van-button square type="primary" @click="moveDirectory(item)" text="移动" />
-        <van-button square type="primary" @click="updateName(item)" text="重命名" />
+        <van-button square hairline type="danger"  @click="delDirectory(item)" text="删除" />
+        <van-button square hairline type="primary"  @click="moveDirectory(item)" text="移动" />
+        <van-button square hairline type="primary"   @click="updateName(item)" text="重命名" />
+        <van-button square hairline type="success"  @click="download(item)" text="下载" />
       </template>
     </van-swipe-cell>
   </van-list>
@@ -48,7 +49,7 @@
   </div>
 
   <van-action-sheet v-model:show="showAddDirectory" title="添加目录">
-    <div class="content">
+    <div>
       <van-form @submit="addDirectory">
         <van-cell-group inset>
           <van-field
@@ -70,7 +71,7 @@
   </van-action-sheet>
 
   <van-action-sheet v-model:show="showMove" title="请进入移动的目的地">
-    <div class="content">
+    <div>
       <van-list
           v-model:loading="moveLoading"
           :finished="moveFinished"
@@ -93,7 +94,7 @@
   </van-action-sheet>
 
   <van-action-sheet v-model:show="showUpdateName" title="重命名">
-    <div class="content">
+    <div>
       <van-form @submit="updateName2">
         <van-cell-group inset>
           <van-field
@@ -115,7 +116,7 @@
   </van-action-sheet>
 
   <van-action-sheet v-model:show="showUpload" title="上传文件">
-    <div class="content">
+    <div>
       <div style="margin: 16px;">
         <van-uploader :max-size="1024 * 1024 * 64" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
@@ -129,19 +130,39 @@
     </div>
   </van-action-sheet>
 
+  <van-action-sheet @opened="openVideo" @close="closeVideo" title="视频播放" round v-model:show="showVideo">
+    <div style="padding-bottom: 20px" id="videoBody">
+    </div>
+  </van-action-sheet>
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
 <script>
-import {Search, List, Cell, Tag, NavBar, showToast,BackTop,Popover,Button,ActionSheet,Field,Form,CellGroup} from 'vant';
-import { Overlay,Loading } from 'vant';
-import {ref} from "vue";
+import {
+  Search,
+  List,
+  Cell,
+  Tag,
+  NavBar,
+  showToast,
+  BackTop,
+  Popover,
+  Button,
+  ActionSheet,
+  Field,
+  Form,
+  CellGroup,
+  showImagePreview,
+} from 'vant';
+import { Overlay,Loading,Collapse,CollapseItem} from 'vant';
+import {createApp, ref, shallowRef} from "vue";
 import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
 import {key} from "@/global/KeyGlobal";
-
+import 'video.js/dist/video-js.css';
+import videojs from "video.js"
 
 export default {
   name: "Disk",
@@ -161,7 +182,9 @@ export default {
     [Overlay.name]: Overlay,
     [Loading.name]: Loading,
     [SwipeCell.name]:SwipeCell,
-    [Uploader.name]: Uploader
+    [Uploader.name]: Uploader,
+    [Collapse.name]: Collapse,
+    [CollapseItem.name]: CollapseItem
   },
   setup() {
     const addActions = [
@@ -172,10 +195,12 @@ export default {
     const showPopover = ref(false);
 
     const onOversize = (file) => {
-      showToast('文件大小不能超过 64MB');
+      showToast('文件大小不能超过64MB');
     };
+    const activeNames = ref([]);
 
     return {
+      activeNames,
       addActions,
       showPopover,
       onOversize
@@ -205,10 +230,119 @@ export default {
       openPath:[
           {name:'/',id:0}
       ],
-      isSubscribe:false
+      isSubscribe:false,
+      showVideo:false,
+      myPlayer:null,
+      videoOptions:{
+        controls: true,
+        playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
+        autoplay: true, //如果true,浏览器准备好时开始回放。
+        muted: false, // 默认情况下将会消除任何音频。
+        loop: false, // 导致视频一结束就重新开始。
+        preload: "auto", // 建议浏览器在<video>加载元素后是否应该开始下载视频数据。auto浏览器选择最佳行为,立即开始加载视频（如果浏览器支持）
+        language: "zh-CN",
+        aspectRatio: "16:9", // 将播放器置于流畅模式，并在计算播放器的动态大小时使用该值。值应该代表一个比例 - 用冒号分隔的两个数字（例如"16:9"或"4:3"）
+        fluid: true, // 当true时，Video.js player将拥有流体大小。换句话说，它将按比例缩放以适应其容器。
+        sources: [
+          {
+            src: "", // 路径
+            type: "", // 类型
+          },
+        ],
+        //poster: "@/assets/camera.png", //你的封面地址
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight,
+        notSupportedMessage: "此视频暂无法播放，请稍后再试", //允许覆盖Video.js无法播放媒体源时显示的默认信息。
+        controlBar: {
+          timeDivider: true,// 当前时间和持续时间的分隔符
+          durationDisplay: true,// 显示持续时间
+          remainingTimeDisplay: true,// 是否显示剩余时间功能
+          fullscreenToggle: true, //全屏按钮
+        }
+      }
     }
   },
   methods:{
+    //退出视频播放
+    closeVideo:function (){
+      this.myPlayer.pause();
+      this.myPlayer.dispose();
+    },
+    //打开视频播放
+    openVideo:function (){
+      let myVideoDiv = document.getElementById("videoBody")
+      myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
+      this.myPlayer = videojs("videoPlayer",this.videoOptions);
+    },
+    //打开文件
+    openFile:function (item) {
+      let mediaType = item.mediaType.toUpperCase();
+      mediaType = mediaType.substring(0,mediaType.indexOf("/"));
+      switch (mediaType) {
+        case "IMAGE"://图片
+        case "VIDEO"://视频
+          this.isOverlay = true;
+          let self = this;
+          axios.post('/file/getFile', {
+            fileMd5: item.fileMd5,
+            name: item.name,
+            source:"CLOUDDISK"
+          },{
+            responseType:"blob"
+          }).then(function (response) {
+            self.isOverlay = false;
+            const { data, headers } = response;
+            const blob = new Blob([data], {type: headers['content-type']});
+            let url = window.URL.createObjectURL(blob);
+            if("IMAGE" == mediaType){
+              showImagePreview({
+                images: [url],
+                closeable: true,
+                showIndex: false
+              });
+            }else if("VIDEO" == mediaType){
+              self.videoOptions.sources[0].src = url;
+              self.videoOptions.sources[0].type = item.mediaType;
+              self.showVideo = true;
+            }
+          }).catch(function (error) {
+            self.isOverlay = false;
+            console.log(error);
+          });
+          break
+        default:
+          showToast("不识别的类型,不能在线预览,请下载文件.");
+          break
+      }
+    },
+    //下载文件
+    download:function (item) {
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/file/getFile', {
+        fileMd5: item.fileMd5,
+        name: item.name,
+        source:"CLOUDDISK"
+      },{
+        responseType:"blob"
+      }).then(function (response) {
+        const { data, headers } = response;
+        const blob = new Blob([data], {type: headers['content-type']});
+        let dom = document.createElement('a');
+        let url = window.URL.createObjectURL(blob);
+        dom.href = url;
+        dom.download = decodeURI(item.name);
+        dom.style.display = 'none';
+        document.body.appendChild(dom);
+        dom.click();
+        dom.parentNode.removeChild(dom);
+        window.URL.revokeObjectURL(url);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
     //检查文件是否都上传完毕
     checkEnd:function (){
       for (let i = 0; i < this.uploadFiles.length; i++) {
@@ -255,6 +389,7 @@ export default {
         let data = new FormData();
         data.append('f', f.file);
         data.append('s', 'CLOUDDISK');
+        data.append('m', f.file.type);
         let self = this;
         axios.post("/file/addFile", data, {
           header:{
@@ -267,7 +402,8 @@ export default {
               name: f.file.name,
               pid: self.pid,
               fileMd5: res.data.data,
-              type:"FILE"
+              type:"FILE",
+              mediaType:f.file.type
             }).then(function (response) {
               if(response.data.result){
                 if(response.data.data){
@@ -432,34 +568,6 @@ export default {
       }else{//文件
         this.openFile(item);
       }
-    },
-    //打开文件
-    openFile:function (item) {
-      this.isOverlay = true;
-      let self = this;
-      axios.post('/file/getFile', {
-        fileMd5: item.fileMd5,
-        name: item.name,
-        source:"CLOUDDISK"
-      },{
-        responseType:"blob"
-      }).then(function (response) {
-        const { data, headers } = response;
-        const blob = new Blob([data], {type: headers['content-type']});
-        let dom = document.createElement('a')
-        let url = window.URL.createObjectURL(blob);
-        dom.href = url;
-        dom.download = decodeURI(item.name);
-        dom.style.display = 'none'
-        document.body.appendChild(dom);
-        dom.click();
-        dom.parentNode.removeChild(dom);
-        window.URL.revokeObjectURL(url);
-        self.isOverlay = false;
-      }).catch(function (error) {
-        self.isOverlay = false;
-        console.log(error);
-      });
     },
     //添加目录
     addDirectory:function (){
