@@ -6,7 +6,6 @@ import axios from 'axios';
 import {isSpace, isToken, key} from '@/global/KeyGlobal';
 import gws from "@/global/WebSocket";
 
-
 axios.defaults.withCredentials = true
 //全局配置axios的请求根路径
 axios.defaults.baseURL = key().baseURL;
@@ -14,7 +13,7 @@ axios.defaults.baseURL = key().baseURL;
 //请求拦截设置头部
 axios.interceptors.request.use(config => {//声明请求拦截器
     if(isToken()){//如果本地保存了token,则在头部传送token
-        config.headers.Authorization = localStorage.getItem(key().authorization);
+        config.headers[key().authorization] = localStorage.getItem(key().authorization);
     }
     if(isSpace()){//如果本地保存了正在使用的空间id,则在头部传送使用中空间id
         config.headers[key().useSpaceId] = localStorage.getItem(key().useSpaceId);

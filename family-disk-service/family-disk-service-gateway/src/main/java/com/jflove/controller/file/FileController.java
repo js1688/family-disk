@@ -26,14 +26,16 @@ import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +68,35 @@ public class FileController {
 //        return new ResponseHeadVO<>(false,"还未实现");
 //    }
 
+    @ApiOperation(value = "文件下载(分片下载,适合大文件)")
+    @GetMapping("/slice/download/{fileMd5}")
+    public void sliceDownload(HttpServletRequest request,HttpServletResponse response,
+                                                  @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5
+    ){
+        Assert.notNull(fileMd5,"错误的请求:文件md5不能为空");
+        //获取从那个字节开始读取文件9
+        String rangeString = request.getHeader(HttpHeaders.RANGE);
+        if (!StringUtils.hasLength(rangeString)) {
+            new ResponseEntity<>(null, new HttpHeaders(), HttpStatus.BAD_REQUEST);
+        }
+        response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
+        response.setContentType("video/mp4");
+        long rangeStart = Long.valueOf(rangeString.substring(rangeString.indexOf("=") + 1, rangeString.indexOf("-")));
+        DataSize ds = DataSize.of(1,DataUnit.MEGABYTES);
+        File file = new File("F:\\formal\\39faacabc42b1075df8b189ad40bad7f.mp4");
+        response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,rangeStart + ds.toBytes(),file.length()));
+        response.setHeader(HttpHeaders.CONTENT_LENGTH,String.valueOf(ds.toBytes()));
+        try(RandomAccessFile raf = new RandomAccessFile(new File("F:\\formal\\39faacabc42b1075df8b189ad40bad7f.mp4" ), "r");OutputStream outputStream = response.getOutputStream();) {
+            byte [] b = new byte[(int)ds.toBytes()];
+            raf.seek(rangeStart);
+            int len = raf.read(b);
+            //获取响应的输出流
+            outputStream.write(b,0,len);
+        }catch (IOException e){
+            log.error("读取文件异常",e);
+        }
+    }
+
     @ApiOperation(value = "删除文件")
     @PostMapping("/delFile")
     public ResponseHeadVO<Boolean> delFile(@RequestBody @Valid DelFileParamVO param){
@@ -82,7 +113,7 @@ public class FileController {
         return vo;
     }
 
-    @ApiOperation(value = "下载文件")
+    @ApiOperation(value = "下载文件(完整文件,非分片)")
     @PostMapping("/getFile")
     public ResponseEntity<Resource> getFile(@RequestBody @Valid GetFileParamVO param) throws Exception{
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);

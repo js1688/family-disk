@@ -130,10 +130,17 @@
     </div>
   </van-action-sheet>
 
-  <van-action-sheet @opened="openVideo" @close="closeVideo" title="视频播放" round v-model:show="showVideo">
-    <div style="padding-bottom: 20px" id="videoBody">
-    </div>
-  </van-action-sheet>
+<!--  <van-action-sheet @opened="playVideo" @close="pauseVideo" title="视频播放" round v-model:show="showVideo">-->
+<!--    <div style="padding-bottom: 20px" id="videoBody">-->
+<!--    </div>-->
+<!--  </van-action-sheet>-->
+  <van-image-preview v-model:show="showVideo" :images="images">
+    <template #image="{ src }">
+      <video style="width: 100%;" controls>
+        <source :src="src" />
+      </video>
+    </template>
+  </van-image-preview>
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
@@ -154,13 +161,13 @@ import {
   CellGroup,
   showImagePreview,
 } from 'vant';
-import { Overlay,Loading,Collapse,CollapseItem} from 'vant';
+import { Overlay,Loading,Collapse,CollapseItem,ImagePreview} from 'vant';
 import {createApp, ref, shallowRef} from "vue";
 import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
-import {key} from "@/global/KeyGlobal";
+import {isSpace, isToken, key} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js"
 
@@ -184,7 +191,8 @@ export default {
     [SwipeCell.name]:SwipeCell,
     [Uploader.name]: Uploader,
     [Collapse.name]: Collapse,
-    [CollapseItem.name]: CollapseItem
+    [CollapseItem.name]: CollapseItem,
+    [ImagePreview.name]:ImagePreview
   },
   setup() {
     const addActions = [
@@ -233,6 +241,7 @@ export default {
       isSubscribe:false,
       showVideo:false,
       myPlayer:null,
+      images:[],
       videoOptions:{
         controls: true,
         playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
@@ -243,12 +252,8 @@ export default {
         language: "zh-CN",
         aspectRatio: "16:9", // 将播放器置于流畅模式，并在计算播放器的动态大小时使用该值。值应该代表一个比例 - 用冒号分隔的两个数字（例如"16:9"或"4:3"）
         fluid: true, // 当true时，Video.js player将拥有流体大小。换句话说，它将按比例缩放以适应其容器。
-        sources: [
-          {
-            src: "", // 路径
-            type: "", // 类型
-          },
-        ],
+        flash:{hls:{withCredentials:true}},//可以播放rtmp视频
+        html5:{hls:{withCredentials:true}},//可以播放m3u8视频
         //poster: "@/assets/camera.png", //你的封面地址
         width: document.documentElement.clientWidth,
         height: document.documentElement.clientHeight,
@@ -258,21 +263,54 @@ export default {
           durationDisplay: true,// 显示持续时间
           remainingTimeDisplay: true,// 是否显示剩余时间功能
           fullscreenToggle: true, //全屏按钮
-        }
+        },
+        sources:[]
       }
     }
   },
   methods:{
-    //退出视频播放
-    closeVideo:function (){
+    //暂停播放视频
+    pauseVideo:function (){
+      this.videoOptions.sources = [];
       this.myPlayer.pause();
       this.myPlayer.dispose();
     },
-    //打开视频播放
-    openVideo:function (){
+    //开始播放视频
+    playVideo:function (){
       let myVideoDiv = document.getElementById("videoBody")
       myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
       this.myPlayer = videojs("videoPlayer",this.videoOptions);
+    },
+    //打开图片,图片文件不会很大,直接下载完打开即可
+    openImage:function (item){
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/file/getFile', {
+        fileMd5: item.fileMd5,
+        name: item.name,
+        source:"CLOUDDISK"
+      },{
+        responseType:"blob"
+      }).then(function (response) {
+        self.isOverlay = false;
+        const { data, headers } = response;
+        const blob = new Blob([data], {type: headers['content-type']});
+        let url = window.URL.createObjectURL(blob);
+        showImagePreview({
+          images: [url],
+          closeable: true,
+          showIndex: false
+        });
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //打开视频,视频流通常会很大,所以需要做到边播边缓存
+    openVideo:function (item){
+      //this.videoOptions.sources.push({src:key().baseURL+"file/slice/download/"+item.fileMd5,type:item.mediaType});
+      this.images.push(key().baseURL+"file/slice/download/"+item.fileMd5);
+      this.showVideo = true;
     },
     //打开文件
     openFile:function (item) {
@@ -280,35 +318,10 @@ export default {
       mediaType = mediaType.substring(0,mediaType.indexOf("/"));
       switch (mediaType) {
         case "IMAGE"://图片
+          this.openImage(item);
+          break
         case "VIDEO"://视频
-          this.isOverlay = true;
-          let self = this;
-          axios.post('/file/getFile', {
-            fileMd5: item.fileMd5,
-            name: item.name,
-            source:"CLOUDDISK"
-          },{
-            responseType:"blob"
-          }).then(function (response) {
-            self.isOverlay = false;
-            const { data, headers } = response;
-            const blob = new Blob([data], {type: headers['content-type']});
-            let url = window.URL.createObjectURL(blob);
-            if("IMAGE" == mediaType){
-              showImagePreview({
-                images: [url],
-                closeable: true,
-                showIndex: false
-              });
-            }else if("VIDEO" == mediaType){
-              self.videoOptions.sources[0].src = url;
-              self.videoOptions.sources[0].type = item.mediaType;
-              self.showVideo = true;
-            }
-          }).catch(function (error) {
-            self.isOverlay = false;
-            console.log(error);
-          });
+          this.openVideo(item);
           break
         default:
           showToast("不识别的类型,不能在线预览,请下载文件.");

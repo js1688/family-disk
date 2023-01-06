@@ -42,6 +42,9 @@ dubbo:
   consumer:
     timeout: 10000 # 超时时间
     retries: 0 # 不重试
+  consumer:
+    timeout: 10000 # 超时时间
+    retries: 0 # 不重试
   application:
     name: ${spring.application.name}
     qos-port: 1166
