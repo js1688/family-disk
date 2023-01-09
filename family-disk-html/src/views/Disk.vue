@@ -118,7 +118,7 @@
   <van-action-sheet v-model:show="showUpload" title="上传文件">
     <div>
       <div style="margin: 16px;">
-        <van-uploader :max-size="1024 * 1024 * 64" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+        <van-uploader :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
         </van-uploader>
       </div>
@@ -130,17 +130,23 @@
     </div>
   </van-action-sheet>
 
-<!--  <van-action-sheet @opened="playVideo" @close="pauseVideo" title="视频播放" round v-model:show="showVideo">-->
-<!--    <div style="padding-bottom: 20px" id="videoBody">-->
-<!--    </div>-->
-<!--  </van-action-sheet>-->
-  <van-image-preview v-model:show="showVideo" :images="images">
-    <template #image="{ src }">
-      <video style="width: 100%;" controls>
-        <source :src="src" />
-      </video>
-    </template>
-  </van-image-preview>
+  <van-action-sheet @opened="playVideo" @close="pauseVideo" title="媒体播放" round v-model:show="showVideo">
+    <div style="padding-bottom: 20px" id="videoBody">
+    </div>
+  </van-action-sheet>
+
+  <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
+    <div>
+      <div style="margin: 16px;">
+        <van-uploader accept="*" :after-read="largeUpload">
+          <van-button icon="plus" round block type="primary">
+            选择文件上传
+          </van-button>
+        </van-uploader>
+      </div>
+    </div>
+  </van-action-sheet>
+
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
@@ -169,7 +175,9 @@ import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
 import {isSpace, isToken, key} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
-import videojs from "video.js"
+import videojs from "video.js";
+import SparkMD5 from 'spark-md5'
+
 
 export default {
   name: "Disk",
@@ -198,12 +206,13 @@ export default {
     const addActions = [
       { text: '新建目录', icon: 'wap-nav',name:'addDirectory'},
       { text: '上传文件', icon: 'upgrade',name:'addFile'},
+      { text: '大件上传', icon: 'upgrade',name:'addLargeFile'},
       { text: '拍照上传', icon: 'photograph',name:'photograph'}
     ];
     const showPopover = ref(false);
 
-    const onOversize = (file) => {
-      showToast('文件大小不能超过64MB');
+    const onOversize = (f) => {
+      showToast('此文件['+f.file.name+']太大,请走大件上传通道');
     };
     const activeNames = ref([]);
 
@@ -233,6 +242,7 @@ export default {
       uploadDisabled:false,
       list:[],
       showUpdateName:false,
+      showLargeUpload:false,
       showUpload:false,
       uploadFiles:[],
       openPath:[
@@ -241,7 +251,6 @@ export default {
       isSubscribe:false,
       showVideo:false,
       myPlayer:null,
-      images:[],
       videoOptions:{
         controls: true,
         playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
@@ -269,6 +278,81 @@ export default {
     }
   },
   methods:{
+    //分片上传
+    sliceUpload:function (fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback){
+      let self = this;
+      let data = new FormData();
+      data.append('originalFileName', file.name);
+      data.append('f', chunk,fileMd5 + "." + i);
+      data.append('s', 'CLOUDDISK');
+      data.append('m', file.type);
+      data.append('n', sliceNum);
+      data.append('start', start);
+      data.append('end', end);
+      data.append('fileMd5', fileMd5);
+      data.append('totalLength', totalLength);
+
+      axios.post("/file/slice/addFile", data, {
+        header:{
+          'Content-Type': 'multipart/form-data'
+        }
+      }).then((res) => {
+        if(res.data.result && res.data.data){
+          callback(res.data);//分片合并完毕,执行回调
+        }
+      }).catch((error) => {
+        console.log(error);
+        //上传失败了,补救
+        this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);
+      });
+    },
+    //大文件上传
+    largeUpload:function (f){
+      let file = f.file;
+      let sliceSize = 1024 * 1024 * 16;
+      if(file.size < sliceSize){
+        sliceSize = file.size;
+      }
+      let sliceNum = Math.ceil(file.size/sliceSize);//分片数量
+      let start = 0;
+      let self = this;
+      const spark = new SparkMD5.ArrayBuffer();
+      spark.append(file);
+      let fileMd5 = spark.end();
+      for (let i = 0; i < sliceNum; i++) {
+        let end = sliceSize + start;
+        let chunk = f.file.slice(start,end);
+        //发送分片
+        this.sliceUpload(
+            fileMd5,
+            file.size,
+            start,
+            end,
+            file,
+            chunk,
+            i,
+            sliceNum,
+            function (d){
+              //所有分片都已经上传完毕,后端已经合并了文件,成功返回了文件的md5值
+              //将文件与网盘目录建立关系
+              axios.post('/netdisk/addDirectory', {
+                name: file.name,
+                pid: self.pid,
+                fileMd5: d.data,
+                type:"FILE",
+                mediaType:file.type
+              }).then(function (response) {
+                if(response.data.result && response.data.data){
+                  self.list.push(response.data.data);
+                }
+              }).catch(function (error) {
+                console.log(error);
+              });
+            }
+        );
+        start = end;
+      }
+    },
     //暂停播放视频
     pauseVideo:function (){
       this.videoOptions.sources = [];
@@ -308,8 +392,9 @@ export default {
     },
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
     openVideo:function (item){
-      //this.videoOptions.sources.push({src:key().baseURL+"file/slice/download/"+item.fileMd5,type:item.mediaType});
-      this.images.push(key().baseURL+"file/slice/download/"+item.fileMd5);
+      this.videoOptions.sources.push({src:
+            key().baseURL+"file/media/play/CLOUDDISK/"+item.fileMd5+"/"+localStorage.getItem(key().useSpaceId)+"/"+localStorage.getItem(key().authorization),
+        type:item.mediaType});
       this.showVideo = true;
     },
     //打开文件
@@ -321,6 +406,7 @@ export default {
           this.openImage(item);
           break
         case "VIDEO"://视频
+        case "AUDIO"://音频
           this.openVideo(item);
           break
         default:
@@ -392,6 +478,9 @@ export default {
     },
     //提交上传
     submitUpload: function(){
+      if(this.uploadFiles.length == 0){
+        return;
+      }
       //设置禁用
       this.uploadDisabled = true;
       //开始循环上传文件
@@ -608,6 +697,9 @@ export default {
       switch (cz) {
         case 'addDirectory':
           this.showAddDirectory = true;
+          break;
+        case 'addLargeFile':
+          this.showLargeUpload = true;
           break;
         case 'addFile':
           this.showUpload = true;

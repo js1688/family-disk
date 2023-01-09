@@ -5,6 +5,7 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.file.FileDiskConfigPO;
 import com.jflove.file.FileInfoPO;
 import com.jflove.file.api.IFileService;
+import com.jflove.file.dto.FileByteReqDTO;
 import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
@@ -57,6 +58,40 @@ public class FileServiceImpl implements IFileService {
 
     @Value("${file.storage.space}")
     private DataSize tempSpace;//临时空间占用大小
+
+    @Override
+    public StreamObserver<FileByteReqDTO> readByte(StreamObserver<FileByteReqDTO> response) {
+        return new StreamObserver<FileByteReqDTO>() {
+            @Override
+            public void onNext(FileByteReqDTO data) {
+                FileInfoPO po = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                        .eq(FileInfoPO::getFileMd5,data.getFileMd5())
+                        .eq(FileInfoPO::getSpaceId,data.getSpaceId())
+                        .eq(FileInfoPO::getSource,data.getSource().getCode())
+                );
+                if(po == null){
+                    response.onError(new RuntimeException("文件不存在"));
+                    return;
+                }
+                data.setType(po.getType());
+                data.setMediaType(po.getMediaType());
+                //查找磁盘
+                FileDiskConfigPO selectd = fileDiskConfigMapper.selectById(po.getDiskId());
+                IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(),IFileReadAndWrit.class);
+                fileReadAndWrit.readByte(data,selectd,response);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        };
+    }
 
     @Override
     public StreamObserver<FileReadReqDTO> getFile(StreamObserver<FileTransmissionDTO> response) {
@@ -115,6 +150,36 @@ public class FileServiceImpl implements IFileService {
     }
 
     @Override
+    public StreamObserver<FileByteReqDTO> writeByte(StreamObserver<FileTransmissionRepDTO> response) {
+        return new StreamObserver<FileByteReqDTO>() {
+            @Override
+            public void onNext(FileByteReqDTO data) {
+                log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},当前分片起:{},当前分片止:{}",
+                        data.getFileName(),data.getType(),data.getTotalLength(),data.getRangeStart(),data.getRangeEnd());
+                //检查用户是否还可以存储
+                DataSize ds = DataSize.ofBytes(data.getTotalLength());
+                ResponseHeadDTO use = userSpace.useSpaceByte(data.getSpaceId(),ds.toMegabytes());
+                if(!use.isResult()){
+                    response.onNext(new FileTransmissionRepDTO(data.getFileName(),data.getFileMd5(),false,"用户存储空间不足"));
+                    return;
+                }
+                //
+
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        };
+    }
+
+    @Override
     public StreamObserver<FileTransmissionDTO> addFile(StreamObserver<FileTransmissionRepDTO> response) {
         return new StreamObserver<FileTransmissionDTO>() {
             @Override
@@ -125,7 +190,6 @@ public class FileServiceImpl implements IFileService {
                     Files.write(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(data.getShardingSort()),tempFileSuffix)),data.getShardingStream());
                     //判断是否是最后一个分片
                     if(data.getShardingSort() == data.getShardingNum()){
-                        log.info("dubbo文件传输本次完毕");
                         //检查用户是否还可以存储
                         DataSize ds = DataSize.ofBytes(data.getTotalSize());
                         ResponseHeadDTO use = userSpace.useSpaceByte(data.getSpaceId(),ds.toMegabytes());
@@ -159,6 +223,7 @@ public class FileServiceImpl implements IFileService {
                             newPo.setCreateUserId(data.getCreateUserId());
                             newPo.setSize(data.getTotalSize());
                             newPo.setFileMd5(data.getFileMd5());
+                            newPo.setMediaType(data.getMediaType());
                             if(fip != null){//文件已存在了,直接做关系绑定
                                 newPo.setDiskId(fip.getDiskId());//磁盘使用旧的磁盘id
                             }else {

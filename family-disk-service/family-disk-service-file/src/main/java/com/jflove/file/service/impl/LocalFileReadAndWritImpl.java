@@ -1,6 +1,7 @@
 package com.jflove.file.service.impl;
 
 import com.jflove.file.FileDiskConfigPO;
+import com.jflove.file.dto.FileByteReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
@@ -23,6 +24,41 @@ import java.nio.file.Path;
 @Component(IFileReadAndWrit.BEAN_PREFIX + "LOCAL")
 @Log4j2
 public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
+
+    @Override
+    public boolean writByte(FileByteReqDTO data, FileDiskConfigPO selectd, String tempFileSuffix, String tempPath) {
+        String path = String.format("%s/%s%s", selectd.getPath(), data.getFileMd5(), data.getType());
+        log.info("路径:{}",path);
+        return false;
+    }
+
+    @Override
+    public void readByte(FileByteReqDTO dto, FileDiskConfigPO selectd, StreamObserver<FileByteReqDTO> response) {
+        String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
+        try(RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
+            //自动修正读取位置
+            if(dto.getRangeStart() > raf.length()) {
+                response.onError(new RuntimeException("读取位置超出了文件大小"));
+            }else if(dto.getRangeStart() == 0 && dto.getRangeStart() + dto.getReadLength() > raf.length()){
+                dto.setReadLength((int)raf.length());
+                dto.setRangeEnd(dto.getReadLength());
+            }else if(dto.getRangeStart() + dto.getReadLength() > raf.length()){
+                dto.setReadLength((int)(raf.length()-dto.getRangeStart()));
+                dto.setRangeEnd((int)dto.getReadLength());
+            }
+            dto.setTotalLength(raf.length());
+            raf.seek(dto.getRangeStart());
+            byte [] b = new byte[(int)dto.getReadLength()];
+            int len = raf.read(b);
+            dto.setReadLength(len);
+            dto.setData(b);
+            response.onNext(dto);
+            response.onCompleted();
+        }catch (IOException e){
+            log.error("读取文件异常",e);
+            response.onError(new RuntimeException("文件读取错误"));
+        }
+    }
 
     @Override
     public void read(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response) {

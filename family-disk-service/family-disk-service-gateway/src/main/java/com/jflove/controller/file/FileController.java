@@ -2,15 +2,22 @@ package com.jflove.controller.file;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
+import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
 import com.jflove.file.api.IFileService;
+import com.jflove.file.dto.FileByteReqDTO;
 import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
+import com.jflove.tool.JJwtTool;
+import com.jflove.user.api.IUserInfo;
+import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.file.DelFileParamVO;
 import com.jflove.vo.file.GetFileParamVO;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -31,7 +38,9 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.HandlerMapping;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -56,45 +65,42 @@ public class FileController {
     private HttpServletRequest autowiredRequest;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private JJwtTool jJwtTool;
+
+    @DubboReference
+    private IUserInfo userInfo;
 
     @Value("${spring.servlet.multipart.max-file-size}")
     private DataSize maxFileSize;
 
-//    @ApiOperation(value = "上传文件,分片多线程上传")
-//    @PostMapping("/addFileSharding")
-//    public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart MultipartFile file){
-//        //todo 每次上传的都是一个文件的分片,临时文件,最终多个分片合并,这个还没有想好怎么实现
-//        return new ResponseHeadVO<>(false,"还未实现");
-//    }
+    @Autowired
+    private ByteResourceHttpRequestHandlerConfig resourceHttpRequestHandle;
 
-    @ApiOperation(value = "文件下载(分片下载,适合大文件)")
-    @GetMapping("/slice/download/{fileMd5}")
+    @ApiOperation(value = "媒体资源边播边下")
+    @GetMapping("/media/play/{source}/{fileMd5}/{useSpaceId}/{token}")
     public void sliceDownload(HttpServletRequest request,HttpServletResponse response,
-                                                  @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5
-    ){
+                              @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @PathVariable("source") String source,
+                              @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5,
+                              @ApiParam("正在使用的空间") @PathVariable("useSpaceId") Long useSpaceId,
+                              @ApiParam("token") @PathVariable("token") String token
+    )throws IOException, ServletException {
         Assert.notNull(fileMd5,"错误的请求:文件md5不能为空");
-        //获取从那个字节开始读取文件9
-        String rangeString = request.getHeader(HttpHeaders.RANGE);
-        if (!StringUtils.hasLength(rangeString)) {
-            new ResponseEntity<>(null, new HttpHeaders(), HttpStatus.BAD_REQUEST);
-        }
-        response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
-        response.setContentType("video/mp4");
-        long rangeStart = Long.valueOf(rangeString.substring(rangeString.indexOf("=") + 1, rangeString.indexOf("-")));
-        DataSize ds = DataSize.of(1,DataUnit.MEGABYTES);
-        File file = new File("F:\\formal\\39faacabc42b1075df8b189ad40bad7f.mp4");
-        response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,rangeStart + ds.toBytes(),file.length()));
-        response.setHeader(HttpHeaders.CONTENT_LENGTH,String.valueOf(ds.toBytes()));
-        try(RandomAccessFile raf = new RandomAccessFile(new File("F:\\formal\\39faacabc42b1075df8b189ad40bad7f.mp4" ), "r");OutputStream outputStream = response.getOutputStream();) {
-            byte [] b = new byte[(int)ds.toBytes()];
-            raf.seek(rangeStart);
-            int len = raf.read(b);
-            //获取响应的输出流
-            outputStream.write(b,0,len);
-        }catch (IOException e){
-            log.error("读取文件异常",e);
-        }
+        Assert.notNull(source,"错误的请求:文件来源不能为空");
+        Assert.notNull(token,"错误的请求:token不能为空");
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Jws<Claims> jws = jJwtTool.parseJwt(token);
+        Claims claims = jws.getBody();
+        //token验证通过,返回用户信息
+        ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(claims.getId());
+        Assert.notNull(dto.getData(),dto.getMessage());
+        UserSpaceRoleENUM useSpacerRole = dto.getData().getSpaces().stream().filter(
+                e->String.valueOf(e.getSpaceId()).equals(String.valueOf(useSpaceId))
+        ).toList().get(0).getRole();
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,fileMd5);
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE,source);
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,useSpaceId);
+        resourceHttpRequestHandle.handleRequest(request, response);
     }
 
     @ApiOperation(value = "删除文件")
@@ -116,7 +122,6 @@ public class FileController {
     @ApiOperation(value = "下载文件(完整文件,非分片)")
     @PostMapping("/getFile")
     public ResponseEntity<Resource> getFile(@RequestBody @Valid GetFileParamVO param) throws Exception{
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
@@ -142,7 +147,7 @@ public class FileController {
 
                 @Override
                 public void onCompleted() {
-
+                    ab.set(true);
                 }
             });
             request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource()),useSpaceId));
@@ -157,6 +162,73 @@ public class FileController {
         }catch (Exception e){
             throw e;
         }
+    }
+
+    @ApiOperation(value = "上传文件(大文件,分片)")
+    @PostMapping("/slice/addFile")
+    public ResponseHeadVO<String> sliceAddFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
+                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s,
+                                          @ApiParam("文件多媒体类型") @RequestParam("m") String m,
+                                               @ApiParam("文件分片数量") @RequestParam("n") Integer n,
+                                               @ApiParam("开始位置") @RequestParam("start") Integer start,
+                                               @ApiParam("结束位置") @RequestParam("end") Integer end,
+                                               @ApiParam("总大小") @RequestParam("totalLength") Long totalLength,
+                                               @ApiParam("文件真实名称") @RequestParam("originalFileName") String originalFileName,
+                                               @ApiParam("文件第一分片md5") @RequestParam("fileMd5") String fileMd5
+    ) throws Exception {
+        Long useSpaceId = (Long) autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Long useUserId = (Long) autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM) autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId, "错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useUserId, "错误的请求:用户ID不能为空");
+        Assert.notNull(useSpacerRole, "错误的请求:正在使用的空间权限不能为空");
+        if (useSpacerRole != UserSpaceRoleENUM.WRITE) {
+            throw new SecurityException("用户对该空间没有写入权限");
+        }
+        FileByteReqDTO dto = new FileByteReqDTO();
+        dto.setRangeStart(start.longValue());
+        dto.setRangeEnd(end.longValue());
+        dto.setTotalLength(totalLength);
+        dto.setFileMd5(fileMd5);
+        dto.setReadLength(f.getSize());
+        dto.setData(f.getBytes());
+        dto.setType(originalFileName.lastIndexOf(".") != -1 ? originalFileName.substring(originalFileName.lastIndexOf(".")) : "");
+        dto.setSpaceId(useSpaceId);
+        dto.setSource(FileSourceENUM.valueOf(s));
+        dto.setCreateUserId(useUserId);
+        dto.setMediaType(m);
+        dto.setFileName(originalFileName);
+        AtomicBoolean ab = new AtomicBoolean(false);
+        ResponseHeadVO<String> ret = new ResponseHeadVO<String>();
+        StreamObserver<FileByteReqDTO> request = fileService.writeByte(new StreamObserver<FileTransmissionRepDTO>() {
+            @Override
+            public void onNext(FileTransmissionRepDTO data) {
+                ret.setResult(data.isResult());
+                ret.setMessage(data.getMessage());
+                dto.setFileMd5(data.getFileMd5());//每次都替换这个变量,等合并成功后就会从批次号变成真实的md5
+                ab.set(true);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                ab.set(true);
+            }
+
+            @Override
+            public void onCompleted() {
+                //文件已经合并完毕,返回的fileMd5换成了真实的,可以响应了
+                ret.setData(dto.getFileMd5());
+                ab.set(true);
+            }
+        });
+        request.onNext(dto);
+        while (true){
+            TimeUnit.SECONDS.sleep(1);
+            if(ab.get()){
+                break;
+            }
+        }
+        return ret;
     }
 
     @ApiOperation(value = "上传文件(完整文件,非分片)")
@@ -201,10 +273,12 @@ public class FileController {
 
             @Override
             public void onError(Throwable throwable) {
+                ab.set(true);
             }
 
             @Override
             public void onCompleted() {
+                ab.set(true);
             }
         });
         try {

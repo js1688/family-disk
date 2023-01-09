@@ -6,7 +6,7 @@ export function key(){
         userEmail:'USER_EMAIL',
         userId:'USER_ID',
         useSpaceRole:'USE_SPACE_ROLE',
-        baseURL:'http://api.jflove.cn/'
+        baseURL:'http://127.0.0.1:8800/'
     };
 }
 

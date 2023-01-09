@@ -7,8 +7,8 @@ spring:
   servlet:
     multipart:
       enabled: true #开启文件上传
-      max-file-size: 64MB #单个文件上传限制
-      max-request-size: 64MB #多个文件一起上传限制
+      max-file-size: 32MB #单个文件上传限制
+      max-request-size: 32MB #多个文件一起上传限制
   application:
     name: family-disk-gateway
   mvc:
@@ -28,6 +28,7 @@ spring:
       admin: #管理员角色的账号才能访问名单
         - /disk/manage/**
       urls: #安全路径白名单
+        - /file/media/play/**
         - /gateway/stomp/**
         - /gateway/stomp
         - /swagger-ui/index.html

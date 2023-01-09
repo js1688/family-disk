@@ -23,5 +23,5 @@ dubbo:
 file:
   storage:
     path:
-      temp: F:\\temp
+      temp: /Users/tanjun/Downloads/temp
     space: 10GB
