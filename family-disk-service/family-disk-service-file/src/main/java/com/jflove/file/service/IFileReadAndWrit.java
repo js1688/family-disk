@@ -1,7 +1,6 @@
 package com.jflove.file.service;
 
 import com.jflove.file.FileDiskConfigPO;
-import com.jflove.file.dto.FileByteReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import org.apache.dubbo.common.stream.StreamObserver;
 
@@ -20,19 +19,9 @@ public interface IFileReadAndWrit {
      * @param selectd 选择的磁盘信息
      * @param tempFileSuffix 临时文件后缀
      * @param tempPath 临时文件存放目录
-     * @return
+     * @return 最终写完返回true
      */
     boolean writ(FileTransmissionDTO data, FileDiskConfigPO selectd,String  tempFileSuffix,String tempPath);
-
-    /**
-     * 在指定位置写入字节
-     * @param data
-     * @param selectd
-     * @param tempFileSuffix
-     * @param tempPath
-     * @return
-     */
-    boolean writByte(FileByteReqDTO data, FileDiskConfigPO selectd,String  tempFileSuffix,String tempPath);
 
     /**
      * 自动分片读取整个文件
@@ -48,5 +37,5 @@ public interface IFileReadAndWrit {
      * @param selectd
      * @param response
      */
-    void readByte(FileByteReqDTO dto, FileDiskConfigPO selectd, StreamObserver<FileByteReqDTO> response);
+    void readByte(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response);
 }

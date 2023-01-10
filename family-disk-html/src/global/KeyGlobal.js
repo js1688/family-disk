@@ -1,3 +1,5 @@
+import SparkMD5 from "spark-md5";
+
 export function key(){
     return {
         authorization:'Authorization',
@@ -32,4 +34,45 @@ export function isSpace(){
         return true;
     }
     return false;
+}
+
+/**
+ * 计算文件md5值
+ * 分片数量为1,直接计算完整md5值,
+ * 如果分片大于1,则将第一个分片和最后一个分片放入计算md5值,这不是真实的,不计算完整的是防止浏览器内存溢出
+ * @param file
+ * @param sliceSize
+ * @param sliceNum
+ * @returns {Promise<unknown>}
+ */
+export function fileMd5(file,sliceSize,sliceNum){
+    return new Promise(function (resolve,reject){
+        let spark = new SparkMD5.ArrayBuffer();
+        if(sliceNum > 1){
+            let reader = new FileReader();
+            reader.readAsArrayBuffer(file.slice(0,sliceSize));
+            reader.onload = (event) => {
+                spark.append(event.target.result);
+            };
+            reader.onloadend = () =>{
+                let reader2 = new FileReader();
+                reader2.readAsArrayBuffer(file.slice(file.size - sliceSize,file.size));
+                reader2.onload = (event) => {
+                    spark.append(event.target.result);
+                };
+                reader2.onloadend = () =>{
+                    resolve(spark.end());
+                }
+            };
+        }else{
+            let reader = new FileReader();
+            reader.readAsArrayBuffer(file.slice(0,file.size));
+            reader.onload = (event) => {
+                spark.append(event.target.result);
+            };
+            reader.onloadend = () =>{
+                resolve(spark.end());
+            };
+        }
+    })
 }

@@ -2,6 +2,7 @@ package com.jflove.netdisk.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
+import com.jflove.admin.api.IFileAdministration;
 import com.jflove.file.api.IFileService;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.NetdiskDirectoryPO;
@@ -34,7 +35,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     private NetdiskDirectoryMapper netdiskDirectoryMapper;
 
     @DubboReference
-    private IFileService fileService;
+    private IFileAdministration fileAdministration;
 
     @Override
     @Transactional
@@ -58,7 +59,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         netdiskDirectoryMapper.updateById(po);
         //如果是文件,还需要修改文件名
         if(NetdiskDirectoryENUM.FILE.getCode().equals(po.getType())){
-            fileService.updateName(po.getFileMd5(),spaceId,name,FileSourceENUM.CLOUDDISK);
+            fileAdministration.updateName(po.getFileMd5(),spaceId,name,FileSourceENUM.CLOUDDISK);
         }
         return new ResponseHeadDTO<>(true,"修改成功");
     }
@@ -136,7 +137,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
                 delDirectory(v.getSpaceId(),v.getId());
             });
         }else{//是文件,通知文件删除
-            ResponseHeadDTO<Boolean> ret = fileService.delFile(po.getFileMd5(),spaceId, FileSourceENUM.CLOUDDISK);
+            fileAdministration.delFile(po.getFileMd5(),spaceId, FileSourceENUM.CLOUDDISK);
         }
         //删除自己
         int i = netdiskDirectoryMapper.deleteById(po.getId());

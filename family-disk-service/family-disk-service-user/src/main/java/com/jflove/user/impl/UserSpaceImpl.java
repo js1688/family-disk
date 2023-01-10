@@ -17,7 +17,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author tanjun
@@ -36,37 +41,52 @@ public class UserSpaceImpl implements IUserSpace {
     @Value("${user.space.init-size}")
     private DataSize maxFileSize;//创建空间的大小
 
+    private ConcurrentHashMap<Long/**spaceId**/,Long/**使用量缓存*/> spaceUseMb = new ConcurrentHashMap<>();
+
 
     @Override
-    public ResponseHeadDTO useSpaceByte(Long spaceId, long useMb) {
+    @Transactional
+    public ResponseHeadDTO useSpaceByte(Long spaceId, long useMb,boolean increase,boolean isUse) {
         ResponseHeadDTO<UserSpaceDTO> info = getSpaceInfo(spaceId);
-        if(!info.isResult()){
-            return new ResponseHeadDTO(info.isResult(),info.getMessage());
+        if (!info.isResult()) {
+            return new ResponseHeadDTO(info.isResult(), info.getMessage());
         }
         //使用大小+1mb,因为计算会忽略小数
-        useMb+=1;
+        useMb += 1;
         UserSpaceDTO usd = info.getData();
-        if(!((usd.getMaxSize() - usd.getUseSize()) >= useMb)){
-            return new ResponseHeadDTO(false,"用户空间不足");
+        if (!((usd.getMaxSize() - usd.getUseSize()) >= useMb)) {
+            return new ResponseHeadDTO(false, "用户空间不足");
         }
-        UserSpacePO po = new UserSpacePO();
-        BeanUtils.copyProperties(usd,po);
-        po.setUseSize(po.getUseSize() + useMb);
-        po.setUpdateTime(null);
-        userSpaceMapper.updateById(po);
-        return new ResponseHeadDTO(true,"用户空间使用成功");
+        if (isUse) {
+            log.info("存储大小:{}mb,加减:{},原本大小:{}", useMb, increase, usd.getUseSize());
+            UserSpacePO po = new UserSpacePO();
+            BeanUtils.copyProperties(usd, po);
+            //如果缓存计数大于数据库则代表数据库的写入还未生效,有效使用内存缓存中的计数
+            long useSize = 0;
+            if(spaceUseMb.containsKey(spaceId)) {
+                useSize = spaceUseMb.get(spaceId) > usd.getUseSize() ? spaceUseMb.get(spaceId) : usd.getUseSize();
+            }else{
+                useSize = usd.getUseSize();
+            }
+            po.setUseSize(increase ? useSize + useMb : useSize - useMb);
+            spaceUseMb.put(spaceId,po.getUseSize());
+            po.setUpdateTime(null);
+            userSpaceMapper.updateById(po);
+            return new ResponseHeadDTO(true, "用户空间使用成功");
+        }
+        return new ResponseHeadDTO(true, "用户空间可以存储");
     }
 
     @Override
     public ResponseHeadDTO<UserSpaceDTO> getSpaceInfo(Long spaceId) {
         UserSpacePO usp = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()
-                .eq(UserSpacePO::getId,spaceId)
+                .eq(UserSpacePO::getId, spaceId)
         );
-        if(usp == null){
-            return new ResponseHeadDTO<>(false,"空间id不存在");
+        if (usp == null) {
+            return new ResponseHeadDTO<>(false, "空间id不存在");
         }
         UserSpaceDTO dto = new UserSpaceDTO();
-        BeanUtils.copyProperties(usp,dto);
+        BeanUtils.copyProperties(usp, dto);
         return new ResponseHeadDTO<UserSpaceDTO>(dto);
     }
 

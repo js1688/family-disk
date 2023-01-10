@@ -24,7 +24,9 @@ export default {
                         callback();
                     }
                 }, (err) => {
-                    this.wsReConnection();
+                    setTimeout(() => {
+                        this.wsReConnection();
+                    }, 3000);//3秒后重试
                 });
             }
         },

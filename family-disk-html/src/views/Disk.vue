@@ -173,10 +173,9 @@ import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
-import {isSpace, isToken, key} from "@/global/KeyGlobal";
+import {isSpace, isToken, key,fileMd5} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
-import SparkMD5 from 'spark-md5'
 
 
 export default {
@@ -283,7 +282,7 @@ export default {
       let self = this;
       let data = new FormData();
       data.append('originalFileName', file.name);
-      data.append('f', chunk,fileMd5 + "." + i);
+      data.append('f', chunk,fileMd5 + "-" + i);
       data.append('s', 'CLOUDDISK');
       data.append('m', file.type);
       data.append('n', sliceNum);
@@ -298,12 +297,14 @@ export default {
         }
       }).then((res) => {
         if(res.data.result && res.data.data){
+          console.log(res.data.data);
           callback(res.data);//分片合并完毕,执行回调
+        }else if(!res.data.result){
+          showToast(res.data.message);
+          callback(null);
         }
       }).catch((error) => {
         console.log(error);
-        //上传失败了,补救
-        this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);
       });
     },
     //大文件上传
@@ -316,42 +317,43 @@ export default {
       let sliceNum = Math.ceil(file.size/sliceSize);//分片数量
       let start = 0;
       let self = this;
-      const spark = new SparkMD5.ArrayBuffer();
-      spark.append(file);
-      let fileMd5 = spark.end();
-      for (let i = 0; i < sliceNum; i++) {
-        let end = sliceSize + start;
-        let chunk = f.file.slice(start,end);
-        //发送分片
-        this.sliceUpload(
-            fileMd5,
-            file.size,
-            start,
-            end,
-            file,
-            chunk,
-            i,
-            sliceNum,
-            function (d){
-              //所有分片都已经上传完毕,后端已经合并了文件,成功返回了文件的md5值
-              //将文件与网盘目录建立关系
-              axios.post('/netdisk/addDirectory', {
-                name: file.name,
-                pid: self.pid,
-                fileMd5: d.data,
-                type:"FILE",
-                mediaType:file.type
-              }).then(function (response) {
-                if(response.data.result && response.data.data){
-                  self.list.push(response.data.data);
+      //前端获取md5值
+      fileMd5(file,sliceSize,sliceNum).then(e=>{
+        for (let i = 0; i < sliceNum; i++) {
+          let end = sliceSize + start;
+          let chunk = f.file.slice(start,end);
+          try{
+            //发送分片
+            this.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
+                  if(d == null){
+                    i = sliceNum;//以这种方式结束循环
+                    return;
+                  }
+                  //所有分片都已经上传完毕,后端已经合并了文件,成功返回了文件的md5值
+                  //将文件与网盘目录建立关系
+                  axios.post('/netdisk/addDirectory', {
+                    name: file.name,
+                    pid: self.pid,
+                    fileMd5: d.data,
+                    type:"FILE",
+                    mediaType:file.type
+                  }).then(function (response) {
+                    if(response.data.result && response.data.data){
+                      self.list.push(response.data.data);
+                    }
+                    showToast(response.data.message);
+                  }).catch(function (error) {
+                    console.log(error);
+                  });
                 }
-              }).catch(function (error) {
-                console.log(error);
-              });
-            }
-        );
-        start = end;
-      }
+            );
+          }catch (e) {
+            console.log(e);
+            break;
+          }
+          start = end;
+        }
+      });
     },
     //暂停播放视频
     pauseVideo:function (){

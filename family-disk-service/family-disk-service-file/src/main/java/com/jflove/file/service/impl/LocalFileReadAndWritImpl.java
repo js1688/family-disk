@@ -1,7 +1,6 @@
 package com.jflove.file.service.impl;
 
 import com.jflove.file.FileDiskConfigPO;
-import com.jflove.file.dto.FileByteReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
@@ -26,14 +25,7 @@ import java.nio.file.Path;
 public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
 
     @Override
-    public boolean writByte(FileByteReqDTO data, FileDiskConfigPO selectd, String tempFileSuffix, String tempPath) {
-        String path = String.format("%s/%s%s", selectd.getPath(), data.getFileMd5(), data.getType());
-        log.info("路径:{}",path);
-        return false;
-    }
-
-    @Override
-    public void readByte(FileByteReqDTO dto, FileDiskConfigPO selectd, StreamObserver<FileByteReqDTO> response) {
+    public void readByte(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response) {
         String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
             //自动修正读取位置
@@ -46,14 +38,13 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
                 dto.setReadLength((int)(raf.length()-dto.getRangeStart()));
                 dto.setRangeEnd((int)dto.getReadLength());
             }
-            dto.setTotalLength(raf.length());
+            dto.setTotalSize(raf.length());
             raf.seek(dto.getRangeStart());
             byte [] b = new byte[(int)dto.getReadLength()];
             int len = raf.read(b);
             dto.setReadLength(len);
-            dto.setData(b);
+            dto.setShardingStream(b);
             response.onNext(dto);
-            response.onCompleted();
         }catch (IOException e){
             log.error("读取文件异常",e);
             response.onError(new RuntimeException("文件读取错误"));
@@ -99,6 +90,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
                 byte [] f = Files.readAllBytes(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(i), tempFileSuffix)));
                 raf.write(f);//支持追加写入
             }
+            return true;
         }catch (IOException e){
             log.error("文件合并异常",e);
         }

@@ -1,8 +1,7 @@
 package com.jflove.config;
 
 import com.jflove.file.api.IFileService;
-import com.jflove.file.dto.FileByteReqDTO;
-import com.jflove.file.dto.FileReadReqDTO;
+import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.em.FileSourceENUM;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.common.stream.StreamObserver;
@@ -64,21 +63,22 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         DataSize ds = DataSize.of((long)(maxFileSize.toMegabytes() * 0.1), DataUnit.MEGABYTES);
         try{
             AtomicBoolean ab = new AtomicBoolean(false);
-            FileByteReqDTO dto = new FileByteReqDTO();
-            StreamObserver<FileByteReqDTO> repStream = fileService.readByte(new StreamObserver<FileByteReqDTO>() {
+            FileTransmissionDTO dto = new FileTransmissionDTO();
+            StreamObserver<FileTransmissionDTO> repStream = fileService.readByte(new StreamObserver<FileTransmissionDTO>() {
                 @Override
-                public void onNext(FileByteReqDTO data) {
+                public void onNext(FileTransmissionDTO data) {
                     BeanUtils.copyProperties(data,dto);
+                    ab.set(true);
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
                     ab.set(true);
+                    log.error("读取文件异常",throwable);
                 }
 
                 @Override
                 public void onCompleted() {
-                    ab.set(true);
                 }
             });
             dto.setFileMd5(path);
@@ -95,9 +95,9 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
                 }
             }
             request.setAttribute(CONTENT_TYPE,dto.getMediaType());
-            request.setAttribute(MAX_SIZE,dto.getTotalLength());
+            request.setAttribute(MAX_SIZE,dto.getTotalSize());
             request.setAttribute(RANGE_LEN,(int)dto.getReadLength());
-            Resource file = new ByteArrayResource(dto.getData());
+            Resource file = new ByteArrayResource(dto.getShardingStream());
             return file;
         }catch (Exception e){
             throw new IOException(e);

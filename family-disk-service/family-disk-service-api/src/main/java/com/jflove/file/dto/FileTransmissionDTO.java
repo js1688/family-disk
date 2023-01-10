@@ -73,4 +73,19 @@ public class FileTransmissionDTO implements Serializable {
      * 文件多媒体类型
      */
     private String mediaType;
+
+    /**
+     * 范围开始位置
+     */
+    private long rangeStart;
+
+    /**
+     * 范围结束位置
+     */
+    private long rangeEnd;
+
+    /**
+     * 本次读取长度
+     */
+    private long readLength;
 }

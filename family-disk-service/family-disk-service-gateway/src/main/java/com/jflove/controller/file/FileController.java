@@ -3,14 +3,15 @@ package com.jflove.controller.file;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
+import com.jflove.admin.api.IFileAdministration;
 import com.jflove.file.api.IFileService;
-import com.jflove.file.dto.FileByteReqDTO;
 import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserInfo;
+import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
@@ -30,10 +31,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 import org.springframework.web.bind.annotation.*;
@@ -69,6 +68,12 @@ public class FileController {
 
     @DubboReference
     private IUserInfo userInfo;
+
+    @DubboReference
+    private IUserSpace userSpace;
+
+    @DubboReference
+    private IFileAdministration fileAdministration;
 
     @Value("${spring.servlet.multipart.max-file-size}")
     private DataSize maxFileSize;
@@ -113,7 +118,7 @@ public class FileController {
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有删除权限");
         }
-        ResponseHeadDTO<Boolean> dto = fileService.delFile(param.getFileMd5(),useSpaceId,FileSourceENUM.valueOf(param.getSource()));
+        ResponseHeadDTO<Boolean> dto = fileAdministration.delFile(param.getFileMd5(),useSpaceId,FileSourceENUM.valueOf(param.getSource()));
         ResponseHeadVO<Boolean> vo = new ResponseHeadVO<>();
         BeanUtils.copyProperties(dto,vo);
         return vo;
@@ -143,11 +148,11 @@ public class FileController {
                 @Override
                 public void onError(Throwable throwable) {
                     ab.set(true);
+                    log.error("文件读取异常",throwable);
                 }
 
                 @Override
                 public void onCompleted() {
-                    ab.set(true);
                 }
             });
             request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource()),useSpaceId));
@@ -174,7 +179,7 @@ public class FileController {
                                                @ApiParam("结束位置") @RequestParam("end") Integer end,
                                                @ApiParam("总大小") @RequestParam("totalLength") Long totalLength,
                                                @ApiParam("文件真实名称") @RequestParam("originalFileName") String originalFileName,
-                                               @ApiParam("文件第一分片md5") @RequestParam("fileMd5") String fileMd5
+                                               @ApiParam("前端计算的文件md5") @RequestParam("fileMd5") String fileMd5
     ) throws Exception {
         Long useSpaceId = (Long) autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Long useUserId = (Long) autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
@@ -185,40 +190,56 @@ public class FileController {
         if (useSpacerRole != UserSpaceRoleENUM.WRITE) {
             throw new SecurityException("用户对该空间没有写入权限");
         }
-        FileByteReqDTO dto = new FileByteReqDTO();
+        FileTransmissionDTO dto = new FileTransmissionDTO();
         dto.setRangeStart(start.longValue());
         dto.setRangeEnd(end.longValue());
-        dto.setTotalLength(totalLength);
+        dto.setTotalSize(totalLength);
         dto.setFileMd5(fileMd5);
         dto.setReadLength(f.getSize());
-        dto.setData(f.getBytes());
+        dto.setShardingNum(n);
+        dto.setShardingStream(f.getBytes());
         dto.setType(originalFileName.lastIndexOf(".") != -1 ? originalFileName.substring(originalFileName.lastIndexOf(".")) : "");
         dto.setSpaceId(useSpaceId);
         dto.setSource(FileSourceENUM.valueOf(s));
+        int sort = Integer.parseInt(f.getOriginalFilename().lastIndexOf("-") != -1 ? f.getOriginalFilename().substring(f.getOriginalFilename().lastIndexOf("-") + 1) : "0");
+        dto.setShardingSort(sort);
         dto.setCreateUserId(useUserId);
         dto.setMediaType(m);
-        dto.setFileName(originalFileName);
+        dto.setName(originalFileName);
+
+        //尝试是否可以从垃圾箱恢复
+        if(fileAdministration.dustbinRecovery(dto.getFileMd5(),dto.getSpaceId(),dto.getSource()).isResult()){
+            return new ResponseHeadVO<>(true,dto.getFileMd5(),"已经从垃圾箱恢复文件,不需要重复上传.");
+        }
+        //是否还存的下
+        DataSize ds = DataSize.ofBytes(dto.getTotalSize());
+        ResponseHeadDTO use = userSpace.useSpaceByte(dto.getSpaceId(),ds.toMegabytes(),true,false);
+        if(!use.isResult()){
+            return new ResponseHeadVO(false,dto.getFileMd5(),"用户存储空间不足");
+        }
+
+        //尝试是否可以直接引用其它人上传的文件
+        if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize()).isResult()){
+            return new ResponseHeadVO<>(true,dto.getFileMd5(),"触发秒传成功");
+        }
+
         AtomicBoolean ab = new AtomicBoolean(false);
         ResponseHeadVO<String> ret = new ResponseHeadVO<String>();
-        StreamObserver<FileByteReqDTO> request = fileService.writeByte(new StreamObserver<FileTransmissionRepDTO>() {
+        StreamObserver<FileTransmissionDTO> request = fileService.writeByte(new StreamObserver<FileTransmissionRepDTO>() {
             @Override
             public void onNext(FileTransmissionRepDTO data) {
                 ret.setResult(data.isResult());
                 ret.setMessage(data.getMessage());
-                dto.setFileMd5(data.getFileMd5());//每次都替换这个变量,等合并成功后就会从批次号变成真实的md5
+                ret.setData(data.getFileMd5());
                 ab.set(true);
             }
 
             @Override
             public void onError(Throwable throwable) {
-                ab.set(true);
             }
 
             @Override
             public void onCompleted() {
-                //文件已经合并完毕,返回的fileMd5换成了真实的,可以响应了
-                ret.setData(dto.getFileMd5());
-                ab.set(true);
             }
         });
         request.onNext(dto);
@@ -259,6 +280,25 @@ public class FileController {
         dto.setType(dto.getName().lastIndexOf(".") != -1 ? dto.getName().substring(dto.getName().lastIndexOf(".")) : "");
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
+        String md5 = DigestUtils.md5DigestAsHex(f.getInputStream());
+        dto.setFileMd5(md5);
+        //尝试是否可以从垃圾箱恢复
+        if(fileAdministration.dustbinRecovery(dto.getFileMd5(),dto.getSpaceId(),dto.getSource()).isResult()){
+            return new ResponseHeadVO<>(true,dto.getFileMd5(),"已经从垃圾箱恢复文件,不需要重复上传.");
+        }
+        //是否还存的下
+        DataSize ds = DataSize.ofBytes(dto.getTotalSize());
+        ResponseHeadDTO use = userSpace.useSpaceByte(dto.getSpaceId(),ds.toMegabytes(),true,false);
+        if(!use.isResult()){
+            return new ResponseHeadVO(false,dto.getFileMd5(),"用户存储空间不足");
+        }
+
+        //尝试是否可以直接引用其它人上传的文件
+        if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize()).isResult()){
+            return new ResponseHeadVO<>(true,dto.getFileMd5(),"触发秒传成功");
+        }
+
+
         AtomicBoolean ab = new AtomicBoolean(false);
         ResponseHeadVO<String> ret = new ResponseHeadVO<String>();
         //按分片读取数据,再将数据发送出去
@@ -273,19 +313,15 @@ public class FileController {
 
             @Override
             public void onError(Throwable throwable) {
-                ab.set(true);
             }
 
             @Override
             public void onCompleted() {
-                ab.set(true);
             }
         });
         try {
-            String md5 = DigestUtils.md5DigestAsHex(f.getInputStream());
-            dto.setFileMd5(md5);
             //判断该文件对于当前用户已存在了
-            ResponseHeadDTO<Boolean> ex = fileService.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
+            ResponseHeadDTO<Boolean> ex = fileAdministration.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
             if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
                 ret.setResult(true);
                 ret.setData(dto.getFileMd5());
