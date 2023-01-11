@@ -81,9 +81,10 @@ public class FileController {
     @Autowired
     private ByteResourceHttpRequestHandlerConfig resourceHttpRequestHandle;
 
+    //todo 前端播放器不支持播放mov等视频资源,或者播放有的mp4黑屏问题,考虑是否后端转码输出 可以试试 FFMPEG 解决转码问题 Chrome只支持标准的H.264方式编码
     @ApiOperation(value = "媒体资源边播边下")
     @GetMapping("/media/play/{source}/{fileMd5}/{useSpaceId}/{token}")
-    public void sliceDownload(HttpServletRequest request,HttpServletResponse response,
+    public void mediaPlay(HttpServletRequest request,HttpServletResponse response,
                               @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @PathVariable("source") String source,
                               @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5,
                               @ApiParam("正在使用的空间") @PathVariable("useSpaceId") Long useSpaceId,
@@ -122,6 +123,22 @@ public class FileController {
         ResponseHeadVO<Boolean> vo = new ResponseHeadVO<>();
         BeanUtils.copyProperties(dto,vo);
         return vo;
+    }
+
+    @ApiOperation(value = "下载文件(分片下载方式)")
+    @PostMapping("/slice/getFile")
+    public void sliceGetFile(
+            HttpServletRequest request,HttpServletResponse response,
+            @RequestBody @Valid GetFileParamVO param) throws Exception{
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,param.getFileMd5());
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE,param.getSource());
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,useSpaceId);
+        response.setHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,HttpHeaders.CONTENT_RANGE);
+        resourceHttpRequestHandle.handleRequest(request, response);
     }
 
     @ApiOperation(value = "下载文件(完整文件,非分片)")

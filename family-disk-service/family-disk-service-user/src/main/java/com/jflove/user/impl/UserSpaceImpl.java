@@ -54,20 +54,20 @@ public class UserSpaceImpl implements IUserSpace {
         //使用大小+1mb,因为计算会忽略小数
         useMb += 1;
         UserSpaceDTO usd = info.getData();
-        if (!((usd.getMaxSize() - usd.getUseSize()) >= useMb)) {
+        //如果缓存计数大于数据库则代表数据库的写入还未生效,有效使用内存缓存中的计数
+        long useSize = 0;
+        if(spaceUseMb.containsKey(spaceId)) {
+            useSize = spaceUseMb.get(spaceId) > usd.getUseSize() ? spaceUseMb.get(spaceId) : usd.getUseSize();
+        }else{
+            useSize = usd.getUseSize();
+        }
+        if (!((usd.getMaxSize() - useSize) >= useMb)) {
             return new ResponseHeadDTO(false, "用户空间不足");
         }
         if (isUse) {
             log.info("存储大小:{}mb,加减:{},原本大小:{}", useMb, increase, usd.getUseSize());
             UserSpacePO po = new UserSpacePO();
             BeanUtils.copyProperties(usd, po);
-            //如果缓存计数大于数据库则代表数据库的写入还未生效,有效使用内存缓存中的计数
-            long useSize = 0;
-            if(spaceUseMb.containsKey(spaceId)) {
-                useSize = spaceUseMb.get(spaceId) > usd.getUseSize() ? spaceUseMb.get(spaceId) : usd.getUseSize();
-            }else{
-                useSize = usd.getUseSize();
-            }
             po.setUseSize(increase ? useSize + useMb : useSize - useMb);
             spaceUseMb.put(spaceId,po.getUseSize());
             po.setUpdateTime(null);

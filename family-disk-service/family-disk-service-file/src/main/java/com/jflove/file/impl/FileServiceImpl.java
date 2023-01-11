@@ -144,6 +144,9 @@ public class FileServiceImpl implements IFileService {
             public void onNext(FileTransmissionDTO data) {
                 log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},当前分片起:{},当前分片止:{}",
                         data.getName(),data.getType(),data.getTotalSize(),data.getRangeStart(),data.getRangeEnd());
+                //判断这是不是最后一片
+                File[] fs = new File(tempPath).listFiles(e->e.getName().startsWith(data.getFileMd5()));
+                boolean ok = fs.length == data.getShardingNum() - 1;
                 try {
                     Files.write(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(data.getShardingSort()), tempFileSuffix)), data.getShardingStream());
                 }catch (IOException e){
@@ -151,10 +154,7 @@ public class FileServiceImpl implements IFileService {
                     response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),false,"分片文件存储异常"));
                     return;
                 }
-
-                //判断分片是否都已经写盘了
-                File[] fs = new File(tempPath).listFiles(e->e.getName().startsWith(data.getFileMd5()));
-                if(fs.length == data.getShardingNum()){//这已经是最后一片了,开始合并
+                if(ok){//这已经是最后一片了,开始合并
                     try {
                         data.setShardingNum(data.getShardingNum()-1);//前端算的分片是从1开始,减1
                         DataSize ds = DataSize.ofBytes(data.getTotalSize());
