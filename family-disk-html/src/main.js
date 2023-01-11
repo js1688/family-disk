@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import 'vant/lib/index.css';
+import '@vant/touch-emulator';
 import router from "./router/index";
 import axios from 'axios';
 import {isSpace, isToken, key} from '@/global/KeyGlobal';

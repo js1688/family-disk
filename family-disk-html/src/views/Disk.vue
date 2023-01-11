@@ -134,15 +134,19 @@
     <div style="padding-bottom: 20px" id="videoBody">
     </div>
   </van-action-sheet>
-
+<!--  self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});-->
   <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
     <div>
       <div style="margin: 16px;">
         <van-uploader accept="*" :after-read="largeUpload">
-          <van-button icon="plus" round block type="primary">
-            选择文件上传
-          </van-button>
+          <van-button style="margin-left: 15px;" icon="plus" size="small" block type="default" />
         </van-uploader>
+        <van-cell v-for="item in largeFileUploadList" :title="item.fileName">
+          <div style="padding-top: 10px;">
+            <van-progress :percentage="item.progress" />
+          </div>
+          <van-button style="margin-top: 10px;" @click="largeDel(item)" v-if="item.del" type="default" size="mini">删除</van-button>
+        </van-cell>
       </div>
     </div>
   </van-action-sheet>
@@ -165,6 +169,7 @@ import {
   Field,
   Form,
   CellGroup,
+  Progress,
   showImagePreview,
 } from 'vant';
 import { Overlay,Loading,Collapse,CollapseItem,ImagePreview} from 'vant';
@@ -176,6 +181,7 @@ import gws from "@/global/WebSocket";
 import {isSpace, isToken, key,fileMd5} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
+import { saveAs } from 'file-saver';
 
 
 export default {
@@ -199,7 +205,8 @@ export default {
     [Uploader.name]: Uploader,
     [Collapse.name]: Collapse,
     [CollapseItem.name]: CollapseItem,
-    [ImagePreview.name]:ImagePreview
+    [ImagePreview.name]:ImagePreview,
+    [Progress.name]: Progress
   },
   setup() {
     const addActions = [
@@ -250,6 +257,8 @@ export default {
       isSubscribe:false,
       showVideo:false,
       myPlayer:null,
+      largeFileUploadList:[],
+      largeDownloadTemporaryStorage:null,
       videoOptions:{
         controls: true,
         playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
@@ -296,9 +305,9 @@ export default {
           'Content-Type': 'multipart/form-data'
         }
       }).then((res) => {
+        callback(res.data);//执行回调
         if(res.data.result && res.data.data){
-          console.log(res.data.data);
-          callback(res.data);//分片合并完毕,执行回调
+
         }else if(!res.data.result){
           showToast(res.data.message);
           callback(null);
@@ -306,6 +315,25 @@ export default {
       }).catch((error) => {
         console.log(error);
       });
+    },
+    //大文件上传增加进度条
+    incrProgress:function (md5,add){
+      for (let i = 0; i < this.largeFileUploadList.length; i++) {
+        if(this.largeFileUploadList[i].fileMd5 == md5){
+          if(add == -1){
+            this.largeFileUploadList.splice(i,1);
+          }else if(add == 100 || add == 0){
+            this.largeFileUploadList[i].progress = add;
+          }else{
+            this.largeFileUploadList[i].progress = this.largeFileUploadList[i].progress + add;
+          }
+          return this.largeFileUploadList[i];
+        }
+      }
+    },
+    //
+    largeDel: function (item){
+      this.incrProgress(item.fileMd5,-1);
     },
     //大文件上传
     largeUpload:function (f){
@@ -319,47 +347,52 @@ export default {
       let self = this;
       //前端获取md5值
       fileMd5(file,sliceSize,sliceNum).then(e=>{
+        //将文件添加到上传展示列表中
+        self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});
         for (let i = 0; i < sliceNum; i++) {
           let end = sliceSize + start;
           let chunk = f.file.slice(start,end);
-          try{
-            //发送分片
-            this.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
-                  if(d == null){
-                    i = sliceNum;//以这种方式结束循环
-                    return;
-                  }
-                  //所有分片都已经上传完毕,后端已经合并了文件,成功返回了文件的md5值
-                  //将文件与网盘目录建立关系
-                  axios.post('/netdisk/addDirectory', {
-                    name: file.name,
-                    pid: self.pid,
-                    fileMd5: d.data,
-                    type:"FILE",
-                    mediaType:file.type
-                  }).then(function (response) {
-                    if(response.data.result && response.data.data){
-                      self.list.push(response.data.data);
-                    }
-                    showToast(response.data.message);
-                  }).catch(function (error) {
-                    console.log(error);
-                  });
+          //发送分片
+          this.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
+            if(!d){
+              return;
+            }
+            if(d.result && d.data){//所有分片合并完毕
+              self.incrProgress(e,100);//进度条
+              //将文件与网盘目录建立关系
+              axios.post('/netdisk/addDirectory', {
+                name: file.name,
+                pid: self.pid,
+                fileMd5: d.data,
+                type:"FILE",
+                mediaType:file.type
+              }).then(function (response) {
+                if(response.data.result && response.data.data){
+                  self.list.push(response.data.data);
                 }
-            );
-          }catch (e) {
-            console.log(e);
-            break;
-          }
+                showToast(response.data.message);
+              }).catch(function (error) {
+                console.log(error);
+              });
+            }else if(d.result){//分片上传成功
+              self.incrProgress(e,Math.ceil(100 / sliceNum));
+            }else if(!d.result){//分片上传失败
+              let tp = self.incrProgress(e,0);//进度条
+              tp.del = true;
+              console.log(d.message);
+            }
+          });
           start = end;
         }
       });
     },
     //暂停播放视频
     pauseVideo:function (){
-      this.videoOptions.sources = [];
-      this.myPlayer.pause();
-      this.myPlayer.dispose();
+      try {
+        this.videoOptions.sources = [];
+        this.myPlayer.dispose();
+        this.myPlayer.pause();
+      }catch (e){}
     },
     //开始播放视频
     playVideo:function (){
@@ -416,33 +449,80 @@ export default {
           break
       }
     },
-    //下载文件
-    download:function (item) {
+    //大文件下载,分片方式
+    sliceDownload:function (item,s) {
       this.isOverlay = true;
       let self = this;
-      axios.post('/file/getFile', {
+      axios.post('/file/slice/getFile', {
         fileMd5: item.fileMd5,
         name: item.name,
         source:"CLOUDDISK"
       },{
-        responseType:"blob"
+        responseType:"arraybuffer",
+        headers:{
+          Range:"bytes="+s+"-"
+        }
       }).then(function (response) {
         const { data, headers } = response;
-        const blob = new Blob([data], {type: headers['content-type']});
-        let dom = document.createElement('a');
-        let url = window.URL.createObjectURL(blob);
-        dom.href = url;
-        dom.download = decodeURI(item.name);
-        dom.style.display = 'none';
-        document.body.appendChild(dom);
-        dom.click();
-        dom.parentNode.removeChild(dom);
-        window.URL.revokeObjectURL(url);
-        self.isOverlay = false;
+        try {
+          let msg = JSON.parse(data);
+          self.isOverlay = false;
+          showToast(msg.message);
+          return;
+        }catch (e){}
+        let contentRange = headers["content-range"];
+        let contentLength = headers["content-length"] * 1;
+        let start = contentRange.substring(6,contentRange.indexOf("-")) * 1;
+        let end = contentRange.substring(contentRange.indexOf("-") + 1,contentRange.indexOf("/")) * 1;
+        let total = contentRange.substring(contentRange.indexOf("/") + 1) * 1;
+        if(start == 0){//第一次请求,重置缓存
+          self.largeDownloadTemporaryStorage = new Uint8Array(total);
+        }
+        let retArr = new Uint8Array(data);
+        for (let i = 0; i < retArr.byteLength; i++) {
+          self.largeDownloadTemporaryStorage[start + i] = retArr[i];
+        }
+        if(end < total-1 && response.status == 206){//还有文件分片,继续请求
+          self.sliceDownload(item,start+contentLength);
+        }else{
+          //下载完毕
+          let bl = new Blob([self.largeDownloadTemporaryStorage]);
+          saveAs(bl,item.name);
+          self.largeDownloadTemporaryStorage = null;
+          self.isOverlay = false;
+        }
       }).catch(function (error) {
         self.isOverlay = false;
         console.log(error);
       });
+    },
+    //下载文件
+    download:function (item) {
+      this.sliceDownload(item,0);//使用分片下载方式
+      return;
+      // this.isOverlay = true;
+      // let self = this;
+      // axios.post('/file/getFile', {
+      //   fileMd5: item.fileMd5,
+      //   name: item.name,
+      //   source:"CLOUDDISK"
+      // },{
+      //   responseType:"blob"
+      // }).then(function (response) {
+      //   const { data, headers } = response;
+      //   try {
+      //     let msg = JSON.parse(data);
+      //     self.isOverlay = false;
+      //     showToast(msg.message);
+      //     return;
+      //   }catch (e){}
+      //   const blob = new Blob([data], {type: headers['content-type']});
+      //   saveAs(blob,item.name);
+      //   self.isOverlay = false;
+      // }).catch(function (error) {
+      //   self.isOverlay = false;
+      //   console.log(error);
+      // });
     },
     //检查文件是否都上传完毕
     checkEnd:function (){
@@ -696,17 +776,26 @@ export default {
     },
     addSelect: function (item){
       let cz = item.name;
+      let clean = true;
       switch (cz) {
         case 'addDirectory':
           this.showAddDirectory = true;
           break;
         case 'addLargeFile':
           this.showLargeUpload = true;
+          //如果列表中全部进度都是100%,代表已经上传完毕且用户不需要太关心每个文件状态,清除列表即可
+          for (let i = 0; i < this.largeFileUploadList.length; i++) {
+            if(this.largeFileUploadList[i].progress != 100){
+              clean = false;
+            }
+          }
+          if(clean){
+            this.largeFileUploadList = [];
+          }
           break;
         case 'addFile':
           this.showUpload = true;
           //如果上传列表中全是上传成功,已经上传完了且用户不需要太关心每个文件的状态,需要清除掉上传列表
-          let clean = true;
           for (let i = 0; i < this.uploadFiles.length; i++) {
             if(this.uploadFiles[i].status != "done"){
               clean = false;
