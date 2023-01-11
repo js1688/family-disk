@@ -8,7 +8,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vant/touch-emulator": "^1.4.0",
     "axios": "^1.2.1",
     "file-saver": "^2.0.5",
     "sockjs-client": "^1.6.1",
