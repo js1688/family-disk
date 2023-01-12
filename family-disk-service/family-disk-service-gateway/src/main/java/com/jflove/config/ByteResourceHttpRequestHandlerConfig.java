@@ -131,6 +131,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
                 InputStream is = resource.getInputStream()
             ){
                 sos.write(is.readAllBytes());
+                sos.flush();
             }
         }
     }
