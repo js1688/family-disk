@@ -319,15 +319,16 @@ export default {
           'Content-Type': 'multipart/form-data'
         }
       }).then((res) => {
-        callback(res.data);//执行回调
-        if(res.data.result && res.data.data){
-
+        if(!res.data.result && res.data.data == 'retry'){//分片失败,服务端主动要求重试
+          this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);
+        }else if(res.data.result && res.data.data){
+          callback(res.data);//执行回调
         }else if(!res.data.result){
           showToast(res.data.message);
-          callback(null);
         }
       }).catch((error) => {
         console.log(error);
+        this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
       });
     },
     //大文件上传增加进度条
@@ -368,10 +369,7 @@ export default {
           let chunk = f.file.slice(start,end);
           //发送分片
           this.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
-            if(!d){
-              return;
-            }
-            if(d.result && d.data){//所有分片合并完毕
+            if(d.result && d.data && d.data != 'ok' && d.data != 'retry'){//所有分片合并完毕
               self.incrProgress(e,100);//进度条
               //将文件与网盘目录建立关系
               axios.post('/netdisk/addDirectory', {
@@ -388,12 +386,8 @@ export default {
               }).catch(function (error) {
                 console.log(error);
               });
-            }else if(d.result){//分片上传成功
+            }else if(d.result && d.data == 'ok'){//分片上传成功
               self.incrProgress(e,Math.ceil(100 / sliceNum));
-            }else if(!d.result){//分片上传失败
-              let tp = self.incrProgress(e,0);//进度条
-              tp.del = true;
-              console.log(d.message);
             }
           });
           start = end;
@@ -521,29 +515,6 @@ export default {
       this.downloadFileProgress = 0;
       this.downloadFileSliceNum = 0;
       this.sliceDownload(item,0);//使用分片下载方式
-      // this.isOverlay = true;
-      // let self = this;
-      // axios.post('/file/getFile', {
-      //   fileMd5: item.fileMd5,
-      //   name: item.name,
-      //   source:"CLOUDDISK"
-      // },{
-      //   responseType:"blob"
-      // }).then(function (response) {
-      //   const { data, headers } = response;
-      //   try {
-      //     let msg = JSON.parse(data);
-      //     self.isOverlay = false;
-      //     showToast(msg.message);
-      //     return;
-      //   }catch (e){}
-      //   const blob = new Blob([data], {type: headers['content-type']});
-      //   saveAs(blob,item.name);
-      //   self.isOverlay = false;
-      // }).catch(function (error) {
-      //   self.isOverlay = false;
-      //   console.log(error);
-      // });
     },
     //检查文件是否都上传完毕
     checkEnd:function (){
