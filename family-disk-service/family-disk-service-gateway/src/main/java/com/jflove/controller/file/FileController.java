@@ -214,7 +214,9 @@ public class FileController {
         dto.setFileMd5(fileMd5);
         dto.setReadLength(f.getSize());
         dto.setShardingNum(n);
-        dto.setShardingStream(f.getBytes());
+        byte[] total = f.getBytes();
+        f.getInputStream().close();//读取完字节后,将流关闭掉
+        dto.setShardingStream(total);
         dto.setType(originalFileName.lastIndexOf(".") != -1 ? originalFileName.substring(originalFileName.lastIndexOf(".")) : "");
         dto.setSpaceId(useSpaceId);
         dto.setSource(FileSourceENUM.valueOf(s));
@@ -297,7 +299,10 @@ public class FileController {
         dto.setType(dto.getName().lastIndexOf(".") != -1 ? dto.getName().substring(dto.getName().lastIndexOf(".")) : "");
         dto.setSpaceId(useSpaceId);
         dto.setCreateUserId(useUserId);
-        String md5 = DigestUtils.md5DigestAsHex(f.getInputStream());
+        byte[] total = f.getBytes();
+        //读取完字节后关闭流
+        f.getInputStream().close();
+        String md5 = DigestUtils.md5DigestAsHex(total);
         dto.setFileMd5(md5);
         //尝试是否可以从垃圾箱恢复
         if(fileAdministration.dustbinRecovery(dto.getFileMd5(),dto.getSpaceId(),dto.getSource()).isResult()){
@@ -315,6 +320,11 @@ public class FileController {
             return new ResponseHeadVO<>(true,dto.getFileMd5(),"触发秒传成功");
         }
 
+        //判断该文件对于当前用户已存在了
+        ResponseHeadDTO<Boolean> ex = fileAdministration.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
+        if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
+            return new ResponseHeadVO<>(true,dto.getFileMd5(),"该文件已存在空间中,可以直接引用");
+        }
 
         AtomicBoolean ab = new AtomicBoolean(false);
         ResponseHeadVO<String> ret = new ResponseHeadVO<String>();
@@ -337,34 +347,22 @@ public class FileController {
             }
         });
         try {
-            //判断该文件对于当前用户已存在了
-            ResponseHeadDTO<Boolean> ex = fileAdministration.isExist(dto.getFileMd5(),dto.getSpaceId(),dto.getSource());
-            if(ex.getData()){//文件已经存在这个空间了,直接返回成功,不需要写盘了
-                ret.setResult(true);
-                ret.setData(dto.getFileMd5());
-                ret.setMessage("该文件已存在空间中,可以直接引用.");
-                ab.set(true);
-            }else {
-                byte[] total = f.getInputStream().readAllBytes();
-                int off = 0;
-                for (int i = 0; i < shardingNum; i++) {
-                    byte[] b = Arrays.copyOfRange(total, off, off + (int) shardingConfigSize);
-                    dto.setShardingSort(i);
-                    dto.setShardingStream(b);
-                    request.onNext(dto);
-                    off += b.length;
-                }
-                //发送最后一片
-                byte[] b = Arrays.copyOfRange(total, off, off + (shardingConfigSize <= 0 ? (int) totalSize : (int) (totalSize % shardingConfigSize)));
-                dto.setShardingSort(shardingNum);
+            int off = 0;
+            for (int i = 0; i < shardingNum; i++) {
+                byte[] b = Arrays.copyOfRange(total, off, off + (int) shardingConfigSize);
+                dto.setShardingSort(i);
                 dto.setShardingStream(b);
                 request.onNext(dto);
+                off += b.length;
             }
+            //发送最后一片
+            byte[] b = Arrays.copyOfRange(total, off, off + (shardingConfigSize <= 0 ? (int) totalSize : (int) (totalSize % shardingConfigSize)));
+            dto.setShardingSort(shardingNum);
+            dto.setShardingStream(b);
+            request.onNext(dto);
         }catch (Exception e){
             log.error("文件上传发生异常",e);
             return new ResponseHeadVO<>(false,"文件上传失败");
-        }finally {
-            f.getInputStream().close();
         }
         while (true){
             TimeUnit.SECONDS.sleep(1);

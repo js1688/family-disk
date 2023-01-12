@@ -19,6 +19,7 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
@@ -126,7 +127,11 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
                     (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
                     (long)request.getAttribute(MAX_SIZE)));
             response.setContentLength((int)request.getAttribute(RANGE_LEN));
-            response.getOutputStream().write(resource.getInputStream().readAllBytes());
+            try(ServletOutputStream sos = response.getOutputStream();
+                InputStream is = resource.getInputStream()
+            ){
+                sos.write(is.readAllBytes());
+            }
         }
     }
 }
