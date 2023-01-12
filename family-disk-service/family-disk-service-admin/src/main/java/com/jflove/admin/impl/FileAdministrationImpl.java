@@ -98,7 +98,7 @@ public class FileAdministrationImpl implements IFileAdministration {
 
     @Override
     @Transactional
-    public ResponseHeadDTO checkDuplicate(String fileName,String type,String mediaType,String fileMd5,long spaceId,FileSourceENUM source,long totalSize) {
+    public ResponseHeadDTO checkDuplicate(String fileName,String type,String mediaType,String fileMd5,long spaceId,FileSourceENUM source,long totalSize,long createUserId) {
         //匹配库中是否已存在这个文件,如果存在则不执行写盘,直接引用已存在的文件以及磁盘id
         FileInfoPO fip = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
                 .eq(FileInfoPO::getFileMd5,fileMd5)
@@ -119,10 +119,11 @@ public class FileAdministrationImpl implements IFileAdministration {
             newPo.setName(fileName);
             newPo.setType(type);
             newPo.setFileMd5(fileMd5);
+            newPo.setCreateUserId(createUserId);
             newPo.setSpaceId(spaceId);
             newPo.setSource(source.getCode());
             newPo.setSize(totalSize);
-            newPo.setDiskId(fip.getId());
+            newPo.setDiskId(fip.getDiskId());
             fileInfoMapper.insert(newPo);
         }
         return new ResponseHeadDTO(true,fileMd5,"文件在服务器中已存在,实现秒存");

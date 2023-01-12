@@ -331,6 +331,7 @@ export default {
         this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
       });
     },
+    //todo 前端上传下载,进度条分片数量算的好像不对
     //大文件上传增加进度条
     incrProgress:function (md5,add){
       for (let i = 0; i < this.largeFileUploadList.length; i++) {

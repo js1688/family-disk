@@ -57,7 +57,8 @@ public interface IFileAdministration {
      * @param spaceId
      * @param source
      * @param totalSize
+     * @param createUserId
      * @return
      */
-    ResponseHeadDTO checkDuplicate(String fileName,String type,String mediaType,String fileMd5,long spaceId,FileSourceENUM source,long totalSize);
+    ResponseHeadDTO checkDuplicate(String fileName,String type,String mediaType,String fileMd5,long spaceId,FileSourceENUM source,long totalSize,long createUserId);
 }

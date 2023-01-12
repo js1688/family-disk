@@ -1,5 +1,6 @@
 package com.jflove.controller.file;
 
+import com.google.protobuf.ByteOutput;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
@@ -40,11 +41,17 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -143,7 +150,7 @@ public class FileController {
 
     @ApiOperation(value = "下载文件(完整文件,非分片)")
     @PostMapping("/getFile")
-    public ResponseEntity<Resource> getFile(@RequestBody @Valid GetFileParamVO param) throws Exception{
+    public void getFile(HttpServletResponse response,@RequestBody @Valid GetFileParamVO param) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
@@ -151,21 +158,25 @@ public class FileController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.attachment().build());
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+        try(ServletOutputStream baos = response.getOutputStream()){
             AtomicBoolean ab = new AtomicBoolean(false);
             StreamObserver<FileReadReqDTO> request = fileService.getFile(new StreamObserver<FileTransmissionDTO>() {
                 @Override
                 public void onNext(FileTransmissionDTO data) {
+                    try{
+                        baos.write(data.getShardingStream());
+                    }catch (IOException e){
+                        onError(e);
+                    }
                     if(data.getShardingSort() == data.getShardingNum()){//是最后一片
                         ab.set(true);
                     }
-                    baos.writeBytes(data.getShardingStream());
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
                     ab.set(true);
-                    log.error("文件读取异常",throwable);
+                    log.error("文件读写服务异常",throwable);
                 }
 
                 @Override
@@ -179,10 +190,7 @@ public class FileController {
                     break;
                 }
             }
-            Resource file = new ByteArrayResource(baos.toByteArray());
-            return new ResponseEntity<>(file, headers, HttpStatus.OK);
-        }catch (Exception e){
-            throw e;
+            request.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
         }
     }
 
@@ -238,7 +246,7 @@ public class FileController {
         }
 
         //尝试是否可以直接引用其它人上传的文件
-        if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize()).isResult()){
+        if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize(),useUserId).isResult()){
             return new ResponseHeadVO<>(true,dto.getFileMd5(),"触发秒传成功");
         }
 
@@ -255,6 +263,11 @@ public class FileController {
 
             @Override
             public void onError(Throwable throwable) {
+                log.error("文件读写服务异常",throwable);
+                ret.setResult(false);
+                ret.setMessage("分片发生异常,请重试");
+                ret.setData("retry");
+                ab.set(true);
             }
 
             @Override
@@ -268,6 +281,7 @@ public class FileController {
                 break;
             }
         }
+        request.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
         return ret;
     }
 
@@ -316,7 +330,7 @@ public class FileController {
         }
 
         //尝试是否可以直接引用其它人上传的文件
-        if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize()).isResult()){
+        if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize(),useUserId).isResult()){
             return new ResponseHeadVO<>(true,dto.getFileMd5(),"触发秒传成功");
         }
 
@@ -340,6 +354,10 @@ public class FileController {
 
             @Override
             public void onError(Throwable throwable) {
+                log.error("文件读写服务异常",throwable);
+                ret.setResult(false);
+                ret.setMessage("上传失败");
+                ab.set(true);
             }
 
             @Override
@@ -370,6 +388,7 @@ public class FileController {
                 break;
             }
         }
+        request.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
         return ret;
     }
 }

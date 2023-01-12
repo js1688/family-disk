@@ -91,7 +91,7 @@ public class FileServiceImpl implements IFileService {
 
             @Override
             public void onCompleted() {
-
+                response.onCompleted();//必须给请求方也响应一个结束,如果不这么做则不会释放,导致内存溢出
             }
         };
     }
@@ -129,7 +129,7 @@ public class FileServiceImpl implements IFileService {
 
             @Override
             public void onCompleted() {
-
+                response.onCompleted();//必须给请求方也响应一个结束,如果不这么做则不会释放,导致内存溢出
             }
         };
     }
@@ -142,8 +142,8 @@ public class FileServiceImpl implements IFileService {
             @Override
             @Transactional
             public void onNext(FileTransmissionDTO data) {
-                log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},当前分片起:{},当前分片止:{}",
-                        data.getName(),data.getType(),data.getTotalSize(),data.getRangeStart(),data.getRangeEnd());
+                log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},当前分片起:{},当前分片止:{},分片数量:{},第{}分片",
+                        data.getName(),data.getType(),data.getTotalSize(),data.getRangeStart(),data.getRangeEnd(),data.getShardingNum(),data.getShardingSort());
                 //判断这是不是最后一片
                 File[] fs = new File(tempPath).listFiles(e->e.getName().startsWith(data.getFileMd5()));
                 boolean ok = fs.length == data.getShardingNum() - 1;
@@ -199,8 +199,7 @@ public class FileServiceImpl implements IFileService {
                         fileDiskConfigMapper.updateById(selectd);
                         response.onNext(new FileTransmissionRepDTO(data.getName(), data.getFileMd5(), true, "文件所有分片写盘成功"));
                     }catch (Exception e){
-                        response.onNext(new FileTransmissionRepDTO(data.getName(),"",false,"文件写盘失败"));
-                        throw e;
+                        response.onError(e);
                     }finally {
                         //清除临时文件
                         for (int i = 0; i <= data.getShardingNum(); i++) {
@@ -211,7 +210,7 @@ public class FileServiceImpl implements IFileService {
                         }
                     }
                 }else{
-                    response.onNext(new FileTransmissionRepDTO(data.getName(),"", true, "分片文件写盘成功"));
+                    response.onNext(new FileTransmissionRepDTO(data.getName(),"ok", true, "分片文件写盘成功"));
                 }
             }
 
@@ -222,7 +221,7 @@ public class FileServiceImpl implements IFileService {
 
             @Override
             public void onCompleted() {
-
+                response.onCompleted();//必须给请求方也响应一个结束,如果不这么做则不会释放,导致内存溢出
             }
         };
     }
@@ -311,7 +310,7 @@ public class FileServiceImpl implements IFileService {
 
             @Override
             public void onCompleted() {
-
+                response.onCompleted();//必须给请求方也响应一个结束,如果不这么做则不会释放,导致内存溢出
             }
         };
     }

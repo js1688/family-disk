@@ -74,8 +74,8 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
 
                 @Override
                 public void onError(Throwable throwable) {
+                    log.error("文件读写服务异常",throwable);
                     ab.set(true);
-                    log.error("读取文件异常",throwable);
                 }
 
                 @Override
@@ -95,12 +95,14 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
                     break;
                 }
             }
+            repStream.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
             request.setAttribute(CONTENT_TYPE,dto.getMediaType());
             request.setAttribute(MAX_SIZE,dto.getTotalSize());
             request.setAttribute(RANGE_LEN,(int)dto.getReadLength());
-            Resource file = new ByteArrayResource(dto.getShardingStream());
+            ByteArrayResource file = new ByteArrayResource(dto.getShardingStream());
             return file;
         }catch (Exception e){
+            log.error("错误",e);
             throw new IOException(e);
         }
     }
@@ -113,7 +115,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         }
         long rangeStart = Long.valueOf(rangeString.substring(rangeString.indexOf("=") + 1, rangeString.indexOf("-")));
         request.setAttribute(RANGE_START,rangeStart);
-        Resource resource = this.getResource(request);
+        ByteArrayResource resource = (ByteArrayResource)this.getResource(request);
         if (resource == null) {
             response.sendError(404);
         } else if (HttpMethod.OPTIONS.matches(request.getMethod())) {
@@ -127,11 +129,8 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
                     (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
                     (long)request.getAttribute(MAX_SIZE)));
             response.setContentLength((int)request.getAttribute(RANGE_LEN));
-            try(ServletOutputStream sos = response.getOutputStream();
-                InputStream is = resource.getInputStream()
-            ){
-                sos.write(is.readAllBytes());
-                sos.flush();
+            try(ServletOutputStream sos = response.getOutputStream()){
+                sos.write(resource.getByteArray());
             }
         }
     }
