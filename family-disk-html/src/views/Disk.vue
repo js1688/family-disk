@@ -1,4 +1,5 @@
 <template>
+
   <van-overlay :show="isOverlay">
     <div class="wrapper">
       <van-loading />
@@ -35,7 +36,7 @@
         <van-button square hairline type="danger"  @click="delDirectory(item)" text="删除" />
         <van-button square hairline type="primary"  @click="moveDirectory(item)" text="移动" />
         <van-button square hairline type="primary"   @click="updateName(item)" text="重命名" />
-        <van-button square hairline type="success"  @click="download(item)" text="下载" />
+        <van-button :disabled="item.type != 'FILE'" square hairline type="success"  @click="download(item)" text="下载" />
       </template>
     </van-swipe-cell>
   </van-list>
@@ -134,7 +135,6 @@
     <div style="padding-bottom: 20px" id="videoBody">
     </div>
   </van-action-sheet>
-<!--  self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});-->
   <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
     <div>
       <div style="margin: 16px;">
@@ -150,6 +150,12 @@
       </div>
     </div>
   </van-action-sheet>
+
+  <van-dialog :show-confirm-button="false" :show-cancel-button="false" v-model:show="showDownloadProgress" :title="downloadFileName">
+    <div style="height: 30px;margin: 10px;">
+      <van-progress :percentage="downloadFileProgress" />
+    </div>
+  </van-dialog>
 
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
@@ -171,6 +177,8 @@ import {
   CellGroup,
   Progress,
   showImagePreview,
+  NumberKeyboard,
+  Dialog
 } from 'vant';
 import { Overlay,Loading,Collapse,CollapseItem,ImagePreview} from 'vant';
 import {createApp, ref, shallowRef} from "vue";
@@ -182,6 +190,7 @@ import {isSpace, isToken, key,fileMd5} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 import { saveAs } from 'file-saver';
+import '@vant/touch-emulator';//vant适配桌面端
 
 
 export default {
@@ -206,7 +215,9 @@ export default {
     [Collapse.name]: Collapse,
     [CollapseItem.name]: CollapseItem,
     [ImagePreview.name]:ImagePreview,
-    [Progress.name]: Progress
+    [Progress.name]: Progress,
+    [NumberKeyboard.name]:NumberKeyboard,
+    [Dialog.name]:Dialog
   },
   setup() {
     const addActions = [
@@ -251,8 +262,12 @@ export default {
       showLargeUpload:false,
       showUpload:false,
       uploadFiles:[],
+      showDownloadProgress:false,
+      downloadFileName:"",
+      downloadFileProgress:0,
+      downloadFileSliceNum:0,
       openPath:[
-          {name:'/',id:0}
+          {name:'目录',id:0}
       ],
       isSubscribe:false,
       showVideo:false,
@@ -288,7 +303,6 @@ export default {
   methods:{
     //分片上传
     sliceUpload:function (fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback){
-      let self = this;
       let data = new FormData();
       data.append('originalFileName', file.name);
       data.append('f', chunk,fileMd5 + "-" + i);
@@ -451,7 +465,6 @@ export default {
     },
     //大文件下载,分片方式
     sliceDownload:function (item,s) {
-      this.isOverlay = true;
       let self = this;
       axios.post('/file/slice/getFile', {
         fileMd5: item.fileMd5,
@@ -466,7 +479,7 @@ export default {
         const { data, headers } = response;
         try {
           let msg = JSON.parse(data);
-          self.isOverlay = false;
+          self.showDownloadProgress = false;
           showToast(msg.message);
           return;
         }catch (e){}
@@ -477,29 +490,37 @@ export default {
         let total = contentRange.substring(contentRange.indexOf("/") + 1) * 1;
         if(start == 0){//第一次请求,重置缓存
           self.largeDownloadTemporaryStorage = new Uint8Array(total);
+          //计算出它有多少分片
+          self.downloadFileSliceNum = Math.ceil(total / contentLength);
         }
         let retArr = new Uint8Array(data);
         for (let i = 0; i < retArr.byteLength; i++) {
           self.largeDownloadTemporaryStorage[start + i] = retArr[i];
         }
         if(end < total-1 && response.status == 206){//还有文件分片,继续请求
+          self.downloadFileProgress = self.downloadFileProgress + (Math.ceil(100 / self.downloadFileSliceNum))
           self.sliceDownload(item,start+contentLength);
         }else{
           //下载完毕
           let bl = new Blob([self.largeDownloadTemporaryStorage]);
+          self.downloadFileProgress = 100;
           saveAs(bl,item.name);
           self.largeDownloadTemporaryStorage = null;
-          self.isOverlay = false;
+          self.showDownloadProgress = false;
         }
       }).catch(function (error) {
-        self.isOverlay = false;
+        self.largeDownloadTemporaryStorage = null;
+        self.showDownloadProgress = false;
         console.log(error);
       });
     },
     //下载文件
     download:function (item) {
+      this.showDownloadProgress = true;
+      this.downloadFileName = item.name;
+      this.downloadFileProgress = 0;
+      this.downloadFileSliceNum = 0;
       this.sliceDownload(item,0);//使用分片下载方式
-      return;
       // this.isOverlay = true;
       // let self = this;
       // axios.post('/file/getFile', {
@@ -748,7 +769,7 @@ export default {
         this.pid = item.id;
         this.onLoad();
         //将打开的目录追加到路径中
-        this.openPath.push({name:item.name + "/",id:item.id});
+        this.openPath.push({name:"/" + item.name,id:item.id});
       }else{//文件
         this.openFile(item);
       }
