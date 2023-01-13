@@ -14,7 +14,7 @@ public interface IFileReadAndWrit {
     String BEAN_PREFIX = "FileReadAndWrit_";
 
     /**
-     * 写入
+     * 将临时文件合并写盘
      * @param data 文件信息
      * @param selectd 选择的磁盘信息
      * @param tempFileSuffix 临时文件后缀
@@ -32,7 +32,7 @@ public interface IFileReadAndWrit {
     void read(FileTransmissionDTO dto, FileDiskConfigPO selectd, StreamObserver<FileTransmissionDTO> response);
 
     /**
-     * 读取指定位置字节
+     * 按指定位置读取文件分片字节
      * @param dto
      * @param selectd
      * @param response

@@ -43,7 +43,7 @@ public class FileServiceImpl implements IFileService {
     @Value("${file.storage.path.temp}")
     private String tempPath;//分片文件临时存放
 
-    private static final String  tempFileSuffix = ".temp";
+    public static final String  tempFileSuffix = ".temp";
 
     @Autowired
     private FileDiskConfigMapper fileDiskConfigMapper;
@@ -233,8 +233,8 @@ public class FileServiceImpl implements IFileService {
             @Override
             @Transactional
             public void onNext(FileTransmissionDTO data) {
-                log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},分片个数:{},当前分片序号:{},流大小:{}",
-                        data.getName(),data.getType(),data.getTotalSize(),data.getShardingNum(),data.getShardingSort(),data.getShardingStream().length);
+                log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},分片个数:{},当前分片序号:{},流大小:{},第{}分片",
+                        data.getName(),data.getType(),data.getTotalSize(),data.getShardingNum(),data.getShardingSort(),data.getShardingStream().length,data.getShardingSort());
                 try {
                     Files.write(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(data.getShardingSort()), tempFileSuffix)), data.getShardingStream());
                 }catch (IOException e){

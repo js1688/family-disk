@@ -18,7 +18,7 @@ import java.nio.file.Path;
 /**
  * @author tanjun
  * @date 2022/12/14 18:34
- * @describe 0 本地磁盘读写实现类
+ * @describe 本地磁盘读写实现类
  */
 @Component(IFileReadAndWrit.BEAN_PREFIX + "LOCAL")
 @Log4j2

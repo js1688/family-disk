@@ -76,7 +76,7 @@ public class FileInfoPO implements Serializable{
    */
   private long markDelete;
   /**
-   * 执行删除时间
+   * 执行删除时间(10位长度)
    */
   private long deleteTime;
   /**

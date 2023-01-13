@@ -52,6 +52,7 @@ public class UserSpaceImpl implements IUserSpace {
             return new ResponseHeadDTO(info.isResult(), info.getMessage());
         }
         //使用大小+1mb,因为计算会忽略小数
+        //这里的使用空间可能会与电脑文件上看到的不一样,因为本程序计算的字节大小是1024b为1k,电脑系统大多数都是以1000b为1k,包括大部分硬盘的存量计算也是1000
         useMb += 1;
         UserSpaceDTO usd = info.getData();
         //如果缓存计数大于数据库则代表数据库的写入还未生效,有效使用内存缓存中的计数
