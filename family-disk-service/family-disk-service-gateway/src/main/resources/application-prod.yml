@@ -19,7 +19,7 @@ spring:
       # token 发布者
       issuer: jflove.cn
       # token生成后有效时长(单位:分钟)
-      ttlMinute: 1440
+      ttlMinute: 43776
 
     ignored:
       origins: #允许跨域地址
@@ -29,6 +29,7 @@ spring:
       admin: #管理员角色的账号才能访问名单
         - /disk/manage/**
       urls: #安全路径白名单
+        - /admin/network/getServiceLocalPath
         - /file/media/play/**
         - /gateway/stomp/**
         - /gateway/stomp
