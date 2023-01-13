@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.net.InetAddress;
+import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
 /**
@@ -30,7 +30,7 @@ public class ApiEnvironmentController {
     @GetMapping("/getServiceLocalPath")
     public ResponseHeadVO<String> getServiceLocalPath(HttpServletRequest request, HttpServletResponse response){
         try{
-            String addr = InetAddress.getLocalHost().getHostAddress();
+            String addr = Inet4Address.getLocalHost().getHostAddress();
             return new ResponseHeadVO<>(true,String.format("http://%s:%s/",addr,port));
         }catch (UnknownHostException e){}
         return new ResponseHeadVO<>(false,"没有获取到内网地址");
