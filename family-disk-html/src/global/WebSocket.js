@@ -2,12 +2,6 @@ import SockJS from  'sockjs-client/dist/sockjs.min.js';
 import Stomp from "stompjs";
 import {key} from "@/global/KeyGlobal";
 export default {
-    data:function(){
-        return {
-            stompClient:null,
-            callbacks:{}
-        }
-    },
     methods: {
         //创建socket连接
         wsConnection:function(callback){
