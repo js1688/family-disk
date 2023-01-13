@@ -313,7 +313,7 @@ export default {
       data.append('end', end);
       data.append('fileMd5', fileMd5);
       data.append('totalLength', totalLength);
-
+      let self = this.
       axios.post("/file/slice/addFile", data, {
         header:{
           'Content-Type': 'multipart/form-data'
@@ -324,6 +324,8 @@ export default {
         }else if(res.data.result && res.data.data){
           callback(res.data);//执行回调
         }else if(!res.data.result){
+          let i = self.incrProgress(fileMd5,-1);
+          this.largeFileUploadList[i].del = true;
           showToast(res.data.message);
         }
       }).catch((error) => {
@@ -331,25 +333,28 @@ export default {
         this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
       });
     },
-    //todo 前端上传下载,进度条分片数量算的好像不对
     //大文件上传增加进度条
     incrProgress:function (md5,add){
       for (let i = 0; i < this.largeFileUploadList.length; i++) {
         if(this.largeFileUploadList[i].fileMd5 == md5){
           if(add == -1){
-            this.largeFileUploadList.splice(i,1);
+            return i;
           }else if(add == 100 || add == 0){
             this.largeFileUploadList[i].progress = add;
           }else{
-            this.largeFileUploadList[i].progress = this.largeFileUploadList[i].progress + add;
+            let a = this.largeFileUploadList[i].progress + add;;
+            if(a < 100){
+              this.largeFileUploadList[i].progress = a;
+            }
           }
           return this.largeFileUploadList[i];
         }
       }
     },
-    //
+    //大文件上传,删除
     largeDel: function (item){
-      this.incrProgress(item.fileMd5,-1);
+      let i = this.incrProgress(item.fileMd5,-1);
+      this.largeFileUploadList.splice(i,1);
     },
     //大文件上传
     largeUpload:function (f){
@@ -493,7 +498,10 @@ export default {
           self.largeDownloadTemporaryStorage[start + i] = retArr[i];
         }
         if(end < total-1 && response.status == 206){//还有文件分片,继续请求
-          self.downloadFileProgress = self.downloadFileProgress + (Math.ceil(100 / self.downloadFileSliceNum))
+          let a = self.downloadFileProgress + Math.ceil(100 / self.downloadFileSliceNum);
+          if(a < 100){
+            self.downloadFileProgress = a;
+          }
           self.sliceDownload(item,start+contentLength);
         }else{
           //下载完毕
