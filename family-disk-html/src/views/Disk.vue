@@ -138,7 +138,7 @@
   <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
     <div>
       <div style="margin: 16px;">
-        <van-uploader accept="*" :after-read="largeUpload">
+        <van-uploader accept="*" :after-read="largeUpload" multiple>
           <van-button style="margin-left: 15px;" icon="plus" size="small" block type="default" />
         </van-uploader>
         <van-cell v-for="item in largeFileUploadList" :title="item.fileName">
@@ -313,24 +313,28 @@ export default {
       data.append('end', end);
       data.append('fileMd5', fileMd5);
       data.append('totalLength', totalLength);
-      let self = this.
+      let self = this;
       axios.post("/file/slice/addFile", data, {
         header:{
           'Content-Type': 'multipart/form-data'
         }
       }).then((res) => {
-        if(!res.data.result && res.data.data == 'retry'){//分片失败,服务端主动要求重试
-          this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);
-        }else if(res.data.result && res.data.data){
-          callback(res.data);//执行回调
-        }else if(!res.data.result){
+        if(!res.data || !res.data.result && res.data.data != 'retry'){//没有返回内容,或者返回的是错误,但是不是要求重试
           let i = self.incrProgress(fileMd5,-1);
           this.largeFileUploadList[i].del = true;
           showToast(res.data.message);
+        }else if(!res.data.result && res.data.data == 'retry'){//分片失败,服务端主动要求重试
+          if(self.incrProgress(fileMd5,-1)){//先判断是否还在上传列表中,如果不在了,则不用重试了
+            self.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
+          }
+        }else if(res.data.result && res.data.data){
+          callback(res.data);//执行回调
         }
       }).catch((error) => {
         console.log(error);
-        this.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
+        if(self.incrProgress(fileMd5,-1)){//先判断是否还在上传列表中,如果不在了,则不用重试了
+          self.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
+        }
       });
     },
     //大文件上传增加进度条
@@ -357,48 +361,53 @@ export default {
       this.largeFileUploadList.splice(i,1);
     },
     //大文件上传
-    largeUpload:function (f){
-      let file = f.file;
-      let sliceSize = 1024 * 1024 * 16;
-      if(file.size < sliceSize){
-        sliceSize = file.size;
+    largeUpload:function (fs){
+      if(!fs.length){//只选择了一个文件
+        fs = [fs];
       }
-      let sliceNum = Math.ceil(file.size/sliceSize);//分片数量
-      let start = 0;
-      let self = this;
-      //前端获取md5值
-      fileMd5(file,sliceSize,sliceNum).then(e=>{
-        //将文件添加到上传展示列表中
-        self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});
-        for (let i = 0; i < sliceNum; i++) {
-          let end = sliceSize + start;
-          let chunk = f.file.slice(start,end);
-          //发送分片
-          this.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
-            if(d.result && d.data && d.data != 'ok' && d.data != 'retry'){//所有分片合并完毕
-              self.incrProgress(e,100);//进度条
-              //将文件与网盘目录建立关系
-              axios.post('/netdisk/addDirectory', {
-                name: file.name,
-                pid: self.pid,
-                fileMd5: d.data,
-                type:"FILE",
-                mediaType:file.type
-              }).then(function (response) {
-                if(response.data.result && response.data.data){
-                  self.list.push(response.data.data);
-                }
-                showToast(response.data.message);
-              }).catch(function (error) {
-                console.log(error);
-              });
-            }else if(d.result && d.data == 'ok'){//分片上传成功
-              self.incrProgress(e,Math.ceil(100 / sliceNum));
-            }
-          });
-          start = end;
+      for (let i = 0; i < fs.length; i++) {
+        let file = fs[i].file;
+        let sliceSize = 1024 * 1024 * 16;
+        if(file.size < sliceSize){
+          sliceSize = file.size;
         }
-      });
+        let sliceNum = Math.ceil(file.size/sliceSize);//分片数量
+        let start = 0;
+        let self = this;
+        //前端获取md5值
+        fileMd5(file,sliceSize,sliceNum).then(e=>{
+          //将文件添加到上传展示列表中
+          self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});
+          for (let i = 0; i < sliceNum; i++) {
+            let end = sliceSize + start;
+            let chunk = file.slice(start,end);
+            //发送分片
+            self.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
+              if(d.result && d.data && d.data != 'ok' && d.data != 'retry'){//所有分片合并完毕
+                self.incrProgress(e,100);//进度条
+                //将文件与网盘目录建立关系
+                axios.post('/netdisk/addDirectory', {
+                  name: file.name,
+                  pid: self.pid,
+                  fileMd5: d.data,
+                  type:"FILE",
+                  mediaType:file.type
+                }).then(function (response) {
+                  if(response.data.result && response.data.data){
+                    self.list.push(response.data.data);
+                  }
+                  showToast(response.data.message);
+                }).catch(function (error) {
+                  console.log(error);
+                });
+              }else if(d.result && d.data == 'ok'){//分片上传成功
+                self.incrProgress(e,Math.ceil(100 / sliceNum));
+              }
+            });
+            start = end;
+          }
+        });
+      }
     },
     //暂停播放视频
     pauseVideo:function (){
@@ -414,7 +423,7 @@ export default {
       myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
       this.myPlayer = videojs("videoPlayer",this.videoOptions);
     },
-    //打开图片,图片文件不会很大,直接下载完打开即可
+    //打开图片,图片文件通常不会很大,直接下载完打开即可
     openImage:function (item){
       this.isOverlay = true;
       let self = this;

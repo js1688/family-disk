@@ -1,15 +1,21 @@
 import SparkMD5 from "spark-md5";
 
+let data = {
+    authorization:'Authorization',
+    useSpaceId:'USE_SPACE_ID',
+    userName:'USER_NAME',
+    userEmail:'USER_EMAIL',
+    userId:'USER_ID',
+    useSpaceRole:'USE_SPACE_ROLE',
+    baseURL:'http://localhost:8800/'
+};
+
+export function keyPut(k,v){
+    data[k] = v;
+}
+
 export function key(){
-    return {
-        authorization:'Authorization',
-        useSpaceId:'USE_SPACE_ID',
-        userName:'USER_NAME',
-        userEmail:'USER_EMAIL',
-        userId:'USER_ID',
-        useSpaceRole:'USE_SPACE_ROLE',
-        baseURL:'http://127.0.0.1:8800/'
-    };
+    return data;
 }
 
 /**
