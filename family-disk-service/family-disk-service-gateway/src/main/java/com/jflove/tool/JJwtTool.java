@@ -1,5 +1,7 @@
 package com.jflove.tool;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateUtil;
 import io.jsonwebtoken.*;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,7 +64,7 @@ public class JJwtTool {
             map.forEach(jwtBuilder::claim);
         }
         // 设置失效时间
-        long exp = System.currentTimeMillis() + (ttlMinute * 60 * 1000);
+        long exp = DateUtil.offset(new Date(), DateField.MINUTE,43776).getTime();
         jwtBuilder.setExpiration(new Date(exp));
         // 生成token
         return jwtBuilder.compact();

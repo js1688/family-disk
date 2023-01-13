@@ -12,7 +12,7 @@
     - family-disk-service-model 数据库模型
     - family-disk-service-api rpc接口标准
     - family-disk-service-plugins 插件模块
-    - family-disk-service-diary 日记
+    - family-disk-service-journal 日记
 ```
 
 # 启动参数
