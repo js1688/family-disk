@@ -26,11 +26,16 @@ public class ApiEnvironmentController {
     @Value("${server.port}")
     private Integer port;
 
+    //在众多ip中使用哪个hostName名称对应的ip地址,所以需要在/etc/hosts文件中配置 期望的ip [spring.application.name] 名称
+    //例如 192.168.3.20 family-disk-gateway
+    @Value("${spring.application.name}")
+    private String hostsName;
+
     @ApiOperation(value = "获取服务端本地环境的ip和端口")
     @GetMapping("/getServiceLocalPath")
     public ResponseHeadVO<String> getServiceLocalPath(HttpServletRequest request, HttpServletResponse response){
         try{
-            String addr = Inet4Address.getLocalHost().getHostAddress();
+            String addr = Inet4Address.getByName(hostsName).getHostAddress();
             return new ResponseHeadVO<>(true,String.format("http://%s:%s/",addr,port));
         }catch (UnknownHostException e){}
         return new ResponseHeadVO<>(false,"没有获取到内网地址");
