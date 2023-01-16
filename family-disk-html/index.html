@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/family.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta charset="UTF-8">
+      <link rel="icon" href="/family.png">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <!-- Content-Security-Policy 设置允许https访问http地址,解决切换到内网环境时,https前端地址不能访问http内网api地址的问题,另外Content-Security-Policy还有很多功能 -->
+      <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
     <title>家庭网盘</title>
   </head>
   <body>

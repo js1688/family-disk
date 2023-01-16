@@ -23,8 +23,9 @@ axios.interceptors.request.use(config => {//声明请求拦截器
 //响应拦截器
 axios.interceptors.response.use(response => {
     if(response.data.result == false && response.data.message == 'token已过期'){
-        //token失效了,清空token存储
+        //token失效了,清空token存储,空间id存储
         localStorage.removeItem(key().authorization);
+        localStorage.removeItem(key().useSpaceId);
         gws.methods.wsDisconnect();//断开socket
     }
     return response;

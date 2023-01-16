@@ -26,17 +26,17 @@ public class AsmrGay {
             .followRedirects(HttpClient.Redirect.ALWAYS)
             .build();
 
-    private static final String name = "步非烟";
-    private static final String storage = "C:\\Users\\Administrator\\Music\\asmr/%s/%s";
-    private static final String fileNameMatching = "点心";
+    private static final String name = "雪儿圆圆";
+    private static final String storage = "/Users/tanjun/Music/local/asmr/%s/%s";
+    private static final String fileNameMatching = null;
 
     public static void main(String[] args) throws Exception{
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://www.asmr.pw/api/public/search"))
+                .uri(URI.create("https://www.asmr.pw/api/fs/search"))
                 .timeout(Duration.ofMinutes(2))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(String.format("""
-                        {"path":"/","keyword":"%s"}
+                        {"parent":"/","keywords":"%s","page":1,"per_page":100,"password":""}
                         """,name)))
                 .build();
         HttpResponse response = client.send(request, HttpResponse.BodyHandlers.ofString());
