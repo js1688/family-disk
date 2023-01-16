@@ -119,7 +119,7 @@
   <van-action-sheet v-model:show="showUpload" title="上传文件">
     <div>
       <div style="margin: 16px;">
-        <van-uploader :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+        <van-uploader @click-preview="openPreview" :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
         </van-uploader>
       </div>
@@ -156,6 +156,12 @@
       <van-progress :percentage="downloadFileProgress" />
     </div>
   </van-dialog>
+
+  <van-image-preview :onClose="closeVideo" v-model:show="showPreviewVideo" :images="videoUrls"  closeable>
+    <template #image="{src}">
+      <video :src="src" ref="previewVideoRef" style="width: 100%;" controls />
+    </template>
+  </van-image-preview>
 
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
@@ -223,13 +229,12 @@ export default {
     const addActions = [
       { text: '新建目录', icon: 'wap-nav',name:'addDirectory'},
       { text: '上传文件', icon: 'upgrade',name:'addFile'},
-      { text: '大件上传', icon: 'upgrade',name:'addLargeFile'},
-      { text: '拍照上传', icon: 'photograph',name:'photograph'}
+      { text: '大件上传', icon: 'upgrade',name:'addLargeFile'}
     ];
     const showPopover = ref(false);
 
     const onOversize = (f) => {
-      showToast('此文件['+f.file.name+']太大,请走大件上传通道');
+      showToast('文件太大,请选择大件上传方式');
     };
     const activeNames = ref([]);
 
@@ -271,6 +276,8 @@ export default {
       ],
       isSubscribe:false,
       showVideo:false,
+      showPreviewVideo:false,
+      videoUrls:[],
       myPlayer:null,
       largeFileUploadList:[],
       largeDownloadTemporaryStorage:null,
@@ -301,6 +308,29 @@ export default {
     }
   },
   methods:{
+    //点击图片预览前回调
+    openPreview:function (f) {
+      let file = f.file;
+      let mediaType = file.type.toUpperCase();
+      mediaType = mediaType.substring(0,mediaType.indexOf("/"));
+      switch (mediaType){
+        case "VIDEO"://视频
+        case "AUDIO"://音频
+          //切换到播放器播放
+          let blob = file.slice(0,file.size);
+          let url = window.URL.createObjectURL(blob);
+          this.videoUrls = [url];
+          this.showPreviewVideo = true;
+          return false;
+      }
+      return true;
+    },
+    //关闭预览视频播放器
+    closeVideo:function () {
+      this.$refs.previewVideoRef.pause();
+      this.videoUrls = [];
+      this.showPreviewVideo = false;
+    },
     //分片上传
     sliceUpload:function (fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback){
       let data = new FormData();
@@ -814,9 +844,6 @@ export default {
           if(clean){
             this.uploadFiles = [];
           }
-          break;
-        case 'photograph':
-          showToast("拍照上传");
           break;
       }
     },
