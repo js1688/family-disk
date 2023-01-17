@@ -27,7 +27,7 @@ public class DelFileParamVO implements Serializable {
     @NotBlank(message = "文件md5值不能为空")
     private String fileMd5;
 
-    @ApiModelProperty(value="文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)")
+    @ApiModelProperty(value="文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)")
     @NotBlank(message = "文件来源不能为空")
     private String source;
 

@@ -56,10 +56,6 @@ public class JournalListPO implements Serializable{
    */
   private long createUserId;
   /**
-   * 最后修改人id
-   */
-  private long updateUserId;
-  /**
    * 所属空间id
    */
   private long spaceId;

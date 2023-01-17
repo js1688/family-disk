@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Mon Jan 16 17:22:17 CST 2023
+ * @date Tue Jan 17 11:59:13 CST 2023
  * @describe 日记关联的文件
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("journal_list_files")
 public class JournalListFilesPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  6324749682688976778L;
+	private static final long serialVersionUID =  3335255810773952094L;
 
   /**
    * 主键
@@ -51,4 +51,8 @@ public class JournalListFilesPO implements Serializable{
    */
   @TableField(fill = FieldFill.INSERT_UPDATE)
   private java.sql.Timestamp updateTime;
+  /**
+   * 多媒体类型
+   */
+  private String mediaType;
 }

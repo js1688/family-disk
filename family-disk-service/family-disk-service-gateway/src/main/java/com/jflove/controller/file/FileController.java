@@ -1,10 +1,9 @@
 package com.jflove.controller.file;
 
-import com.google.protobuf.ByteOutput;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.config.HttpConstantConfig;
-import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
 import com.jflove.admin.api.IFileAdministration;
+import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
+import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileService;
 import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
@@ -29,9 +28,9 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.unit.DataSize;
@@ -42,16 +41,11 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -92,7 +86,7 @@ public class FileController {
     @ApiOperation(value = "媒体资源边播边下")
     @GetMapping("/media/play/{source}/{fileMd5}/{useSpaceId}/{token}")
     public void mediaPlay(HttpServletRequest request,HttpServletResponse response,
-                              @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @PathVariable("source") String source,
+                              @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @PathVariable("source") String source,
                               @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5,
                               @ApiParam("正在使用的空间") @PathVariable("useSpaceId") Long useSpaceId,
                               @ApiParam("token") @PathVariable("token") String token
@@ -197,7 +191,7 @@ public class FileController {
     @ApiOperation(value = "上传文件(大文件,分片)")
     @PostMapping("/slice/addFile")
     public ResponseHeadVO<String> sliceAddFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
-                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s,
+                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @RequestParam("s") String s,
                                           @ApiParam("文件多媒体类型") @RequestParam("m") String m,
                                                @ApiParam("文件分片数量") @RequestParam("n") Integer n,
                                                @ApiParam("开始位置") @RequestParam("start") Integer start,
@@ -288,7 +282,7 @@ public class FileController {
     @ApiOperation(value = "上传文件(完整文件,非分片)")
     @PostMapping("/addFile")
     public ResponseHeadVO<String> addFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
-                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,DIARY=日记)") @RequestParam("s") String s,
+                                          @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @RequestParam("s") String s,
                                           @ApiParam("文件多媒体类型") @RequestParam("m") String m
     ) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
