@@ -605,6 +605,7 @@ export default {
       }
       //设置禁用
       this.uploadDisabled = true;
+      let self = this;
       //开始循环上传文件
       for (let i = 0; i < this.uploadFiles.length; i++) {
         let f = this.uploadFiles[i];
@@ -614,7 +615,6 @@ export default {
         data.append('f', f.file);
         data.append('s', 'CLOUDDISK');
         data.append('m', f.file.type);
-        let self = this;
         axios.post("/file/addFile", data, {
           header:{
             'Content-Type': 'multipart/form-data'
