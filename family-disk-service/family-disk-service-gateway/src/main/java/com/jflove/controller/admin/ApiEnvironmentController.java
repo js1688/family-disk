@@ -36,7 +36,7 @@ public class ApiEnvironmentController {
     public ResponseHeadVO<String> getServiceLocalPath(HttpServletRequest request, HttpServletResponse response){
         try{
             String addr = Inet4Address.getByName(hostsName).getHostAddress();
-            return new ResponseHeadVO<>(true,String.format("http://%s:%s/",addr,port),"获取到了内网地址");
+            return new ResponseHeadVO<>(true,String.format("//%s:%s/",addr,port),"获取到了内网地址");
         }catch (UnknownHostException e){}
         return new ResponseHeadVO<>(false,"没有获取到内网地址");
     }

@@ -7,7 +7,7 @@ let data = {
     userEmail:'USER_EMAIL',
     userId:'USER_ID',
     useSpaceRole:'USE_SPACE_ROLE',
-    baseURL:'https://api.jflove.cn/'
+    baseURL:'//api.jflove.cn/'
 };
 
 export function keyPut(k,v){
