@@ -42,6 +42,7 @@ if(isToken()){
 
 
 //检查网络环境,是否可以切换至内网
+//切换到内网时,会碰到网页端是https,内网地址是http,无法访问过去,需要在服务端启动nginx将ip默认的443端口做一下转发,同时使用跟网页端相同的ssl证书
 console.log("网络环境检查,尝试是否可以切换到内网环境");
 axios.get("/admin/network/getServiceLocalPath").then(function (res){
     if(res.data.result && res.data.data){//获得信息成功
