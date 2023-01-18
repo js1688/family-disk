@@ -7,7 +7,10 @@ let data = {
     userEmail:'USER_EMAIL',
     userId:'USER_ID',
     useSpaceRole:'USE_SPACE_ROLE',
-    baseURL:'//api.jflove.cn/'
+    // 公网
+    baseURL:'//api.jflove.cn/',
+    // 局域网
+    lanURL:'//192.168.3.20/'
 };
 
 export function keyPut(k,v){
