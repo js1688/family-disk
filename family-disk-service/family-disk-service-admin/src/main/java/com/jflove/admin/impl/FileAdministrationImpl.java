@@ -107,7 +107,8 @@ public class FileAdministrationImpl implements IFileAdministration {
         if(fip == null){
             return new ResponseHeadDTO(false,fileMd5,"磁盘中没有这个文件可以引用");
         }
-        if(fip.getSpaceId() != spaceId) {//不是自己空间的文件
+        if(fip.getSpaceId() != spaceId ||
+                (fip.getSpaceId() == spaceId && !fip.getSource().equals(source.getCode()))) {//不是自己空间的文件,或者是自己空间的文件,但属于不同的来源
             //是否可以存的下
             DataSize ds = DataSize.ofBytes(totalSize);
             ResponseHeadDTO use = userSpace.useSpaceByte(spaceId,ds.toMegabytes(),true,true);
