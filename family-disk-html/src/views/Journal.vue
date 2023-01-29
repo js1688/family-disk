@@ -411,6 +411,16 @@ export default {
       this.loading = false;//加载完毕
       this.finished = true;//全部数据加载完毕
     },
+    //根据文件名在文件缓存数组中找到对象
+    uploadFilesFind:function (fileName) {
+      if(this.uploadFiles){
+        for (let i = 0; i < this.uploadFiles.length; i++) {
+          if(this.uploadFiles[i].file.name == fileName){
+            return this.uploadFiles[i];
+          }
+        }
+      }
+    },
     //打开日记
     open:function (item) {
       this.journalDate = item.date;
@@ -423,6 +433,10 @@ export default {
       let self = this;
       if(item.files){
         for (let i = 0; i < item.files.length; i++) {
+          //添加占位,在媒体资源未下载完之前就显示有哪些资源正在加载
+          self.uploadFiles.push({status:"uploading",message:"加载中",file:
+                {name:item.files[i].fileName,type:item.files[i].mediaType}
+          });
           axios.post('/file/getFile', {
             fileMd5: item.files[i].fileMd5,
             name: item.files[i].fileName,
@@ -433,9 +447,10 @@ export default {
             const { data, headers } = response;
             const blob = new Blob([data], {type: headers['content-type']});
             let url = window.URL.createObjectURL(blob);
-            self.uploadFiles.push({url:url,file:
-                  {name:item.files[i].fileName,type:item.files[i].mediaType}
-            });
+            let f = self.uploadFilesFind(item.files[i].fileName);
+            f["url"] = url;
+            f.status = "done"
+            f.message = "";
           }).catch(function (error) {
             console.log(error);
           });
