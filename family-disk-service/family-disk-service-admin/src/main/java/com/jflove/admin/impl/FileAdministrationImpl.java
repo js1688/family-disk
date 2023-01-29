@@ -100,6 +100,14 @@ public class FileAdministrationImpl implements IFileAdministration {
     @Transactional
     public ResponseHeadDTO checkDuplicate(String fileName,String type,String mediaType,String fileMd5,long spaceId,FileSourceENUM source,long totalSize,long createUserId) {
         //匹配库中是否已存在这个文件,如果存在则不执行写盘,直接引用已存在的文件以及磁盘id
+        //检查是否已存在同空间并且同来源这个文件,如果存在则不需要添加这个文件信息
+        if(fileInfoMapper.exists(new LambdaQueryWrapper<FileInfoPO>()
+                .eq(FileInfoPO::getFileMd5,fileMd5)
+                .eq(FileInfoPO::getSource,source.getCode())
+                .eq(FileInfoPO::getSpaceId,spaceId)
+        )){
+            return new ResponseHeadDTO(true,fileMd5,"用户上传过这个文件,不需要重复上传");
+        }
         FileInfoPO fip = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
                 .eq(FileInfoPO::getFileMd5,fileMd5)
                 .last(" limit 1")
@@ -107,26 +115,23 @@ public class FileAdministrationImpl implements IFileAdministration {
         if(fip == null){
             return new ResponseHeadDTO(false,fileMd5,"磁盘中没有这个文件可以引用");
         }
-        if(fip.getSpaceId() != spaceId ||
-                (fip.getSpaceId() == spaceId && !fip.getSource().equals(source.getCode()))) {//不是自己空间的文件,或者是自己空间的文件,但属于不同的来源
-            //是否可以存的下
-            DataSize ds = DataSize.ofBytes(totalSize);
-            ResponseHeadDTO use = userSpace.useSpaceByte(spaceId,ds.toMegabytes(),true,true);
-            if(!use.isResult()){
-                return new ResponseHeadDTO(false,fileMd5,"用户存储空间不足");
-            }
-            FileInfoPO newPo = new FileInfoPO();
-            newPo.setMediaType(mediaType);
-            newPo.setName(fileName);
-            newPo.setType(type);
-            newPo.setFileMd5(fileMd5);
-            newPo.setCreateUserId(createUserId);
-            newPo.setSpaceId(spaceId);
-            newPo.setSource(source.getCode());
-            newPo.setSize(totalSize);
-            newPo.setDiskId(fip.getDiskId());
-            fileInfoMapper.insert(newPo);
+        //是否可以存的下
+        DataSize ds = DataSize.ofBytes(totalSize);
+        ResponseHeadDTO use = userSpace.useSpaceByte(spaceId,ds.toMegabytes(),true,true);
+        if(!use.isResult()){
+            return new ResponseHeadDTO(false,fileMd5,"用户存储空间不足");
         }
+        FileInfoPO newPo = new FileInfoPO();
+        newPo.setMediaType(mediaType);
+        newPo.setName(fileName);
+        newPo.setType(type);
+        newPo.setFileMd5(fileMd5);
+        newPo.setCreateUserId(createUserId);
+        newPo.setSpaceId(spaceId);
+        newPo.setSource(source.getCode());
+        newPo.setSize(totalSize);
+        newPo.setDiskId(fip.getDiskId());
+        fileInfoMapper.insert(newPo);
         return new ResponseHeadDTO(true,fileMd5,"文件在服务器中已存在,实现秒存");
     }
 }
