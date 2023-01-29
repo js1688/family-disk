@@ -119,7 +119,7 @@
   <van-action-sheet v-model:show="showUpload" title="上传文件">
     <div>
       <div style="margin: 16px;">
-        <van-uploader @click-preview="openPreview" :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="10" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+        <van-uploader @click-preview="openPreview" :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="12" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
         </van-uploader>
       </div>

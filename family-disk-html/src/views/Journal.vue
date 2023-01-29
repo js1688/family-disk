@@ -67,7 +67,7 @@
                       preview-size="80"
                       :max-size="1024 * 1024 * 32"
                       @oversize="onOversize"
-                      :max-count="10"
+                      :max-count="12"
                       :before-read="beforeRead"
                       :disabled="uploadDisabled"
                       accept="image/*,video/*,audio/*"
@@ -423,7 +423,7 @@ export default {
     },
     //打开日记
     open:function (item) {
-      this.journalDate = item.date;
+      this.journalDate = item.happenTime;
       this.showJournalSave = true;
       this.uploadDisabled = true;
       this.journalTitle = item.title;
