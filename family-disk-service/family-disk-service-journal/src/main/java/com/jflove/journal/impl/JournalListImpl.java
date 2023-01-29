@@ -57,6 +57,7 @@ public class JournalListImpl implements IJournalList {
                 .eq(JournalListPO::getSpaceId,spaceId)
                 .eq(date != null,JournalListPO::getHappenTime,date)
                 .like(title != null,JournalListPO::getTitle,title)
+                .orderByDesc(JournalListPO::getHappenTime)
         );
         List<JournalListDTO> dtoList = new ArrayList<>(listPO.size());
         listPO.forEach(v->{
