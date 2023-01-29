@@ -124,7 +124,7 @@ public class FileAdministrationImpl implements IFileAdministration {
         FileInfoPO newPo = new FileInfoPO();
         newPo.setMediaType(mediaType);
         newPo.setName(fileName);
-        newPo.setType(type);
+        newPo.setType(fip.getType());//为了防止手动改后缀,导致与已存储的不一致,这里将文件类型沿用引用过来的
         newPo.setFileMd5(fileMd5);
         newPo.setCreateUserId(createUserId);
         newPo.setSpaceId(spaceId);
