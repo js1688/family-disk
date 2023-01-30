@@ -119,7 +119,7 @@
   <van-action-sheet v-model:show="showUpload" title="上传文件">
     <div>
       <div style="margin: 16px;">
-        <van-uploader @click-preview="openPreview" :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="12" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
+        <van-uploader :preview-options="{closeable:true}" @click-preview="openPreview" :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="12" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
           <van-button block hairline icon="plus" type="default">选择文件</van-button>
         </van-uploader>
       </div>
@@ -132,13 +132,13 @@
   </van-action-sheet>
 
   <van-action-sheet @opened="playVideo" @close="pauseVideo" title="媒体播放" round v-model:show="showVideo">
-    <div style="padding-bottom: 20px" id="videoBody">
+    <div style="padding-bottom: 20px;" id="videoBody">
     </div>
   </van-action-sheet>
   <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
     <div>
       <div style="margin: 16px;">
-        <van-uploader accept="*" :after-read="largeUpload" multiple>
+        <van-uploader accept="*" :after-read="largeUpload"  multiple>
           <van-button style="margin-left: 15px;" icon="plus" size="small" block type="default" />
         </van-uploader>
         <van-cell v-for="item in largeFileUploadList" :title="item.fileName">
@@ -159,7 +159,7 @@
 
   <van-image-preview :onClose="closeVideo" v-model:show="showPreviewVideo" :images="videoUrls"  closeable>
     <template #image="{src}">
-      <video :src="src" ref="previewVideoRef" style="width: 100%;" controls />
+      <video :src="src" ref="previewVideoRef" style="width: 100%;height: 800px;" controls autoplay />
     </template>
   </van-image-preview>
 
@@ -328,6 +328,7 @@ export default {
     //关闭预览视频播放器
     closeVideo:function () {
       this.$refs.previewVideoRef.pause();
+      this.$refs.previewVideoRef.src = "";
       this.videoUrls = [];
       this.showPreviewVideo = false;
     },
@@ -479,23 +480,30 @@ export default {
       });
     },
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
-    openVideo:function (item){
-      this.videoOptions.sources.push({src:
-            key().baseURL+"file/media/play/CLOUDDISK/"+item.fileMd5+"/"+localStorage.getItem(key().useSpaceId)+"/"+localStorage.getItem(key().authorization),
-        type:item.mediaType});
-      this.showVideo = true;
+    openVideo:function (item,gs){
+      //判断使用哪种播放器,如果是苹果公司的媒体资源则使用原生播放器播放
+      let url = key().baseURL+"file/media/play/CLOUDDISK/"+item.fileMd5+"/"+localStorage.getItem(key().useSpaceId)+"/"+localStorage.getItem(key().authorization);
+      switch (gs) {
+        case "MP4":
+          this.videoOptions.sources.push({src:url,type:item.mediaType});
+          this.showVideo = true;
+          break
+        default:
+          this.videoUrls = [url];
+          this.showPreviewVideo = true;
+      }
     },
     //打开文件
     openFile:function (item) {
       let mediaType = item.mediaType.toUpperCase();
-      mediaType = mediaType.substring(0,mediaType.indexOf("/"));
-      switch (mediaType) {
+      let mediaTypes = mediaType.split("/");
+      switch (mediaTypes[0]) {
         case "IMAGE"://图片
           this.openImage(item);
           break
         case "VIDEO"://视频
         case "AUDIO"://音频
-          this.openVideo(item);
+          this.openVideo(item,mediaTypes[1]);
           break
         default:
           showToast("不识别的类型,不能在线预览,请下载文件.");

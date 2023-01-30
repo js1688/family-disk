@@ -71,6 +71,7 @@
                       :before-read="beforeRead"
                       :disabled="uploadDisabled"
                       accept="image/*,video/*,audio/*"
+                      :preview-options="{closeable:true}"
                       v-model="uploadFiles" multiple>
         </van-uploader>
         <van-button round block :disabled="uploadDisabled" type="primary" @click="addJournal" native-type="submit">
@@ -83,7 +84,7 @@
 
   <van-image-preview :onClose="closeVideo" v-model:show="showVideo" :images="videoUrls"  closeable>
     <template #image="{src}">
-      <video :src="src" ref="previewVideoRef" style="width: 100%;" controls />
+      <video :src="src" ref="previewVideoRef" style="width: 100%;height: 800px;" controls autoplay />
     </template>
   </van-image-preview>
 
@@ -108,6 +109,7 @@ import {
   Button,
   SwipeCell,
   ImagePreview,
+  Image,
   showConfirmDialog, showImagePreview
 } from 'vant';
 //vant适配桌面端
@@ -118,6 +120,7 @@ import {ref} from "vue";
 export default {
   name: "Journal",
   components:{
+    [Image.name]:Image,
     [Loading.name]:Loading,
     [Overlay.name]:Overlay,
     [Uploader.name]:Uploader,
@@ -193,6 +196,7 @@ export default {
     //关闭视频播放器
     closeVideo:function () {
       this.$refs.previewVideoRef.pause();
+      this.$refs.previewVideoRef.src = "";
       this.videoUrls = [];
       this.showVideo = false;
     },
