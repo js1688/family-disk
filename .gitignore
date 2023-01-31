@@ -8,6 +8,8 @@ dist
 dist-ssr
 coverage
 *.local
+application-dev.yml
+application-prod.yml
 /cypress/videos/
 /cypress/screenshots/
 
