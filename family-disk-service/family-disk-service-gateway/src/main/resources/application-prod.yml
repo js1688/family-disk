@@ -1,0 +1,55 @@
+server:
+  port: 8800
+spring:
+  jackson: # 统一的json转换处理
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  servlet:
+    multipart:
+      enabled: true #开启文件上传
+      max-file-size: 32MB #单个文件上传限制
+      max-request-size: 32MB #多个文件一起上传限制
+  application:
+    name: family-disk-gateway
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  security:
+    jjwt:
+      # token 发布者
+      issuer: jflove.cn
+      # token生成后有效时长(单位:分钟)
+      ttlMinute: 43776
+
+    ignored:
+      origins: #允许跨域地址
+        - http://localhost:5173/
+        - https://www.jflove.cn/
+        - https://m.jflove.cn/
+      admin: #管理员角色的账号才能访问名单
+        - /disk/manage/**
+      urls: #安全路径白名单
+        - /admin/network/getServiceLocalPath
+        - /file/media/play/**
+        - /gateway/stomp/**
+        - /gateway/stomp
+        - /swagger-ui/index.html
+        - /swagger-ui/**
+        - /swagger-resources
+        - /swagger-resources/**
+        - /v2/api-docs
+        - /user/info/emailPasswordLogin
+        - /user/info/sendRegisterEmailCaptcha
+        - /user/info/createUserInfo
+dubbo:
+  consumer:
+    timeout: 10000 # 超时时间
+    retries: 0 # 不重试
+  application:
+    name: ${spring.application.name}
+    qos-port: 1166
+  protocol:
+    name: dubbo
+    port: 2266
+logging:
+  config: logback.xml
