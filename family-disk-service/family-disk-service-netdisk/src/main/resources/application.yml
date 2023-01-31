@@ -2,9 +2,9 @@ spring:
   application:
     name: family-disk-netdisk
   datasource:
-    url: jdbc:mysql://49.232.164.11:13306/family?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
-    username: family
-    password: tanjun1994
+    url: jdbc:mysql://ip:port/schame?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
+    username:
+    password:
     driver-class-name: com.mysql.cj.jdbc.Driver
 mybatis-plus:
   configuration:

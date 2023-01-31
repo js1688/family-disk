@@ -10,6 +10,7 @@ JAVA_OPT="${JAVA_OPT} -Ddubbo.resolve.file=dubbo-resolve.properties"
 JAVA_OPT="${JAVA_OPT} -Ddubbo.consumer.check=false"
 
 cmd=$1
+profiles=$2
 
 if [ ! $cmd ]; then
   echo "Please specify args 'start|restart|stop'"
@@ -31,8 +32,8 @@ do
     pid=`ps -ef|grep java|grep $app|awk '{print $2}'`
 
     startup(){
-      echo "java ${JAVA_OPT}  -jar $app --spring.profiles.active=prod >/dev/null 2>&1 &"
-      nohup java ${JAVA_OPT}  -jar $app --spring.profiles.active=prod >/dev/null 2>&1 &
+      echo "java ${JAVA_OPT}  -jar $app --spring.profiles.active=$profiles >/dev/null 2>&1 &"
+      nohup java ${JAVA_OPT}  -jar $app --spring.profiles.active=$profiles >/dev/null 2>&1 &
     }
 
     if [ $cmd == 'start' ]; then
