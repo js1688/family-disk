@@ -10,6 +10,7 @@ coverage
 *.local
 /cypress/videos/
 /cypress/screenshots/
+application-prod.yml
 
 # Logs
 logs
