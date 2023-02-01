@@ -82,9 +82,18 @@
     </div>
   </van-action-sheet>
 
-  <van-image-preview :onClose="closeVideo" v-model:show="showVideo" :images="videoUrls"  closeable>
+  <van-image-preview
+      :onClose="closeVideo"
+      v-model:show="showVideo"
+      :images="videoUrls"
+      :showIndex="false"
+      :beforeClose="videoBeforeClose"
+      closeable>
     <template #image="{src}">
-      <video :src="src" ref="previewVideoRef" style="width: 100%;height: 800px;" controls autoplay />
+      <!-- 为了兼容移动端和pc端,需要绑定两种事件 -->
+      <div @click.native="chickVideo" @touchend="chickVideo" style="position: absolute;top:50px;left: 0;bottom: 50px;right: 0;">
+        <video :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+      </div>
     </template>
   </van-image-preview>
 
@@ -165,10 +174,20 @@ export default {
       journalTitle:"",
       keyword:"",
       journalBody:"",
-      journalList:[]
+      journalList:[],
+      chickVideoValue:false
     }
   },
   methods:{
+    //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
+    chickVideo:function (){
+      this.chickVideoValue = true;
+    },
+    videoBeforeClose:function (e) {
+      let ret = !this.chickVideoValue;
+      this.chickVideoValue = false;
+      return ret;
+    },
     //选择文件前校验
     beforeRead: function (files){
       if(this.uploadFiles == null || this.uploadFiles.length == 0){
@@ -195,8 +214,10 @@ export default {
     },
     //关闭视频播放器
     closeVideo:function () {
-      this.$refs.previewVideoRef.pause();
-      this.$refs.previewVideoRef.src = "";
+      if(this.$refs.previewVideoRef){
+        this.$refs.previewVideoRef.pause();
+        this.$refs.previewVideoRef.src = "";
+      }
       this.videoUrls = [];
       this.showVideo = false;
     },

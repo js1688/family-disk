@@ -132,7 +132,7 @@
   </van-action-sheet>
 
   <van-action-sheet @opened="playVideo" @close="pauseVideo" title="媒体播放" round v-model:show="showVideo">
-    <div style="padding-bottom: 20px;" id="videoBody">
+    <div style="max-width: 1200px;" id="videoBody">
     </div>
   </van-action-sheet>
   <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
@@ -157,12 +157,20 @@
     </div>
   </van-dialog>
 
-  <van-image-preview :onClose="closeVideo" v-model:show="showPreviewVideo" :images="videoUrls"  closeable>
+  <van-image-preview
+      :onClose="closeVideo"
+      v-model:show="showPreviewVideo"
+      :images="videoUrls"
+      :showIndex="false"
+      :beforeClose="videoBeforeClose"
+      closeable>
     <template #image="{src}">
-      <video :src="src" ref="previewVideoRef" style="width: 100%;height: 800px;" controls autoplay />
+      <!-- 为了兼容移动端和pc端,需要绑定两种事件 -->
+      <div @click.native="chickVideo" @touchend="chickVideo" style="position: absolute;top:50px;left: 0;bottom: 50px;right: 0;">
+        <video :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+      </div>
     </template>
   </van-image-preview>
-
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
@@ -237,7 +245,6 @@ export default {
       showToast('文件太大,请选择大件上传方式');
     };
     const activeNames = ref([]);
-
     return {
       activeNames,
       addActions,
@@ -304,10 +311,20 @@ export default {
           fullscreenToggle: true, //全屏按钮
         },
         sources:[]
-      }
+      },
+      chickVideoValue:false
     }
   },
   methods:{
+    //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
+    chickVideo:function (){
+      this.chickVideoValue = true;
+    },
+    videoBeforeClose:function (e) {
+      let ret = !this.chickVideoValue;
+      this.chickVideoValue = false;
+      return ret;
+    },
     //点击图片预览前回调
     openPreview:function (f) {
       let file = f.file;
@@ -327,8 +344,10 @@ export default {
     },
     //关闭预览视频播放器
     closeVideo:function () {
-      this.$refs.previewVideoRef.pause();
-      this.$refs.previewVideoRef.src = "";
+      if(this.$refs.previewVideoRef){
+        this.$refs.previewVideoRef.pause();
+        this.$refs.previewVideoRef.src = "";
+      }
       this.videoUrls = [];
       this.showPreviewVideo = false;
     },
