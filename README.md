@@ -14,7 +14,7 @@
 完全开源且免费，以家庭为服务单位的系统，功能有网盘、日记、记事本，使用用户空间隔离数据，多个用户可以加入共同的空间，共享空间内的数据，空间权限分为只读和读写两种，媒体资源支持在线播放，资源链接分享，数据备份，访问网盘服务时自动在局域网与公网之间切换，家庭网盘的功能仅限于这些，后面有版本更新应该也是围绕（功能优化、bug修复、存储方式扩展、对不同设备的支持）并不会出现这些功能以外的内容。
 ## 架构介绍
 本系统采用前后端分离方式：
-* 前端：vue （v4）+ vant-ui（v4）[点击跳转前端架构详细介绍](https://github.com/js1688/family-disk/tree/main/family-disk-html#readme) 
+* 前端：vue （v3.2.45）+ vant-ui（v4.0.3）+ vite（v4.0.0）[点击跳转前端架构详细介绍](https://github.com/js1688/family-disk/tree/main/family-disk-html#readme) 
 * 后端：微服务设计 + dubbo(v3.1.3) + java（v17）+ springboot（v2.7.6）+ maven（v3.6.1）[点击跳转后端架构详细介绍](https://github.com/js1688/family-disk/tree/main/family-disk-service#readme) 
 * 数据库：mysql（v8.0.31）[点击跳转表模型DDL文件](https://github.com/js1688/family-disk/tree/main/mysql-table-model/DDL)
 ## 系统部署方案场景推荐
