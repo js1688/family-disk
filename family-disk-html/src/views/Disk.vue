@@ -141,7 +141,7 @@
         <van-uploader accept="*" :after-read="largeUpload"  multiple>
           <van-button style="margin-left: 15px;" icon="plus" size="small" block type="default" />
         </van-uploader>
-        <van-cell v-for="item in largeFileUploadList" :title="item.fileName">
+        <van-cell v-for="item in largeFileUploadList" :title="item.fileName.length > 10 ? item.fileName.substring(0,10) : item.fileName">
           <div style="padding-top: 10px;">
             <van-progress :percentage="item.progress" />
           </div>
