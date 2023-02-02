@@ -124,13 +124,13 @@ export default {
   setup() {
     const addActions = [
       { text: '笔记', icon: 'notes-o',name:'note'},
-      { text: '备忘录', icon: 'passed',name:'memorandum'}
+      { text: '待办', icon: 'passed',name:'matter'}
     ];
     const showPopover = ref(false);
 
     const menuTypeOptions = [
       { text: '笔记', value: 0 },
-      { text: '备忘录', value: 1 }
+      { text: '待办', value: 1 }
     ];
 
     // 编辑器实例，必须用 shallowRef
@@ -147,8 +147,8 @@ export default {
     })
 
     const toolbarConfig = {
-      excludeKeys:["fullScreen"],
-      insertKeys:{index:0,keys: ['menu1']}
+      excludeKeys:["fullScreen"],//屏蔽工具
+      insertKeys:{index:0,keys: ['menu1']}//添加额外的工具
     }
     const editorConfig = { placeholder: '请输入内容...'}
 
@@ -218,8 +218,8 @@ export default {
         case 'note':
           this.showNote = true;
           break;
-        case 'memorandum':
-          showToast("备忘录");
+        case 'matter':
+          showToast("待办");
           break;
       }
     },

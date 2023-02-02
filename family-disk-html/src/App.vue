@@ -14,7 +14,7 @@
       </template>
     </van-tabbar-item>
     <van-tabbar-item to="/notepad">
-      <span>记事本</span>
+      <span>备忘录</span>
       <template #icon="props">
         <img :src="props.active ? icon.notepad1 : icon.notepad0" />
       </template>
