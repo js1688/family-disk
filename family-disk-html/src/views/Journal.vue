@@ -461,13 +461,14 @@ export default {
       video.setAttribute('src', url);
       video.setAttribute('width', '100%');
       video.setAttribute('height', '100%');
-      video.currentTime = 100;
+      video.currentTime = 0.1;//设置获取那一帧,跳转到视频的0.1秒即可
       video.addEventListener('loadeddata', () => {
         let canvas = document.createElement("canvas");
         canvas.width = video.width;
         canvas.height = video.height;
         canvas.getContext("2d").drawImage(video, 0, 0, video.width, video.height); //绘制canvas
         setCoverUrl(canvas.toDataURL('image/jpeg'));//转换为base64
+        video.remove();//及时销毁对象
       });
     },
     //base64转file
