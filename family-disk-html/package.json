@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@vant/touch-emulator": "^1.4.0",
+    "@wangeditor/editor": "^5.1.23",
     "@wangeditor/editor-for-vue": "^5.1.12",
     "axios": "^1.2.1",
     "file-saver": "^2.0.5",

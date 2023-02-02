@@ -27,13 +27,30 @@
     </van-popover>
   </div>
 
+  <div style="">
+    <Toolbar
+        style="border-bottom: 1px solid #ccc"
+        :editor="editorRef"
+        :defaultConfig="toolbarConfig"
+        :mode="mode"
+    />
+    <Editor
+        style="height: 500px; overflow-y: hidden;"
+        v-model="valueHtml"
+        :defaultConfig="editorConfig"
+        :mode="mode"
+        @onCreated="handleCreated"
+    />
+  </div>
+
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
 <script>
 import '@wangeditor/editor/dist/css/style.css' // 引入 css
 import { onBeforeUnmount, ref, shallowRef, onMounted } from 'vue'
-import { Editor, Toolbar} from '@wangeditor/editor-for-vue'
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
+import { Boot} from "@wangeditor/editor";
 import {
   Popover,
   Button,
@@ -43,9 +60,54 @@ import {
   Loading,
   showToast,
   DropdownMenu,
-  DropdownItem
+  DropdownItem,
+  ActionSheet
 } from 'vant';
 import axios from "axios";
+
+//自定义工具栏功能,保存,退出
+class MyButtonMenu {
+  constructor() {
+    this.title = '保存' // 自定义菜单标题
+    // this.iconSvg = '<svg>...</svg>' // 可选
+    this.tag = 'button'
+  }
+
+  // 获取菜单执行时的 value ，用不到则返回空 字符串或 false
+  getValue(editor) {                              // JS 语法
+    return ' hello '
+  }
+
+  // 菜单是否需要激活（如选中加粗文本，“加粗”菜单会激活），用不到则返回 false
+  isActive(editor) {                    // JS 语法
+    return false
+  }
+
+  // 菜单是否需要禁用（如选中 H1 ，“引用”菜单被禁用），用不到则返回 false
+  isDisabled(editor) {                     // JS 语法
+    return false
+  }
+
+  // 点击菜单时触发的函数
+  exec(editor, value) {                              // JS 语法
+    if (this.isDisabled(editor)) return
+    editor.insertText(value) // value 即 this.value(editor) 的返回值
+  }
+
+}
+
+const menu1Conf = {
+  key: 'menu1', // 定义 menu key ：要保证唯一、不重复（重要）
+  factory() {
+    return new MyButtonMenu() // 把 `YourMenuClass` 替换为你菜单的 class
+  },
+}
+
+const module = {                      // JS 语法
+  menus: [menu1Conf]
+}
+Boot.registerModule(module)
+
 export default {
   name: "Notepad",
   components: { Editor, Toolbar ,
@@ -56,7 +118,8 @@ export default {
     [Search.name]:Search,
     [Loading.name]:Loading,
     [DropdownMenu.name]:DropdownMenu,
-    [DropdownItem.name]:DropdownItem
+    [DropdownItem.name]:DropdownItem,
+    [ActionSheet.name]:ActionSheet
   },
   setup() {
     const addActions = [
@@ -69,10 +132,49 @@ export default {
       { text: '笔记', value: 0 },
       { text: '备忘录', value: 1 }
     ];
+
+    // 编辑器实例，必须用 shallowRef
+    const editorRef = shallowRef()
+
+    // 内容 HTML
+    const valueHtml = ref('<p>hello</p>')
+
+    // 模拟 ajax 异步获取内容
+    onMounted(() => {
+      setTimeout(() => {
+        valueHtml.value = '<p>模拟 Ajax 异步设置内容</p>'
+      }, 1500)
+    })
+
+    const toolbarConfig = {
+      excludeKeys:["fullScreen"],
+      insertKeys:{index:0,keys: ['menu1']}
+    }
+    const editorConfig = { placeholder: '请输入内容...'}
+
+    // 组件销毁时，也及时销毁编辑器
+    onBeforeUnmount(() => {
+      const editor = editorRef.value
+      if (editor == null) return
+      editor.destroy()
+    })
+
+    const handleCreated = (editor) => {
+      editorRef.value = editor // 记录 editor 实例，重要！
+      editorRef.value.fullScreen();//默认打开全屏
+
+    }
     return {
       addActions,
       showPopover,
-      menuTypeOptions
+      menuTypeOptions,
+
+      editorRef,
+      valueHtml,
+      mode: 'simple', // default 或 'simple'
+      toolbarConfig,
+      editorConfig,
+      handleCreated
     };
   },
   data(){
@@ -83,7 +185,8 @@ export default {
       keyword:"",
       menuTypeValue:0,
       menuLabelValue:null,
-      menuLabelOptions:[]
+      menuLabelOptions:[],
+      showNote:false
     }
   },
   created(){
@@ -112,19 +215,11 @@ export default {
     addSelect: function (item){
       let cz = item.name;
       switch (cz) {
-        case 'addJournal':
-          if(!this.journalDate){
-            let dt = new Date();
-            let year = dt.getFullYear();
-            let month = (dt.getMonth() + 1).toString().padStart(2,'0');
-            let date = dt.getDate().toString().padStart(2,'0');
-            this.journalDate = year+'-'+month+'-'+date;
-          }
-          this.journalTitle = "";
-          this.journalBody = "";
-          this.uploadFiles = [];
-          this.uploadDisabled = false;
-          this.showJournalSave = true;
+        case 'note':
+          this.showNote = true;
+          break;
+        case 'memorandum':
+          showToast("备忘录");
           break;
       }
     },
