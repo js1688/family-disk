@@ -82,7 +82,7 @@ public class FileController {
     @Autowired
     private ByteResourceHttpRequestHandlerConfig resourceHttpRequestHandle;
 
-    //todo 前端播放器不支持播放mov等视频资源,或者播放有的mp4黑屏问题,考虑是否后端转码输出 可以试试 FFMPEG 解决转码问题 Chrome只支持标准的H.264方式编码
+
     @ApiOperation(value = "媒体资源边播边下")
     @GetMapping("/media/play/{source}/{fileMd5}/{useSpaceId}/{token}")
     public void mediaPlay(HttpServletRequest request,HttpServletResponse response,

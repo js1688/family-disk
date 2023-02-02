@@ -63,13 +63,14 @@
       </van-cell-group>
       <div style="margin-left: 30px;margin-right: 30px;margin-bottom: 30px;">
         <van-uploader :deletable="uploadDisabled == false"
+                      ref="uploader"
                       @click-preview="openPreview"
                       preview-size="80"
                       :max-size="1024 * 1024 * 32"
                       @oversize="onOversize"
                       :max-count="12"
                       :before-read="beforeRead"
-                      :disabled="uploadDisabled"
+                      :readonly="uploadDisabled"
                       accept="image/*,video/*,audio/*"
                       :preview-options="{closeable:true}"
                       v-model="uploadFiles" multiple>
@@ -92,7 +93,7 @@
     <template #image="{src}">
       <!-- 为了兼容移动端和pc端,需要绑定两种事件 -->
       <div @click.native="chickVideo" @touchend="chickVideo" style="position: absolute;top:50px;left: 0;bottom: 50px;right: 0;">
-        <video :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+        <video id="videoId" :poster="videoCoverBase64" :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
       </div>
     </template>
   </van-image-preview>
@@ -124,6 +125,7 @@ import {
 //vant适配桌面端
 import '@vant/touch-emulator';
 import {ref} from "vue";
+import {key} from "@/global/KeyGlobal";
 
 
 export default {
@@ -175,7 +177,8 @@ export default {
       keyword:"",
       journalBody:"",
       journalList:[],
-      chickVideoValue:false
+      chickVideoValue:false,
+      videoCoverBase64:''
     }
   },
   methods:{
@@ -224,27 +227,32 @@ export default {
     //点击图片预览前回调
     openPreview:function (f) {
       let file = f.file;
-      if(!file){
-        //没有file对象,预览的是远程资源
+      let mediaType = null;
+      if(file.type2){//有真实的视频类型
+        mediaType = file.type2.toUpperCase();
+      }else{
+        mediaType = file.type.toUpperCase();
       }
-      let mediaType = file.type.toUpperCase();
       mediaType = mediaType.substring(0,mediaType.indexOf("/"));
       switch (mediaType){
         case "VIDEO"://视频
         case "AUDIO"://音频
-            //切换到播放器播放
-            let url = null;
-            if(f.url){
-              url = f.url;
-            }else{
-              let blob = file.slice(0,file.size);
-              url = window.URL.createObjectURL(blob);
-            }
-            this.videoUrls = [url];
-            this.showVideo = true;
-            return false;
+          this.$refs.uploader.closeImagePreview();
+          //切换到播放器播放,有url的是远程资源
+          let url = null;
+          if(f.url && !f.url2){
+            url = f.url;
+          }else if(f.url2 && f.url){//如果2个都值,那么url2才是视频地址,url是封面
+            this.videoCoverBase64 = f.url;//视频封面
+            url = f.url2;
+          }else{//本地资源
+            let blob = file.slice(0,file.size);
+            url = window.URL.createObjectURL(blob);
+          }
+          this.videoUrls = [url];
+          this.showVideo = true;
+          return false;
       }
-      return true;
     },
     /**
      * 检查文件是否都上传完毕
@@ -446,6 +454,34 @@ export default {
         }
       }
     },
+    //从视频流中读取第一帧,获得base64
+    getVideoCoverBase64(url,setCoverUrl) {
+      let video = document.createElement("video");
+      video.setAttribute('crossOrigin', 'anonymous');//处理跨域
+      video.setAttribute('src', url);
+      video.setAttribute('width', '100%');
+      video.setAttribute('height', '100%');
+      video.currentTime = 100;
+      video.addEventListener('loadeddata', () => {
+        let canvas = document.createElement("canvas");
+        canvas.width = video.width;
+        canvas.height = video.height;
+        canvas.getContext("2d").drawImage(video, 0, 0, video.width, video.height); //绘制canvas
+        setCoverUrl(canvas.toDataURL('image/jpeg'));//转换为base64
+      });
+    },
+    //base64转file
+    dataURLtoBlob:function(base64Url){
+      let arr = base64Url.split(",");
+      let  mime = arr[0].match(/:(.*?);/)[1];
+      let  str = window.atob(arr[1]);
+      let  n = str.length;
+      let  u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = str.charCodeAt(n);
+      }
+      return new Blob([u8arr], {type:mime});
+    },
     //打开日记
     open:function (item) {
       this.journalDate = item.happenTime;
@@ -459,26 +495,53 @@ export default {
       if(item.files){
         for (let i = 0; i < item.files.length; i++) {
           //添加占位,在媒体资源未下载完之前就显示有哪些资源正在加载
-          self.uploadFiles.push({status:"uploading",message:"加载中",file:
-                {name:item.files[i].fileName,type:item.files[i].mediaType}
-          });
-          axios.post('/file/getFile', {
-            fileMd5: item.files[i].fileMd5,
-            name: item.files[i].fileName,
-            source:"JOURNAL"
-          },{
-            responseType:"blob"
-          }).then(function (response) {
-            const { data, headers } = response;
-            const blob = new Blob([data], {type: headers['content-type']});
-            let url = window.URL.createObjectURL(blob);
-            let f = self.uploadFilesFind(item.files[i].fileName);
-            f["url"] = url;
-            f.status = "done"
-            f.message = "";
-          }).catch(function (error) {
-            console.log(error);
-          });
+          let config = {url2:'',url:'',status:"uploading",message:"加载中",file:
+                {name:item.files[i].fileName,type:'',type2:''}
+          };
+          let mediaType = item.files[i].mediaType.toUpperCase();
+          let mediaTypes = mediaType.split("/");
+          //如果是视频或音频,改成变下边播的url
+          let url = key().baseURL+"file/media/play/JOURNAL/"+item.files[i].fileMd5+"/"+localStorage.getItem(key().useSpaceId)+"/"+localStorage.getItem(key().authorization);
+          switch (mediaTypes[0]) {
+            case "VIDEO"://视频
+              config.url2 = url;//真实媒体播放地址
+              this.getVideoCoverBase64(url, function (u) {
+                //预览小图
+                let blob = self.dataURLtoBlob(u);
+                let f = self.uploadFilesFind(config.file.name);
+                f.url = window.URL.createObjectURL(blob);//封面地址
+                f.file.type2 = mediaType;//真实媒体类型
+                f.file.type = blob.type;//封面类型
+                f.status = "done";
+                f.message = "";
+              });
+              break;
+            case "AUDIO"://音频
+              config.status = "done";
+              config.message = "";
+              config.url = url;//真实媒体播放地址
+              break;
+            default:
+              axios.post('/file/getFile', {
+                fileMd5: item.files[i].fileMd5,
+                name: item.files[i].fileName,
+                source:"JOURNAL"
+              },{
+                responseType:"blob"
+              }).then(function (response) {
+                const { data, headers } = response;
+                const blob = new Blob([data], {type: headers['content-type']});
+                let url = window.URL.createObjectURL(blob);
+                let f = self.uploadFilesFind(item.files[i].fileName);
+                f.url = url;
+                f.status = "done"
+                f.message = "";
+              }).catch(function (error) {
+                console.log(error);
+              });
+          }
+          config.file.type = item.files[i].mediaType;
+          self.uploadFiles.push(config);
         }
       }
     }
