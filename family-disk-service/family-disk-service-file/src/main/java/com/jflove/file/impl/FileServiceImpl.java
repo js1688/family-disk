@@ -1,7 +1,6 @@
 package com.jflove.file.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.FileDiskConfigPO;
 import com.jflove.file.FileInfoPO;
@@ -9,7 +8,6 @@ import com.jflove.file.api.IFileService;
 import com.jflove.file.dto.FileReadReqDTO;
 import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.dto.FileTransmissionRepDTO;
-import com.jflove.file.em.FileSourceENUM;
 import com.jflove.file.mapper.FileDiskConfigMapper;
 import com.jflove.file.mapper.FileInfoMapper;
 import com.jflove.file.service.IFileReadAndWrit;
@@ -27,7 +25,6 @@ import org.springframework.util.unit.DataSize;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -148,7 +145,9 @@ public class FileServiceImpl implements IFileService {
                 File[] fs = new File(tempPath).listFiles(e->e.getName().startsWith(data.getFileMd5()));
                 boolean ok = fs.length == data.getShardingNum() - 1;
                 try {
-                    Files.write(Path.of(String.format("%s/%s-%s%s", tempPath, data.getFileMd5(), String.valueOf(data.getShardingSort()), tempFileSuffix)), data.getShardingStream());
+                    Path p = Path.of(String.format("%s/%s-%s%s", tempPath,data.getFileMd5(), String.valueOf(data.getShardingSort()), tempFileSuffix));
+                    Files.deleteIfExists(p);//如果分片存在,先删除这个分片,重新写入
+                    Files.write(p,data.getShardingStream());
                 }catch (IOException e){
                     log.error("分片存储异常",e);
                     response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),false,"分片文件存储异常"));
