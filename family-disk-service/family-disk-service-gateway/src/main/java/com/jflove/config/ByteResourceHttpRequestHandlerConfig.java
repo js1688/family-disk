@@ -90,7 +90,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             dto.setSpaceId((Long)request.getAttribute(SPACE_ID));
             repStream.onNext(dto);
             while (true){
-                TimeUnit.SECONDS.sleep(1);
+                TimeUnit.MILLISECONDS.sleep(200);
                 if(ab.get()){
                     break;
                 }

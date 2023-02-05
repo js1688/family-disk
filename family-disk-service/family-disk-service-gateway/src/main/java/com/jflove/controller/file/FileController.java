@@ -179,7 +179,7 @@ public class FileController {
             });
             request.onNext(new FileReadReqDTO(param.getFileMd5(),FileSourceENUM.valueOf(param.getSource()),useSpaceId));
             while (true){
-                TimeUnit.SECONDS.sleep(1);
+                TimeUnit.MILLISECONDS.sleep(200);
                 if(ab.get()){
                     break;
                 }
@@ -270,7 +270,7 @@ public class FileController {
         });
         request.onNext(dto);
         while (true){
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(200);
             if(ab.get()){
                 break;
             }
@@ -377,7 +377,7 @@ public class FileController {
             return new ResponseHeadVO<>(false,"文件上传失败");
         }
         while (true){
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(200);
             if(ab.get()){
                 break;
             }
