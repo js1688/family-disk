@@ -27,30 +27,32 @@
     </van-popover>
   </div>
 
-  <div style="">
-    <Toolbar
-        style="border-bottom: 1px solid #ccc"
-        :editor="editorRef"
-        :defaultConfig="toolbarConfig"
-        :mode="mode"
-    />
-    <Editor
-        style="height: 500px; overflow-y: hidden;"
-        v-model="valueHtml"
-        :defaultConfig="editorConfig"
-        :mode="mode"
-        @onCreated="handleCreated"
-    />
-  </div>
+
+  <van-action-sheet v-model:show="showNote" :round="false">
+    <div>
+      <v-md-editor
+          v-if="showNote"
+          v-model="text"
+          :disabled-menus="disabledMenus"
+          :right-toolbar="rightToolbar"
+          :left-toolbar="leftToolbar"
+          :toolbar="toolbar"
+          :default-fullscreen="defaultFullscreen"
+          :autofocus="true"
+          :mode="mode"
+          @save="save"
+      >
+      </v-md-editor>
+    </div>
+  </van-action-sheet>
+
+
 
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
 <script>
-import '@wangeditor/editor/dist/css/style.css' // 引入 css
-import { onBeforeUnmount, ref, shallowRef, onMounted } from 'vue'
-import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
-import { Boot} from "@wangeditor/editor";
+import {ref} from 'vue';
 import {
   Popover,
   Button,
@@ -61,56 +63,24 @@ import {
   showToast,
   DropdownMenu,
   DropdownItem,
-  ActionSheet
+  ActionSheet, showConfirmDialog
 } from 'vant';
+import VMdEditor from '@kangc/v-md-editor';
+import '@kangc/v-md-editor/lib/style/base-editor.css';
+import githubTheme from '@kangc/v-md-editor/lib/theme/github.js';
+import '@kangc/v-md-editor/lib/theme/style/github.css';
+import createTodoListPlugin from '@kangc/v-md-editor/lib/plugins/todo-list/index';
+import hljs from 'highlight.js';
+VMdEditor.use(githubTheme, {
+  Hljs: hljs,
+});
 import axios from "axios";
 
-//自定义工具栏功能,保存,退出
-class MyButtonMenu {
-  constructor() {
-    this.title = '保存' // 自定义菜单标题
-    // this.iconSvg = '<svg>...</svg>' // 可选
-    this.tag = 'button'
-  }
-
-  // 获取菜单执行时的 value ，用不到则返回空 字符串或 false
-  getValue(editor) {                              // JS 语法
-    return ' hello '
-  }
-
-  // 菜单是否需要激活（如选中加粗文本，“加粗”菜单会激活），用不到则返回 false
-  isActive(editor) {                    // JS 语法
-    return false
-  }
-
-  // 菜单是否需要禁用（如选中 H1 ，“引用”菜单被禁用），用不到则返回 false
-  isDisabled(editor) {                     // JS 语法
-    return false
-  }
-
-  // 点击菜单时触发的函数
-  exec(editor, value) {                              // JS 语法
-    if (this.isDisabled(editor)) return
-    editor.insertText(value) // value 即 this.value(editor) 的返回值
-  }
-
-}
-
-const menu1Conf = {
-  key: 'menu1', // 定义 menu key ：要保证唯一、不重复（重要）
-  factory() {
-    return new MyButtonMenu() // 把 `YourMenuClass` 替换为你菜单的 class
-  },
-}
-
-const module = {                      // JS 语法
-  menus: [menu1Conf]
-}
-Boot.registerModule(module)
 
 export default {
   name: "Notepad",
-  components: { Editor, Toolbar ,
+  components: {
+    VMdEditor,
     [Popover.name]:Popover,
     [Button.name]:Button,
     [BackTop.name]:BackTop,
@@ -124,61 +94,66 @@ export default {
   setup() {
     const addActions = [
       { text: '笔记', icon: 'notes-o',name:'note'},
-      { text: '待办', icon: 'passed',name:'matter'}
+      // { text: '待办', icon: 'passed',name:'matter'}
     ];
     const showPopover = ref(false);
 
     const menuTypeOptions = [
       { text: '笔记', value: 0 },
-      { text: '待办', value: 1 }
+      // { text: '待办', value: 1 }
     ];
 
-    // 编辑器实例，必须用 shallowRef
-    const editorRef = shallowRef()
-
-    // 内容 HTML
-    const valueHtml = ref('<p>hello</p>')
-
-    // 模拟 ajax 异步获取内容
-    onMounted(() => {
-      setTimeout(() => {
-        valueHtml.value = '<p>模拟 Ajax 异步设置内容</p>'
-      }, 1500)
-    })
-
-    const toolbarConfig = {
-      excludeKeys:["fullScreen"],//屏蔽工具
-      insertKeys:{index:0,keys: ['menu1']}//添加额外的工具
-    }
-    const editorConfig = { placeholder: '请输入内容...'}
-
-    // 组件销毁时，也及时销毁编辑器
-    onBeforeUnmount(() => {
-      const editor = editorRef.value
-      if (editor == null) return
-      editor.destroy()
-    })
-
-    const handleCreated = (editor) => {
-      editorRef.value = editor // 记录 editor 实例，重要！
-      editorRef.value.fullScreen();//默认打开全屏
-
-    }
     return {
       addActions,
       showPopover,
-      menuTypeOptions,
-
-      editorRef,
-      valueHtml,
-      mode: 'simple', // default 或 'simple'
-      toolbarConfig,
-      editorConfig,
-      handleCreated
+      menuTypeOptions
     };
   },
   data(){
+    let self = this;
+    self.toolbar = {
+      exitToolbar:{
+        icon:"v-md-icon-undo",
+        title:'退出',
+        action(editor) {
+          if(self.text != self.originalText){
+            this.isOverlay = true;
+            showConfirmDialog({
+              title: '保存?',
+              message:'内容已发生改变,是否保存?'
+            }).then(() => {
+              self.isOverlay = false;
+              self.showNote = false;
+            }).catch(function (error) {
+              console.log(error);
+              self.isOverlay = false;
+            });
+          }else{
+            self.showNote = false;
+          }
+        },
+      },
+      checkboxToolbar:{
+        icon:"v-md-icon-checkbox",
+        title:'复选框',
+        action(editor) {
+          editor.insert(function (selected) {
+            return {
+              text: '- [ ] ',
+              selected: selected,
+            };
+          });
+        }
+      }
+    };
     return {
+      defaultFullscreen:true,
+      mode:"edit",
+      disabledMenus:['image/upload-image','h/h4','h/h5','h/h6'],
+      rightToolbar:'exitToolbar',
+      leftToolbar:"h bold strikethrough quote ul ol checkboxToolbar hr link image code | save",
+      text:'',
+      originalText:'',
       isOverlay:false,
       loading:false,
       finished:false,
@@ -187,18 +162,28 @@ export default {
       menuLabelValue:null,
       menuLabelOptions:[],
       showNote:false
-    }
+    };
   },
+  //页面打开时初始化
   created(){
+    let self = this;
     this.getMenuLabelOption();
+
   },
   methods:{
+    //富文本编辑器触发保存
+    save:function (text, html){
+      console.log(text);
+      console.log(html);
+      showToast('点击保存');
+    },
     //用户标签获取
     getMenuLabelOption:function (){
-      let list = [{ text: '个人', value: 0 }];//默认一个
+      let list = [{ text: '全部', value: 0 }];//默认一个
       //获取用户添加的标签
-      list.push({ text: '生活', value: 1 });
-      list.push({ text: '工作', value: 2 });
+      list.push({ text: '个人', value: 1 });
+      list.push({ text: '生活', value: 2 });
+      list.push({ text: '工作', value: 3 });
       this.menuLabelOptions = list;
       this.menuLabelValue = list[0].value;
     },
@@ -216,6 +201,10 @@ export default {
       let cz = item.name;
       switch (cz) {
         case 'note':
+          this.originalText='原始文字';
+          this.text = this.originalText;
+          // this.mode='preview';
+          // this.defaultFullscreen = false;
           this.showNote = true;
           break;
         case 'matter':
