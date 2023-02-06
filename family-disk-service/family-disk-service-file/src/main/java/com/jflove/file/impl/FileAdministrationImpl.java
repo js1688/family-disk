@@ -69,8 +69,7 @@ public class FileAdministrationImpl implements IFileAdministration {
             return new ResponseHeadDTO<>(false,"删除失败,不存在这个文件");
         }
         po.setMarkDelete(1);//标记删除
-        int after = 30;//三十天后删除
-        po.setDeleteTime((System.currentTimeMillis() / 1000) + (60 * 60 * 24 * after));
+        po.setDeleteTime(System.currentTimeMillis() / 1000);//现在没做回收站,标记成现在就可以删除,等清理线程扫描到了就会执行删除
         po.setUpdateTime(null);
         fileInfoMapper.updateById(po);
         return new ResponseHeadDTO<>(true,true,"文件已删除,可以在回收站中找回或彻底删除.");
