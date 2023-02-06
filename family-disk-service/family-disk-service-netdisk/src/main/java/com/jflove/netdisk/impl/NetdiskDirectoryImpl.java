@@ -2,8 +2,7 @@ package com.jflove.netdisk.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.admin.api.IFileAdministration;
-import com.jflove.file.api.IFileService;
+import com.jflove.file.api.IFileAdministration;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.NetdiskDirectoryPO;
 import com.jflove.netdisk.api.INetdiskDirectory;

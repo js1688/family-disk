@@ -19,3 +19,6 @@ dubbo:
   protocol:
     name: dubbo
     port: 4466
+
+logging:
+  config: logback.xml

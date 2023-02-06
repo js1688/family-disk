@@ -1,7 +1,6 @@
-package com.jflove.admin.api;
+package com.jflove.file.api;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.file.dto.FileTransmissionDTO;
 import com.jflove.file.em.FileSourceENUM;
 
 /**

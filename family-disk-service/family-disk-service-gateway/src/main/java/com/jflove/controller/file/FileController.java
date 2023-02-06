@@ -1,7 +1,7 @@
 package com.jflove.controller.file;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.admin.api.IFileAdministration;
+import com.jflove.file.api.IFileAdministration;
 import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileService;

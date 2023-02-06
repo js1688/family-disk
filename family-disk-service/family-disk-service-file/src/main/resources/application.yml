@@ -25,3 +25,6 @@ file:
     path:
       temp: /Users/tanjun/Downloads/temp
     space: 10GB
+
+logging:
+  config: logback.xml

@@ -19,3 +19,6 @@ dubbo:
   protocol:
     name: dubbo
     port: 3322
+
+logging:
+  config: logback.xml

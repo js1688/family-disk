@@ -1,11 +1,11 @@
-package com.jflove.admin.impl;
+package com.jflove.file.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.admin.api.IFileAdministration;
-import com.jflove.admin.mapper.FileInfoMapper;
 import com.jflove.file.FileInfoPO;
+import com.jflove.file.api.IFileAdministration;
 import com.jflove.file.em.FileSourceENUM;
+import com.jflove.file.mapper.FileInfoMapper;
 import com.jflove.user.api.IUserSpace;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;

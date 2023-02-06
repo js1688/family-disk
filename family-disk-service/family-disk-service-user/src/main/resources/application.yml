@@ -22,3 +22,6 @@ mybatis-plus:
 user:
   space:
     init-size: 10240MB
+
+logging:
+  config: logback.xml
