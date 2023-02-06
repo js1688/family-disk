@@ -1,5 +1,5 @@
 #!/bin/bash
-# 阿里云云效自动化部署启动脚本
+# 启动脚本
 JAVA_OPT="${JAVA_OPT} -server -Xms512m -Xmx512m"
 JAVA_OPT="${JAVA_OPT} -ea"
 JAVA_OPT="${JAVA_OPT} --add-opens java.base/java.lang=ALL-UNNAMED"
