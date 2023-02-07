@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -25,5 +26,6 @@ public class GetByIdParamVO implements Serializable {
     private static final long serialVersionUID = 7622838224315552244L;
 
     @ApiModelProperty(value="ID")
+    @NotNull(message = "查询条件id不能为空")
     private Long id;
 }
