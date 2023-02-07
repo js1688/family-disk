@@ -63,9 +63,9 @@ public class NoteBookController {
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
-    @ApiOperation(value = "添加日记")
-    @PostMapping("/addNote")
-    public ResponseHeadVO addNote(@RequestBody @Valid NotebookNoteVO param){
+    @ApiOperation(value = "保存笔记")
+    @PostMapping("/saveNote")
+    public ResponseHeadVO saveNote(@RequestBody @Valid NotebookNoteVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
@@ -80,9 +80,9 @@ public class NoteBookController {
         NotebookNoteDTO dto = new NotebookNoteDTO();
         BeanUtils.copyProperties(param,dto);
         dto.setSpaceId(useSpaceId);
-        dto.setId(0);
+        dto.setId(param.getId());
         dto.setCreateUserId(useUserId);
-        ResponseHeadDTO<Long> retDto = noteService.add(dto);
+        ResponseHeadDTO<Long> retDto = noteService.saveNote(dto);
         ResponseHeadVO<Long> retVo = new ResponseHeadVO<Long>();
         BeanUtils.copyProperties(retDto,retVo);
         return retVo;

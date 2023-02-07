@@ -51,15 +51,22 @@ public class NoteServiceImpl implements INoteService {
     }
 
     @Override
-    public ResponseHeadDTO<Long> add(NotebookNoteDTO dto) {
+    public ResponseHeadDTO<Long> saveNote(NotebookNoteDTO dto) {
         NotebookNotePO po = new NotebookNotePO();
         BeanUtils.copyProperties(dto,po);
-        po.setId(0);
         int len = po.getText().length();
-        String keyword = po.getText().substring(0,len > 10 ? 10 : len);
+        String keyword = po.getText().substring(0, len > 10 ? 10 : len);
         po.setKeyword(keyword);
-        notebookNoteMapper.insert(po);
-        return new ResponseHeadDTO<>(true,po.getId(),"添加笔记成功");
+        if(po.getId() == 0) {
+            notebookNoteMapper.insert(po);
+        }else{//修改
+            po.setUpdateTime(null);
+            po.setCreateUserId(0);
+            po.setCreateTime(null);
+            po.setSpaceId(0);
+            notebookNoteMapper.updateById(po);
+        }
+        return new ResponseHeadDTO<>(true,po.getId(),"笔记保存成功");
     }
 
     @Override

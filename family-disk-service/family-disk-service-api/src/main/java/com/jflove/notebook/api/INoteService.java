@@ -40,7 +40,7 @@ public interface INoteService {
      * @param dto
      * @return
      */
-    ResponseHeadDTO<Long> add(NotebookNoteDTO dto);
+    ResponseHeadDTO<Long> saveNote(NotebookNoteDTO dto);
 
     /**
      * 删除笔记
