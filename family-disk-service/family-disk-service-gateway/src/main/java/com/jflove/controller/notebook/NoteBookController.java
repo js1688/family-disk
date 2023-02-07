@@ -68,7 +68,12 @@ public class NoteBookController {
     @PostMapping("/delNote")
     public ResponseHeadVO delNote(@RequestBody @Valid GetByIdParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有删除权限");
+        }
         ResponseHeadDTO<String> ret = noteService.del(useSpaceId,param.getId());
         return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
     }
