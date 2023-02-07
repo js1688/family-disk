@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -28,8 +29,10 @@ public class GetListParamVO implements Serializable {
     private String keyword;
 
     @ApiModelProperty(value="标签")
-    private long tag;
+    @NotNull(message = "标签不能为空")
+    private Long tag;
 
     @ApiModelProperty(value="类型(笔记=0,待办=1)")
-    private long type;
+    @NotNull(message = "备忘录类型不能为空")
+    private Long type;
 }

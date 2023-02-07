@@ -23,7 +23,7 @@ public class NotebookListVO implements Serializable{
 
 
   @ApiModelProperty(value="主键")
-  private long id;
+  private Long id;
 
   @ApiModelProperty(value="创建日期")
   private Date createTime;
@@ -32,10 +32,10 @@ public class NotebookListVO implements Serializable{
   private Date updateTime;
 
   @ApiModelProperty(value="标签")
-  private long tag;
+  private Long tag;
 
   @ApiModelProperty(value="类型(笔记=0,待办=1)")
-  private long type;
+  private Long type;
 
   @ApiModelProperty(value="关键字")
   private String keyword;
