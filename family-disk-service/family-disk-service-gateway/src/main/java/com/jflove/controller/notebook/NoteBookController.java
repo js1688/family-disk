@@ -6,7 +6,8 @@ import com.jflove.notebook.api.INoteService;
 import com.jflove.notebook.dto.NotebookNoteDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
-import com.jflove.vo.notebook.GetNoteListParamVO;
+import com.jflove.vo.notebook.GetListParamVO;
+import com.jflove.vo.notebook.NotebookListVO;
 import com.jflove.vo.notebook.NotebookNoteVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -31,10 +32,10 @@ import java.util.List;
  * @desc:
  */
 @RestController
-@RequestMapping("/note")
-@Api(tags = "笔记")
+@RequestMapping("/notebook")
+@Api(tags = "备忘录")
 @Log4j2
-public class NoteController {
+public class NoteBookController {
 
     @DubboReference
     private INoteService noteService;
@@ -43,17 +44,18 @@ public class NoteController {
     private HttpServletRequest autowiredRequest;
 
 
-    @ApiOperation(value = "查询日记")
-    @PostMapping("/getNoteList")
-    public ResponseHeadVO<NotebookNoteVO> getNoteList(@RequestBody @Valid GetNoteListParamVO param){
+    @ApiOperation(value = "查询备忘录列表")
+    @PostMapping("/getList")
+    public ResponseHeadVO<NotebookListVO> getList(@RequestBody @Valid GetListParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
         ResponseHeadDTO<NotebookNoteDTO> dto = noteService.getList(useSpaceId,param.getKeyword(),param.getTag());
         if(dto.isResult()){
-            List<NotebookNoteVO> vos = new ArrayList<>(dto.getDatas().size());
+            List<NotebookListVO> vos = new ArrayList<>(dto.getDatas().size());
             dto.getDatas().forEach(v->{
-                NotebookNoteVO vo = new NotebookNoteVO();
+                NotebookListVO vo = new NotebookListVO();
                 BeanUtils.copyProperties(v,vo);
+                vo.setType(param.getType());
                 vos.add(vo);
             });
             return new ResponseHeadVO<>(dto.isResult(),vos,dto.getMessage());

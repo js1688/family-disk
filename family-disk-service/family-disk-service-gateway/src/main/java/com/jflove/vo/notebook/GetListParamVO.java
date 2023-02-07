@@ -17,8 +17,8 @@ import java.io.Serializable;
 @Getter
 @Setter
 @ToString
-@ApiModel("查询笔记本条件")
-public class GetNoteListParamVO implements Serializable {
+@ApiModel("备忘录查询条件")
+public class GetListParamVO implements Serializable {
 
 
     @Serial
@@ -29,4 +29,7 @@ public class GetNoteListParamVO implements Serializable {
 
     @ApiModelProperty(value="标签")
     private long tag;
+
+    @ApiModelProperty(value="类型(笔记=0,待办=1)")
+    private long type;
 }
