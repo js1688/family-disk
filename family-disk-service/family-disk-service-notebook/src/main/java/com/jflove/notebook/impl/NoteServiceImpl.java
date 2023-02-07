@@ -78,7 +78,7 @@ public class NoteServiceImpl implements INoteService {
         if(po == null){
             return new ResponseHeadDTO<>(false,po.getText(),"笔记不存在");
         }
-        return new ResponseHeadDTO<>(po.getText());
+        return new ResponseHeadDTO<>(true,po.getText(),"查询成功");
     }
 
     @Override
