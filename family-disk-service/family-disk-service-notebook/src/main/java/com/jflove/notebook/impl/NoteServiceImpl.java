@@ -69,7 +69,7 @@ public class NoteServiceImpl implements INoteService {
 
     @Override
     public ResponseHeadDTO del(long spaceId, long id) {
-        if(notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>().eq(NotebookNotePO::getId,id))){
+        if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>().eq(NotebookNotePO::getId,id))){
             return new ResponseHeadDTO<>(false,"","笔记不存在");
         }
         return new ResponseHeadDTO<>(true,"","删除成功");
