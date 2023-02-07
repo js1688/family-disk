@@ -72,6 +72,7 @@ public class NoteServiceImpl implements INoteService {
         if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>().eq(NotebookNotePO::getId,id))){
             return new ResponseHeadDTO<>(false,"","笔记不存在");
         }
+        notebookNoteMapper.deleteById(id);
         return new ResponseHeadDTO<>(true,"","删除成功");
     }
 
