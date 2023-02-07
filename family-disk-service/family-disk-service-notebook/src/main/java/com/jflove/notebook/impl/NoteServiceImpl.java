@@ -55,7 +55,7 @@ public class NoteServiceImpl implements INoteService {
         NotebookNotePO po = new NotebookNotePO();
         BeanUtils.copyProperties(dto,po);
         int len = po.getText().length();
-        String keyword = po.getText().substring(0, len > 10 ? 10 : len);
+        String keyword = po.getText().substring(0, len > 20 ? 20 : len);
         po.setKeyword(keyword);
         if(po.getId() == 0) {
             notebookNoteMapper.insert(po);
@@ -69,14 +69,17 @@ public class NoteServiceImpl implements INoteService {
 
     @Override
     public ResponseHeadDTO del(long spaceId, long id) {
-        return null;
+        if(notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>().eq(NotebookNotePO::getId,id))){
+            return new ResponseHeadDTO<>(false,"","笔记不存在");
+        }
+        return new ResponseHeadDTO<>(true,"","删除成功");
     }
 
     @Override
     public ResponseHeadDTO<String> getText(long spaceId, long id) {
         NotebookNotePO po = notebookNoteMapper.selectById(id);
         if(po == null){
-            return new ResponseHeadDTO<>(false,po.getText(),"笔记不存在");
+            return new ResponseHeadDTO<>(false,"","笔记不存在");
         }
         return new ResponseHeadDTO<>(true,po.getText(),"查询成功");
     }

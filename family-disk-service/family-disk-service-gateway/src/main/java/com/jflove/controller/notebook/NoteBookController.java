@@ -64,6 +64,15 @@ public class NoteBookController {
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
+    @ApiOperation(value = "删除笔记")
+    @PostMapping("/delNote")
+    public ResponseHeadVO delNote(@RequestBody @Valid GetByIdParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        ResponseHeadDTO<String> ret = noteService.del(useSpaceId,param.getId());
+        return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
+    }
+
     @ApiOperation(value = "获取笔记text")
     @PostMapping("/getNoteText")
     public ResponseHeadVO getNoteText(@RequestBody @Valid GetByIdParamVO param){
