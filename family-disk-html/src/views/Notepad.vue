@@ -27,8 +27,33 @@
     </van-popover>
   </div>
 
+  <van-list
+      v-model:loading="loading"
+      :finished="finished"
+      finished-text="没有更多了"
+      @load="onLoad"
+  >
+    <van-swipe-cell v-for="item in list">
+      <van-cell is-link :title="item.keyword" :label="item.updateTime" @click="open(item)" >
+        <van-tag plain type="primary">{{tags[item.tag]}}</van-tag>
+      </van-cell>
+      <template #right>
+        <van-button style="height: 66px;" square hairline type="danger"  @click="del(item)" text="删除" />
+        <van-button style="height: 66px;" square hairline type="primary"  @click="update(item)" text="修改" />
+      </template>
+    </van-swipe-cell>
+  </van-list>
 
-  <van-action-sheet v-model:show="showNote" :round="false">
+  <van-popup v-model:show="showPicker" round position="bottom">
+    <van-picker
+        v-model="selectdLabelValue"
+        :columns="showPickerOptions"
+        @cancel="showPicker = false"
+        @confirm="onConfirm"
+    />
+  </van-popup>
+
+  <van-action-sheet v-model:show="showNote" :round="false" title="笔记查看">
     <div>
       <v-md-editor
           v-if="showNote"
@@ -62,9 +87,17 @@ import {
   Loading,
   showToast,
   DropdownMenu,
+  Cell,
+  Popup,
+  Picker,
+  List,
+  Tag,
+  SwipeCell,
   DropdownItem,
   ActionSheet, showConfirmDialog
 } from 'vant';
+//vant适配桌面端
+import '@vant/touch-emulator';
 import VMdEditor from '@kangc/v-md-editor';
 import '@kangc/v-md-editor/lib/style/base-editor.css';
 import githubTheme from '@kangc/v-md-editor/lib/theme/github.js';
@@ -81,6 +114,12 @@ export default {
   name: "Notepad",
   components: {
     VMdEditor,
+    [Popup.name]:Popup,
+    [Picker.name]:Picker,
+    [Cell.name]:Cell,
+    [Tag.name]:Tag,
+    [SwipeCell.name]:SwipeCell,
+    [List.name]:List,
     [Popover.name]:Popover,
     [Button.name]:Button,
     [BackTop.name]:BackTop,
@@ -118,14 +157,16 @@ export default {
         action(editor) {
           if(self.text != self.originalText){
             this.isOverlay = true;
+            let txt = editor.text;
             showConfirmDialog({
               title: '保存?',
               message:'内容已发生改变,是否保存?'
             }).then(() => {
+              self.save(txt,'');
               self.isOverlay = false;
               self.showNote = false;
             }).catch(function (error) {
-              console.log(error);
+              self.showNote = false;
               self.isOverlay = false;
             });
           }else{
@@ -159,53 +200,162 @@ export default {
       finished:false,
       keyword:"",
       menuTypeValue:0,
-      menuLabelValue:null,
+      menuLabelValue:0,
+      selectdLabelValue:[],
       menuLabelOptions:[],
-      showNote:false
+      showNote:false,
+      list:[],
+      tags:{1:'个人',2:'生活',3:'工作'},
+      showPickerOptions:[],
+      showPicker:false,
+      docId:0
     };
   },
   //页面打开时初始化
   created(){
-    let self = this;
     this.getMenuLabelOption();
-
   },
   methods:{
+    //修改
+    update:function (item) {
+      this.selectdLabelValue = ref([item.tag + '']);
+      this.docId = item.id;
+      //调用接口获取内容
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/notebook/getNoteText', {id:item.id}).then(function (response) {
+        if(response.data.result){
+          self.originalText = response.data.data;
+          self.text = self.originalText;
+          self.mode='edit';
+          self.defaultFullscreen = true;
+          self.showPicker = true;
+        }else{
+          showToast(response.data.message);
+        }
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //添加笔记时,选择标签
+    onConfirm:function(e){
+      this.showPicker = false;
+      this.showNote = true;
+    },
     //富文本编辑器触发保存
     save:function (text, html){
-      console.log(text);
-      console.log(html);
-      showToast('点击保存');
+      let data = {
+        html:html,
+        text:text,
+        tag:this.selectdLabelValue[0],
+        id:this.docId
+      };
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/notebook/saveNote', data).then(function (response) {
+        if(response.data.result){
+          self.docId = response.data.data;
+          self.originalText = text;
+          self.onLoad();
+        }
+        self.isOverlay = false;
+        showToast(response.data.message);
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //删除
+    del:function (item) {
+      let self = this;
+      showConfirmDialog({
+        title: '删除',
+        message:'是否删除笔记:' + item.keyword + ',删除后不可恢复!'
+      }).then(() => {
+        this.isOverlay = true;
+        axios.post('/notebook/delNote', {id:item.id}).then(function (response) {
+          if(response.data.result){
+            self.onLoad();
+          }
+          self.isOverlay = false;
+          showToast(response.data.message);
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }).catch(function (error) {
+      });
+    },
+    //打开
+    open:function (item) {
+      //调用接口获取内容
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/notebook/getNoteText', {id:item.id}).then(function (response) {
+        if(response.data.result){
+          self.mode='preview';
+          self.defaultFullscreen = false;
+          self.text = response.data.data;
+          self.showNote = true;
+        }else{
+          showToast(response.data.message);
+        }
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
     },
     //用户标签获取
     getMenuLabelOption:function (){
       let list = [{ text: '全部', value: 0 }];//默认一个
+      let list2 = [];
       //获取用户添加的标签
-      list.push({ text: '个人', value: 1 });
-      list.push({ text: '生活', value: 2 });
-      list.push({ text: '工作', value: 3 });
+      for (const listKey in this.tags) {
+        let j = { text: this.tags[listKey], value: listKey };
+        list.push(j);
+        list2.push(j);
+      }
       this.menuLabelOptions = list;
+      this.showPickerOptions = list2;
       this.menuLabelValue = list[0].value;
     },
     //加载笔记和备忘录
     onLoad:function (){
-      //this.isOverlay = true;
+      this.isOverlay = true;
       let self = this;
-      console.log(this.menuTypeValue);
-      console.log(this.menuLabelValue);
+      axios.post('/notebook/getList', {
+        keyword: this.keyword,
+        tag:this.menuLabelValue,
+        type:this.menuTypeValue
+      }).then(function (response) {
+        if(response.data.result){
+          self.list = response.data.datas;
+        }else{
+          showToast(response.data.message);
+        }
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
       this.loading = false;//加载完毕
       this.finished = true;//全部数据加载完毕
     },
     //选择功能
     addSelect: function (item){
       let cz = item.name;
+      this.docId = 0;//待办或笔记的暂存id,新增的时候需要清空
       switch (cz) {
         case 'note':
-          this.originalText='原始文字';
+          this.selectdLabelValue = ref(['1']);
+          this.mode='edit';
+          this.defaultFullscreen = true;
+          this.originalText = '';
           this.text = this.originalText;
-          // this.mode='preview';
-          // this.defaultFullscreen = false;
-          this.showNote = true;
+          this.showPicker = true;
           break;
         case 'matter':
           showToast("待办");
@@ -217,5 +367,10 @@ export default {
 </script>
 
 <style scoped>
-
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
 </style>
