@@ -74,6 +74,9 @@ public class NoteBookController {
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有添加权限");
         }
+        if(param.getTag() == 0){
+           throw new NullPointerException("标签不能为空");
+        }
         NotebookNoteDTO dto = new NotebookNoteDTO();
         BeanUtils.copyProperties(param,dto);
         dto.setSpaceId(useSpaceId);
