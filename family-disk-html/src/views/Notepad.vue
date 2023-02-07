@@ -19,13 +19,6 @@
     <van-dropdown-item @change="onLoad" v-model="menuLabelValue" :options="menuLabelOptions" />
   </van-dropdown-menu>
 
-  <div style="position: fixed;right: 25px;bottom: 200px;">
-    <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
-      <template #reference>
-        <van-button icon="plus" type="primary"/>
-      </template>
-    </van-popover>
-  </div>
 
   <van-list
       v-model:loading="loading"
@@ -44,7 +37,19 @@
     </van-swipe-cell>
   </van-list>
 
-  <van-popup v-model:show="showPicker" round position="bottom">
+  <div style="position: fixed;right: 25px;bottom: 200px;">
+    <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
+      <template #reference>
+        <van-button icon="plus" type="primary"/>
+      </template>
+    </van-popover>
+  </div>
+
+  <van-popup
+      v-model:show="showPicker"
+      round
+      position="bottom"
+  >
     <van-picker
         v-model="selectdLabelValue"
         :columns="showPickerOptions"
@@ -53,7 +58,10 @@
     />
   </van-popup>
 
-  <van-action-sheet v-model:show="showNote" :round="false" title="笔记查看">
+  <van-action-sheet
+      :lock-scroll="false"
+      v-model:show="showNote" :round="false"
+      title="笔记查看">
     <div>
       <v-md-editor
           v-if="showNote"
