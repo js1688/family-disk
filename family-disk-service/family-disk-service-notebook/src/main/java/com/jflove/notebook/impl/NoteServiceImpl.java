@@ -74,7 +74,11 @@ public class NoteServiceImpl implements INoteService {
 
     @Override
     public ResponseHeadDTO<String> getText(long spaceId, long id) {
-        return null;
+        NotebookNotePO po = notebookNoteMapper.selectById(id);
+        if(po == null){
+            return new ResponseHeadDTO<>(false,po.getText(),"笔记不存在");
+        }
+        return new ResponseHeadDTO<>(po.getText());
     }
 
     @Override
