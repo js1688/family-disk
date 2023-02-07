@@ -30,7 +30,7 @@ public class NoteServiceImpl implements INoteService {
     public ResponseHeadDTO<NotebookNoteDTO> getList(long spaceId, String keyword, long tag) {
         List<NotebookNotePO> listPO = notebookNoteMapper.selectList(new LambdaQueryWrapper<NotebookNotePO>()
                 .eq(NotebookNotePO::getSpaceId,spaceId)
-                .eq(NotebookNotePO::getTag,tag)
+                .eq(tag != 0,NotebookNotePO::getTag,tag)
                 .like(StringUtils.hasLength(keyword),NotebookNotePO::getKeyword,keyword)
                 .orderByDesc(NotebookNotePO::getCreateTime)
                 .select(NotebookNotePO::getId,
