@@ -287,8 +287,7 @@ export default {
         };
         axios.post('/journal/addJournalList', data).then(function (response) {
           if(response.data.result){
-            data["id"] = response.data.data;
-            self.journalList.push(JSON.parse(JSON.stringify(data)));
+            self.onLoad();
           }else{
             self.uploadDisabled = false;
           }

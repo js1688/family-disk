@@ -61,9 +61,7 @@ public class NoteServiceImpl implements INoteService {
             notebookNoteMapper.insert(po);
         }else{//修改
             po.setUpdateTime(null);
-            po.setCreateUserId(0);
             po.setCreateTime(null);
-            po.setSpaceId(0);
             notebookNoteMapper.updateById(po);
         }
         return new ResponseHeadDTO<>(true,po.getId(),"笔记保存成功");
