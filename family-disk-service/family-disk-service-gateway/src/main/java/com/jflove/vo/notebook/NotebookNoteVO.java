@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
@@ -44,5 +45,6 @@ public class NotebookNoteVO implements Serializable{
   private String html;
 
   @ApiModelProperty(value="标签")
-  private long tag;
+  @NotNull(message = "标签不能为空")
+  private Long tag;
 }

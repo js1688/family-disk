@@ -6,6 +6,7 @@ import com.jflove.notebook.api.INoteService;
 import com.jflove.notebook.dto.NotebookNoteDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
+import com.jflove.vo.notebook.GetByIdParamVO;
 import com.jflove.vo.notebook.GetListParamVO;
 import com.jflove.vo.notebook.NotebookListVO;
 import com.jflove.vo.notebook.NotebookNoteVO;
@@ -61,6 +62,15 @@ public class NoteBookController {
             return new ResponseHeadVO<>(dto.isResult(),vos,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "获取笔记text")
+    @PostMapping("/getNoteText")
+    public ResponseHeadVO getNoteText(@RequestBody @Valid GetByIdParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        ResponseHeadDTO<String> ret = noteService.getText(useSpaceId,param.getId());
+        return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
     }
 
     @ApiOperation(value = "保存笔记")
