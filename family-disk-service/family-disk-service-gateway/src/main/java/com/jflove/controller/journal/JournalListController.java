@@ -93,6 +93,7 @@ public class JournalListController {
     @PostMapping("/addJournalList")
     public ResponseHeadVO addJournalList(@RequestBody @Valid JournalListVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
@@ -112,7 +113,7 @@ public class JournalListController {
         }
         dto.setSpaceId(useSpaceId);
         dto.setId(0);
-        dto.setCreateUserId(useSpaceId);
+        dto.setCreateUserId(useUserId);
         ResponseHeadDTO<Long> retDto = journalList.add(dto);
         ResponseHeadVO<Long> retVo = new ResponseHeadVO<Long>();
         BeanUtils.copyProperties(retDto,retVo);

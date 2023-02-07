@@ -1,4 +1,4 @@
-package com.jflove.vo.journal;
+package com.jflove.vo.notebook;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -17,12 +17,16 @@ import java.io.Serializable;
 @Getter
 @Setter
 @ToString
-@ApiModel("查询日记条件")
-public class GetJournalListParamVO implements Serializable {
+@ApiModel("查询笔记本条件")
+public class GetNoteListParamVO implements Serializable {
+
+
     @Serial
-    private static final long serialVersionUID = -515619245972167430L;
+    private static final long serialVersionUID = 2388172038897141624L;
 
-
-    @ApiModelProperty(value="请输入日记标题或日期(格式:2020年01月02日)")
+    @ApiModelProperty(value="搜索关键字")
     private String keyword;
+
+    @ApiModelProperty(value="标签")
+    private long tag;
 }

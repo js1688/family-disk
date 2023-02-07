@@ -52,4 +52,9 @@ public class NotebookNoteDTO implements Serializable {
      * 标签
      */
     private long tag;
+
+    /**
+     * 创建用户id
+     */
+    private long createUserId;
 }

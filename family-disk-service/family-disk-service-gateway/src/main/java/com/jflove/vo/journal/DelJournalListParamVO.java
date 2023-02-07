@@ -18,7 +18,7 @@ import java.io.Serializable;
 @Getter
 @Setter
 @ToString
-@ApiModel("删除日志条件")
+@ApiModel("删除日记条件")
 public class DelJournalListParamVO implements Serializable {
 
     @Serial

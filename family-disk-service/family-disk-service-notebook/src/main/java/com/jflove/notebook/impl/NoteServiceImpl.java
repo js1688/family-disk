@@ -1,12 +1,19 @@
 package com.jflove.notebook.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
+import com.jflove.notebook.NotebookNotePO;
 import com.jflove.notebook.api.INoteService;
 import com.jflove.notebook.dto.NotebookNoteDTO;
 import com.jflove.notebook.mapper.NotebookNoteMapper;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author: tanjun
@@ -21,16 +28,52 @@ public class NoteServiceImpl implements INoteService {
 
     @Override
     public ResponseHeadDTO<NotebookNoteDTO> getList(long spaceId, String keyword, long tag) {
-        return null;
+        List<NotebookNotePO> listPO = notebookNoteMapper.selectList(new LambdaQueryWrapper<NotebookNotePO>()
+                .eq(NotebookNotePO::getSpaceId,spaceId)
+                .eq(NotebookNotePO::getTag,tag)
+                .like(StringUtils.hasLength(keyword),NotebookNotePO::getKeyword,keyword)
+                .orderByDesc(NotebookNotePO::getCreateTime)
+                .select(NotebookNotePO::getId,
+                        NotebookNotePO::getCreateTime,
+                        NotebookNotePO::getUpdateTime,
+                        NotebookNotePO::getKeyword,
+                        NotebookNotePO::getSpaceId,
+                        NotebookNotePO::getTag
+                )
+        );
+        List<NotebookNoteDTO> dtoList = new ArrayList<>(listPO.size());
+        listPO.forEach(v->{
+            NotebookNoteDTO listDTO = new NotebookNoteDTO();
+            BeanUtils.copyProperties(v,listDTO);
+            dtoList.add(listDTO);
+        });
+        return new ResponseHeadDTO<>(true,dtoList,"查询成功");
     }
 
     @Override
     public ResponseHeadDTO<Long> add(NotebookNoteDTO dto) {
-        return null;
+        NotebookNotePO po = new NotebookNotePO();
+        BeanUtils.copyProperties(dto,po);
+        po.setId(0);
+        int len = po.getText().length();
+        String keyword = po.getText().substring(0,len > 10 ? 10 : len);
+        po.setKeyword(keyword);
+        notebookNoteMapper.insert(po);
+        return new ResponseHeadDTO<>(true,po.getId(),"添加笔记成功");
     }
 
     @Override
     public ResponseHeadDTO del(long spaceId, long id) {
+        return null;
+    }
+
+    @Override
+    public ResponseHeadDTO<String> getText(long spaceId, long id) {
+        return null;
+    }
+
+    @Override
+    public ResponseHeadDTO<String> getHtml(long spaceId, long id) {
         return null;
     }
 }

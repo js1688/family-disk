@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Mon Feb 06 16:52:34 CST 2023
+ * @date Tue Feb 07 10:36:16 CST 2023
  * @describe 备忘录-笔记
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("notebook_note")
 public class NotebookNotePO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  8990654067738548757L;
+	private static final long serialVersionUID =  2899815778187405427L;
 
   /**
    * null
@@ -59,4 +59,8 @@ public class NotebookNotePO implements Serializable{
    * 标签
    */
   private long tag;
+  /**
+   * 创建用户id
+   */
+  private long createUserId;
 }

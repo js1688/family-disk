@@ -20,6 +20,22 @@ public interface INoteService {
     ResponseHeadDTO<NotebookNoteDTO> getList(long spaceId, String keyword,long tag);
 
     /**
+     * 获取记事本text
+     * @param spaceId
+     * @param id
+     * @return
+     */
+    ResponseHeadDTO<String> getText(long spaceId,long id);
+
+    /**
+     * 获取记事本html
+     * @param spaceId
+     * @param id
+     * @return
+     */
+    ResponseHeadDTO<String> getHtml(long spaceId,long id);
+
+    /**
      * 添加笔记
      * @param dto
      * @return
