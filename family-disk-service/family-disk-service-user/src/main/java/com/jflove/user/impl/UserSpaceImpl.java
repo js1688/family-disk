@@ -210,14 +210,27 @@ public class UserSpaceImpl implements IUserSpace {
         if(createUserId == removeUserId){
             return new ResponseHeadDTO(false,"不能移除空间创建者");
         }
-        int i = userSpaceRelMapper.delete(new LambdaUpdateWrapper<UserSpaceRelPO>()
+        UserSpaceRelPO usrp = userSpaceRelMapper.selectOne(new LambdaUpdateWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getCreateUserId,createUserId)
                 .eq(UserSpaceRelPO::getUserId,removeUserId)
                 .eq(UserSpaceRelPO::getSpaceId,spaceId)
         );
-        if(i == 0){
+        if(usrp == null){
             return new ResponseHeadDTO(false,"移除失败");
         }
+        //如果删除的权限是正在使用的,那删除后将用户自己创建的空间设置成正在使用,关联用户id和创建用户id都是同一个id就可以确定这条关系是他创建的空间
+        if(UserRelStateENUM.USE.getCode().equals(usrp.getState())){
+            UserSpaceRelPO createRel = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
+                    .eq(UserSpaceRelPO::getCreateUserId,removeUserId)
+                    .eq(UserSpaceRelPO::getUserId,removeUserId)
+            );
+            if(createRel != null){
+                createRel.setUpdateTime(null);
+                createRel.setState(UserRelStateENUM.USE.getCode());
+                userSpaceRelMapper.updateById(createRel);
+            }
+        }
+        userSpaceRelMapper.deleteById(usrp.getId());
         return new ResponseHeadDTO(true,"移除成功");
     }
 
