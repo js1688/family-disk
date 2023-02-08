@@ -1,8 +1,8 @@
 package com.jflove.user.api;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
+import com.jflove.user.dto.UserSpaceRelDTO;
 
 /**
  * @author tanjun
@@ -61,5 +61,5 @@ public interface IUserSpace {
      * @param createUserId 空间的创建用户
      * @return
      */
-    ResponseHeadDTO<UserInfoDTO> getUserInfoBySpaceId(long spaceId, long createUserId);
+    ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long spaceId, long createUserId);
 }

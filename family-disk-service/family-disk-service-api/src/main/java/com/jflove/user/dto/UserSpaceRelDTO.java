@@ -47,4 +47,9 @@ public class UserSpaceRelDTO implements Serializable {
      * 空间主题
      */
     private String title;
+
+    /**
+     * 用户名称
+     */
+    private String userName;
 }

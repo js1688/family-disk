@@ -6,8 +6,8 @@ import com.jflove.user.UserInfoPO;
 import com.jflove.user.UserSpacePO;
 import com.jflove.user.UserSpaceRelPO;
 import com.jflove.user.api.IUserSpace;
-import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
+import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.user.mapper.UserInfoMapper;
@@ -179,7 +179,7 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
-    public ResponseHeadDTO<UserInfoDTO> getUserInfoBySpaceId(long spaceId, long createUserId) {
+    public ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long spaceId, long createUserId) {
         List<UserSpaceRelPO> usrp = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getCreateUserId,createUserId)
                 .eq(UserSpaceRelPO::getSpaceId,spaceId)
@@ -188,16 +188,17 @@ public class UserSpaceImpl implements IUserSpace {
         if(usrp == null || usrp.size() == 0){
             return new ResponseHeadDTO<>(true,new ArrayList<>(),"未查到数据");
         }
-        List<Long> userIds = usrp.stream().map(UserSpaceRelPO::getUserId).toList();
-        List<UserInfoPO> us = userInfoMapper.selectList(new LambdaQueryWrapper<UserInfoPO>()
-                .in(UserInfoPO::getId,userIds)
-                .select(UserInfoPO::getId,UserInfoPO::getName,UserInfoPO::getEmail)
-        );
-        List<UserInfoDTO> uids = new ArrayList<>(us.size());
-        us.forEach(v->{
-            UserInfoDTO dto = new UserInfoDTO();
+        List<UserSpaceRelDTO> uids = new ArrayList<>(usrp.size());
+        usrp.forEach(v->{
+            UserSpaceRelDTO dto = new UserSpaceRelDTO();
             BeanUtils.copyProperties(v,dto);
-            uids.add(dto);
+            UserInfoPO uip = userInfoMapper.selectOne(new LambdaQueryWrapper<UserInfoPO>()
+                    .eq(UserInfoPO::getId,v.getUserId())
+            );
+            if(uip != null){
+                dto.setUserName(uip.getName());
+                uids.add(dto);
+            }
         });
         return new ResponseHeadDTO<>(uids);
     }
