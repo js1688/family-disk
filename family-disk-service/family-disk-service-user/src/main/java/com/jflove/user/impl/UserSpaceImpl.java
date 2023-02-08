@@ -199,6 +199,6 @@ public class UserSpaceImpl implements IUserSpace {
             BeanUtils.copyProperties(v,dto);
             uids.add(dto);
         });
-        return new ResponseHeadDTO(true,uids,"查询成功");
+        return new ResponseHeadDTO<List<UserInfoDTO>>(true,uids,"查询成功");
     }
 }
