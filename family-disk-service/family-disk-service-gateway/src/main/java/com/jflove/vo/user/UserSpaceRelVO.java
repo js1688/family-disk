@@ -35,6 +35,6 @@ public class UserSpaceRelVO implements Serializable {
     @ApiModelProperty(value="空间权限")
     private String role;
 
-    @ApiModelProperty(value="正在使用,1是0否")
-    private long inUse;
+    @ApiModelProperty(value="文件来源(USE=正在使用,APPROVAL=待审批,NOTUSED=未使用)")
+    private String state;
 }
