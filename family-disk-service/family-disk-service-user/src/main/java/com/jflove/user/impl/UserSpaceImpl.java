@@ -179,7 +179,7 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
-    public ResponseHeadDTO<List<UserInfoDTO>> getUserInfoBySpaceId(long spaceId, long createUserId) {
+    public ResponseHeadDTO<UserInfoDTO> getUserInfoBySpaceId(long spaceId, long createUserId) {
         List<UserSpaceRelPO> usrp = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getCreateUserId,createUserId)
                 .eq(UserSpaceRelPO::getSpaceId,spaceId)
@@ -199,6 +199,6 @@ public class UserSpaceImpl implements IUserSpace {
             BeanUtils.copyProperties(v,dto);
             uids.add(dto);
         });
-        return new ResponseHeadDTO<List<UserInfoDTO>>(true,uids,"查询成功");
+        return new ResponseHeadDTO<>(uids);
     }
 }

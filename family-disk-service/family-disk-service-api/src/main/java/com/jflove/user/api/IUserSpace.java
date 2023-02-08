@@ -4,8 +4,6 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 
-import java.util.List;
-
 /**
  * @author tanjun
  * @date 2022/12/9 16:42
@@ -63,5 +61,5 @@ public interface IUserSpace {
      * @param createUserId 空间的创建用户
      * @return
      */
-    ResponseHeadDTO<List<UserInfoDTO>> getUserInfoBySpaceId(long spaceId, long createUserId);
+    ResponseHeadDTO<UserInfoDTO> getUserInfoBySpaceId(long spaceId, long createUserId);
 }

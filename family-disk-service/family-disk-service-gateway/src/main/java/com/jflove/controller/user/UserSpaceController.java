@@ -93,7 +93,7 @@ public class UserSpaceController {
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
 
-        ResponseHeadDTO<List<UserInfoDTO>> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
+        ResponseHeadDTO<UserInfoDTO> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
         if(dto.isResult()){
             List<UserInfoVO> list = new ArrayList<>(dto.getDatas().size());
             dto.getDatas().forEach(v->{
