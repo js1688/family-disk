@@ -60,11 +60,13 @@ public class UserInfoImpl implements IUserInfo {
         );
         List<UserSpaceRelDTO> spacesDTOs = new ArrayList<>(spacesPO.size());
         spacesPO.forEach(v->{
-            UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
-            BeanUtils.copyProperties(v,spacesDto);
-            spacesDto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
-            spacesDto.setState(UserRelStateENUM.valueOf(v.getState()));
-            spacesDTOs.add(spacesDto);
+            if(!UserRelStateENUM.APPROVAL.getCode().equals(v.getState())) {//过滤掉还在审批的关系
+                UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
+                BeanUtils.copyProperties(v, spacesDto);
+                spacesDto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
+                spacesDto.setState(UserRelStateENUM.valueOf(v.getState()));
+                spacesDTOs.add(spacesDto);
+            }
         });
         dto.setRole(UserRoleENUM.valueOf(po.getRole()));
         dto.setSpaces(spacesDTOs);
