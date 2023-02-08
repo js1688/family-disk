@@ -40,4 +40,7 @@ public class UserSpaceRelVO implements Serializable {
 
     @ApiModelProperty(value="空间主题")
     private String title;
+
+    @ApiModelProperty(value="用户名称")
+    private String userName;
 }

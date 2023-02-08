@@ -3,8 +3,8 @@ package com.jflove.controller.user;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.user.api.IUserSpace;
-import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
+import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.user.*;
 import io.swagger.annotations.Api;
@@ -87,17 +87,17 @@ public class UserSpaceController {
 
     @ApiOperation(value = "查找用户创建的空间下有多少关联用户")
     @GetMapping("/getUserInfoBySpaceId")
-    public ResponseHeadVO<UserInfoVO> getUserInfoBySpaceId(){
+    public ResponseHeadVO<UserSpaceRelVO> getUserInfoBySpaceId(){
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
 
-        ResponseHeadDTO<UserInfoDTO> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
+        ResponseHeadDTO<UserSpaceRelDTO> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
         if(dto.isResult()){
-            List<UserInfoVO> list = new ArrayList<>(dto.getDatas().size());
+            List<UserSpaceRelVO> list = new ArrayList<>(dto.getDatas().size());
             dto.getDatas().forEach(v->{
-                UserInfoVO vo = new UserInfoVO();
+                UserSpaceRelVO vo = new UserSpaceRelVO();
                 BeanUtils.copyProperties(v, vo);
                 list.add(vo);
             });
