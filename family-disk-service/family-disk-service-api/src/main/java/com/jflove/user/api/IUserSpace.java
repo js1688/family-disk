@@ -3,6 +3,7 @@ package com.jflove.user.api;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserSpaceRoleENUM;
 
 /**
  * @author tanjun
@@ -71,4 +72,14 @@ public interface IUserSpace {
      * @return
      */
     ResponseHeadDTO removeRel(long spaceId, long createUserId,long removeUserId);
+
+    /**
+     * 设置用户与空间的权限
+     * @param spaceId
+     * @param createUserId
+     * @param targetUserId
+     * @param role
+     * @return
+     */
+    ResponseHeadDTO setRelRole(long spaceId, long createUserId, long targetUserId, UserSpaceRoleENUM role);
 }

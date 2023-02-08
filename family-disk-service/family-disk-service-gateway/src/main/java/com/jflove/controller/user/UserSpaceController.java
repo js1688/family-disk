@@ -102,6 +102,22 @@ public class UserSpaceController {
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
 
+    @ApiOperation(value = "设置用户与空间的权限")
+    @PostMapping("/setRelRole")
+    public ResponseHeadVO setRelRole(@RequestBody @Valid SetRelRoleParamVO param){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有设置权限");
+        }
+        ResponseHeadDTO dto = userSpace.setRelRole(useSpaceId,useUserId,param.getTargetUserId(),UserSpaceRoleENUM.valueOf(param.getRole()));
+        return new ResponseHeadVO(dto.isResult(),dto.getMessage());
+    }
+
     @ApiOperation(value = "查找用户创建的空间下有多少关联用户")
     @GetMapping("/getUserInfoBySpaceId")
     public ResponseHeadVO<UserSpaceRelVO> getUserInfoBySpaceId(){

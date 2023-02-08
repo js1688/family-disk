@@ -210,11 +210,33 @@ public class UserSpaceImpl implements IUserSpace {
         if(createUserId == removeUserId){
             return new ResponseHeadDTO(false,"不能移除空间创建者");
         }
-        userSpaceRelMapper.delete(new LambdaUpdateWrapper<UserSpaceRelPO>()
+        int i = userSpaceRelMapper.delete(new LambdaUpdateWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getCreateUserId,createUserId)
                 .eq(UserSpaceRelPO::getUserId,removeUserId)
                 .eq(UserSpaceRelPO::getSpaceId,spaceId)
         );
+        if(i == 0){
+            return new ResponseHeadDTO(false,"移除失败");
+        }
         return new ResponseHeadDTO(true,"移除成功");
+    }
+
+    @Override
+    public ResponseHeadDTO setRelRole(long spaceId, long createUserId, long targetUserId, UserSpaceRoleENUM role) {
+        UserSpaceRelPO usrp = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getSpaceId,spaceId)
+                .eq(UserSpaceRelPO::getCreateUserId,createUserId)
+                .eq(UserSpaceRelPO::getUserId,targetUserId)
+        );
+        if(usrp == null){
+            return new ResponseHeadDTO<>(false,"设置失败");
+        }
+        if(UserRelStateENUM.APPROVAL.getCode().equals(usrp.getState())){//如果关系是待审批,直接设置成未使用
+            usrp.setState(UserRelStateENUM.NOTUSED.getCode());
+        }
+        usrp.setUpdateTime(null);
+        usrp.setRole(role.getCode());
+        userSpaceRelMapper.updateById(usrp);
+        return new ResponseHeadDTO(true,"设置权限成功");
     }
 }
