@@ -6,6 +6,8 @@ import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.user.CreateSpaceParamVO;
+import com.jflove.vo.user.JoinSpaceParamVO;
+import com.jflove.vo.user.SwitchSpaceParamVO;
 import com.jflove.vo.user.UserSpaceVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -61,5 +63,25 @@ public class UserSpaceController {
             return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "切换空间")
+    @PostMapping("/switchSpace")
+    public ResponseHeadVO switchSpace(@RequestBody @Valid SwitchSpaceParamVO param){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
+        ResponseHeadDTO dto = userSpace.switchSpace(param.getTargetSpaceId(),useSpaceId,useUserId);
+        return new ResponseHeadVO(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "申请加入空间")
+    @PostMapping("/joinSpace")
+    public ResponseHeadVO joinSpace(@RequestBody @Valid JoinSpaceParamVO param){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
+        ResponseHeadDTO dto = userSpace.joinSpace(param.getTargetSpaceCode(),useUserId);
+        return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
 }

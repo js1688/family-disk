@@ -121,6 +121,7 @@ public class UserSpaceImpl implements IUserSpace {
     public ResponseHeadDTO joinSpace(String targetSpaceCode, long userId) {
         UserSpacePO usp = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()
                 .eq(UserSpacePO::getCode,targetSpaceCode)
+                .ne(UserSpacePO::getCreateUserId,userId)
         );
         if(usp == null){
             return new ResponseHeadDTO(false,"空间编码不存在");
