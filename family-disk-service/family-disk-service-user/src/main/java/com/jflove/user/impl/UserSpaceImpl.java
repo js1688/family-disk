@@ -186,7 +186,7 @@ public class UserSpaceImpl implements IUserSpace {
                 .ne(UserSpaceRelPO::getUserId,createUserId)
         );
         if(usrp == null || usrp.size() == 0){
-            return new ResponseHeadDTO<>(false,new ArrayList<>(),"未查到数据");
+            return new ResponseHeadDTO<>(true,new ArrayList<>(),"未查到数据");
         }
         List<Long> userIds = usrp.stream().map(UserSpaceRelPO::getUserId).toList();
         List<UserInfoPO> us = userInfoMapper.selectList(new LambdaQueryWrapper<UserInfoPO>()
@@ -199,6 +199,6 @@ public class UserSpaceImpl implements IUserSpace {
             BeanUtils.copyProperties(v,dto);
             uids.add(dto);
         });
-        return new ResponseHeadDTO(uids);
+        return new ResponseHeadDTO(true,uids,"查询成功");
     }
 }
