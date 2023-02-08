@@ -196,6 +196,7 @@ public class UserSpaceImpl implements IUserSpace {
                     .eq(UserInfoPO::getId,v.getUserId())
             );
             if(uip != null){
+                dto.setState(UserRelStateENUM.valueOf(v.getState()));
                 dto.setUserName(uip.getName());
                 uids.add(dto);
             }

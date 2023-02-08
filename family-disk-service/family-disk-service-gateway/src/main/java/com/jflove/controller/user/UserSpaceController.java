@@ -99,6 +99,7 @@ public class UserSpaceController {
             dto.getDatas().forEach(v->{
                 UserSpaceRelVO vo = new UserSpaceRelVO();
                 BeanUtils.copyProperties(v, vo);
+                vo.setState(v.getState().getCode());
                 list.add(vo);
             });
             return new ResponseHeadVO<>(dto.isResult(),list,dto.getMessage());
