@@ -65,6 +65,7 @@ public class UserInfoController {
                     UserSpaceRelVO usr = new UserSpaceRelVO();
                     BeanUtils.copyProperties(v, usr);
                     usr.setRole(v.getRole().getCode());
+                    usr.setState(v.getState().getCode());
                     usrList.add(usr);
                 });
                 vo.setSpaces(usrList);
