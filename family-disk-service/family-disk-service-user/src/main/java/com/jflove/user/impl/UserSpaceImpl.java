@@ -2,12 +2,15 @@ package com.jflove.user.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
+import com.jflove.user.UserInfoPO;
 import com.jflove.user.UserSpacePO;
 import com.jflove.user.UserSpaceRelPO;
 import com.jflove.user.api.IUserSpace;
+import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
+import com.jflove.user.mapper.UserInfoMapper;
 import com.jflove.user.mapper.UserSpaceMapper;
 import com.jflove.user.mapper.UserSpaceRelMapper;
 import lombok.extern.log4j.Log4j2;
@@ -18,6 +21,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,6 +39,9 @@ public class UserSpaceImpl implements IUserSpace {
     private UserSpaceMapper userSpaceMapper;
     @Autowired
     private UserSpaceRelMapper userSpaceRelMapper;
+
+    @Autowired
+    private UserInfoMapper userInfoMapper;
 
     @Value("${user.space.init-size}")
     private DataSize maxFileSize;//创建空间的大小
@@ -168,5 +176,29 @@ public class UserSpaceImpl implements IUserSpace {
         po.setUpdateTime(null);
         userSpaceRelMapper.updateById(po);
         return new ResponseHeadDTO(true,"切换空间成功");
+    }
+
+    @Override
+    public ResponseHeadDTO<List<UserInfoDTO>> getUserInfoBySpaceId(long spaceId, long createUserId) {
+        List<UserSpaceRelPO> usrp = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getCreateUserId,createUserId)
+                .eq(UserSpaceRelPO::getSpaceId,spaceId)
+                .ne(UserSpaceRelPO::getUserId,createUserId)
+        );
+        if(usrp == null || usrp.size() == 0){
+            return new ResponseHeadDTO<>(false,new ArrayList<>(),"未查到数据");
+        }
+        List<Long> userIds = usrp.stream().map(UserSpaceRelPO::getUserId).toList();
+        List<UserInfoPO> us = userInfoMapper.selectList(new LambdaQueryWrapper<UserInfoPO>()
+                .in(UserInfoPO::getId,userIds)
+                .select(UserInfoPO::getId,UserInfoPO::getName,UserInfoPO::getEmail)
+        );
+        List<UserInfoDTO> uids = new ArrayList<>(us.size());
+        us.forEach(v->{
+            UserInfoDTO dto = new UserInfoDTO();
+            BeanUtils.copyProperties(v,dto);
+            uids.add(dto);
+        });
+        return new ResponseHeadDTO(uids);
     }
 }

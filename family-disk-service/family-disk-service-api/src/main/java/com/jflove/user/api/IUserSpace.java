@@ -1,7 +1,10 @@
 package com.jflove.user.api;
 
 import com.jflove.ResponseHeadDTO;
+import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
+
+import java.util.List;
 
 /**
  * @author tanjun
@@ -53,4 +56,12 @@ public interface IUserSpace {
      */
     ResponseHeadDTO switchSpace(long targetSpaceId,long originalSpaceId,long userId);
 
+
+    /**
+     * 获取空间关联的所有用户,但不包含空间创建者本身
+     * @param spaceId 空间id
+     * @param createUserId 空间的创建用户
+     * @return
+     */
+    ResponseHeadDTO<List<UserInfoDTO>> getUserInfoBySpaceId(long spaceId, long createUserId);
 }

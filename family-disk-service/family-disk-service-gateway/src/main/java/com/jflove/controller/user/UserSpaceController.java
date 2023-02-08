@@ -3,12 +3,10 @@ package com.jflove.controller.user;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.user.api.IUserSpace;
+import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.vo.ResponseHeadVO;
-import com.jflove.vo.user.CreateSpaceParamVO;
-import com.jflove.vo.user.JoinSpaceParamVO;
-import com.jflove.vo.user.SwitchSpaceParamVO;
-import com.jflove.vo.user.UserSpaceVO;
+import com.jflove.vo.user.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -19,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -83,5 +83,26 @@ public class UserSpaceController {
         Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         ResponseHeadDTO dto = userSpace.joinSpace(param.getTargetSpaceCode(),useUserId);
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "查找用户创建的空间下有多少关联用户")
+    @GetMapping("/getUserInfoBySpaceId")
+    public ResponseHeadVO<UserInfoVO> getUserInfoBySpaceId(){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
+
+        ResponseHeadDTO<List<UserInfoDTO>> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
+        if(dto.isResult()){
+            List<UserInfoVO> list = new ArrayList<>(dto.getDatas().size());
+            dto.getDatas().forEach(v->{
+                UserInfoVO vo = new UserInfoVO();
+                BeanUtils.copyProperties(v, vo);
+                list.add(vo);
+            });
+            return new ResponseHeadVO<>(dto.isResult(),list,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),new ArrayList<>(),dto.getMessage());
     }
 }
