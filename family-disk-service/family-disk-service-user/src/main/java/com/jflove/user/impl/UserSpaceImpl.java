@@ -1,6 +1,7 @@
 package com.jflove.user.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.user.UserInfoPO;
 import com.jflove.user.UserSpacePO;
@@ -202,5 +203,18 @@ public class UserSpaceImpl implements IUserSpace {
             }
         });
         return new ResponseHeadDTO<>(uids);
+    }
+
+    @Override
+    public ResponseHeadDTO removeRel(long spaceId, long createUserId, long removeUserId) {
+        if(createUserId == removeUserId){
+            return new ResponseHeadDTO(false,"不能移除空间创建者");
+        }
+        userSpaceRelMapper.delete(new LambdaUpdateWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getCreateUserId,createUserId)
+                .eq(UserSpaceRelPO::getUserId,removeUserId)
+                .eq(UserSpaceRelPO::getSpaceId,spaceId)
+        );
+        return new ResponseHeadDTO(true,"移除成功");
     }
 }

@@ -62,4 +62,13 @@ public interface IUserSpace {
      * @return
      */
     ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long spaceId, long createUserId);
+
+    /**
+     * 移除用户与空间关系
+     * @param spaceId
+     * @param createUserId
+     * @param removeUserId
+     * @return
+     */
+    ResponseHeadDTO removeRel(long spaceId, long createUserId,long removeUserId);
 }

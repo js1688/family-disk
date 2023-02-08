@@ -5,6 +5,7 @@ import com.jflove.config.HttpConstantConfig;
 import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.user.*;
 import io.swagger.annotations.Api;
@@ -82,6 +83,22 @@ public class UserSpaceController {
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         ResponseHeadDTO dto = userSpace.joinSpace(param.getTargetSpaceCode(),useUserId);
+        return new ResponseHeadVO(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "移除空间与用户关系")
+    @PostMapping("/removeRel")
+    public ResponseHeadVO removeRel(@RequestBody @Valid RemoveRelParamVO param){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有移除权限");
+        }
+        ResponseHeadDTO dto = userSpace.removeRel(useSpaceId,useUserId,param.getRemoveUserId());
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
 
