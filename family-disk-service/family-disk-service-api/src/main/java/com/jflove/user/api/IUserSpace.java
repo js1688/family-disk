@@ -34,4 +34,23 @@ public interface IUserSpace {
      * @return
      */
     ResponseHeadDTO useSpaceByte(Long spaceId,long useMb,boolean increase,boolean isUse);
+
+
+    /**
+     * 加入空间
+     * @param targetSpaceCode 目标空间编码
+     * @param userId 用户id
+     * @return
+     */
+    ResponseHeadDTO joinSpace(String targetSpaceCode,long userId);
+
+    /**
+     * 切换正在使用的空间空间
+     * @param targetSpaceId 目标空间id
+     * @param originalSpaceId 原空间id
+     * @param userId 用户id
+     * @return
+     */
+    ResponseHeadDTO switchSpace(long targetSpaceId,long originalSpaceId,long userId);
+
 }

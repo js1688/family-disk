@@ -35,5 +35,6 @@ public class UserSpaceRelVO implements Serializable {
     @ApiModelProperty(value="空间权限")
     private String role;
 
-
+    @ApiModelProperty(value="正在使用,1是0否")
+    private long inUse;
 }

@@ -6,6 +6,7 @@ import com.jflove.user.UserSpacePO;
 import com.jflove.user.UserSpaceRelPO;
 import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserSpaceDTO;
+import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.user.mapper.UserSpaceMapper;
 import com.jflove.user.mapper.UserSpaceRelMapper;
@@ -17,12 +18,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author tanjun
@@ -66,7 +63,6 @@ public class UserSpaceImpl implements IUserSpace {
             return new ResponseHeadDTO(false, "用户空间不足");
         }
         if (isUse) {
-            log.info("存储大小:{}mb,加减:{},原本大小:{}", useMb, increase, usd.getUseSize());
             UserSpacePO po = new UserSpacePO();
             BeanUtils.copyProperties(usd, po);
             po.setUseSize(increase ? useSize + useMb : useSize - useMb);
@@ -113,9 +109,54 @@ public class UserSpaceImpl implements IUserSpace {
         usrp.setCreateUserId(usp.getCreateUserId());
         usrp.setUserId(createUserId);
         usrp.setRole(UserSpaceRoleENUM.WRITE.getCode());
+        usrp.setState(UserRelStateENUM.USE.getCode());//默认设置正在使用
         userSpaceRelMapper.insert(usrp);
         UserSpaceDTO dto = new UserSpaceDTO();
         BeanUtils.copyProperties(usp,dto);
         return new ResponseHeadDTO<>(true,dto,"创建空间成功");
+    }
+
+    @Override
+    public ResponseHeadDTO joinSpace(String targetSpaceCode, long userId) {
+        UserSpacePO usp = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()
+                .eq(UserSpacePO::getCode,targetSpaceCode)
+        );
+        if(usp == null){
+            return new ResponseHeadDTO(false,"空间编码不存在");
+        }
+        UserSpaceRelPO usrp = new UserSpaceRelPO();
+        usrp.setSpaceId(usp.getId());
+        usrp.setCreateUserId(usp.getCreateUserId());
+        usrp.setUserId(userId);
+        usrp.setState(UserRelStateENUM.APPROVAL.getCode());//设置成待审批
+        userSpaceRelMapper.insert(usrp);
+        return new ResponseHeadDTO(true,"已申请加入,等待空间所有者审批");
+    }
+
+    @Override
+    public ResponseHeadDTO switchSpace(long targetSpaceId,long originalSpaceId,long userId) {
+        UserSpaceRelPO po = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getUserId,userId)
+                .eq(UserSpaceRelPO::getSpaceId,targetSpaceId)
+                .eq(UserSpaceRelPO::getState,UserRelStateENUM.NOTUSED.getCode())
+        );
+        if(po == null){
+            return new ResponseHeadDTO(false,"不能切换到目标空间");
+        }
+        UserSpaceRelPO po2 = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getUserId,userId)
+                .eq(UserSpaceRelPO::getSpaceId,originalSpaceId)
+                .eq(UserSpaceRelPO::getState,UserRelStateENUM.USE.getCode())
+        );
+        if(po2 == null){
+            return new ResponseHeadDTO(false,"原始空间不正确");
+        }
+        po2.setState(UserRelStateENUM.NOTUSED.getCode());
+        po2.setUpdateTime(null);
+        userSpaceRelMapper.updateById(po2);
+        po.setState(UserRelStateENUM.USE.getCode());
+        po.setUpdateTime(null);
+        userSpaceRelMapper.updateById(po);
+        return new ResponseHeadDTO(true,"切换空间成功");
     }
 }

@@ -6,6 +6,7 @@ import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -50,8 +51,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         String useSpaceId =  autowiredRequest.getHeader(HttpConstantConfig.USE_SPACE_ID);
         //如果头部信息中包含了当前使用的空间ID则判断是否有权限
         if(StringUtils.hasLength(useSpaceId) && dto.getData().getSpaces() != null){
-            if(!dto.getData().getSpaces().stream().map(UserSpaceRelDTO::getSpaceId).map(String::valueOf).toList().contains(useSpaceId)){
-                throw new SecurityException("该用没有使用当前空间的权限");
+            if(!dto.getData().getSpaces().stream()
+                    .filter(e->e.getState() == UserRelStateENUM.USE)
+                    .map(UserSpaceRelDTO::getSpaceId)
+                    .map(String::valueOf).toList().contains(useSpaceId)){
+                throw new SecurityException("该用户没有使用当前空间的权限");
             }
             UserSpaceRoleENUM em = dto.getData().getSpaces().stream().filter(e->String.valueOf(e.getSpaceId()).equals(useSpaceId)).toList().get(0).getRole();
             autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ROLE,em);

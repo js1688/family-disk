@@ -9,6 +9,7 @@ import com.jflove.user.api.IUserInfo;
 import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserRoleENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.user.mapper.UserCaptchaMapper;
@@ -62,6 +63,7 @@ public class UserInfoImpl implements IUserInfo {
             UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
             BeanUtils.copyProperties(v,spacesDto);
             spacesDto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
+            spacesDto.setState(UserRelStateENUM.valueOf(v.getState()));
             spacesDTOs.add(spacesDto);
         });
         dto.setRole(UserRoleENUM.valueOf(po.getRole()));

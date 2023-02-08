@@ -60,6 +60,12 @@ public class NoteServiceImpl implements INoteService {
         if(po.getId() == 0) {
             notebookNoteMapper.insert(po);
         }else{//修改
+            if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
+                    .eq(NotebookNotePO::getSpaceId,dto.getSpaceId())
+                    .eq(NotebookNotePO::getId,dto.getId())
+            )){
+                return new ResponseHeadDTO(false,"笔记不存在");
+            }
             po.setUpdateTime(null);
             po.setCreateTime(null);
             notebookNoteMapper.updateById(po);
@@ -69,7 +75,10 @@ public class NoteServiceImpl implements INoteService {
 
     @Override
     public ResponseHeadDTO del(long spaceId, long id) {
-        if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>().eq(NotebookNotePO::getId,id))){
+        if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
+                .eq(NotebookNotePO::getSpaceId,spaceId)
+                .eq(NotebookNotePO::getId,id)
+        )){
             return new ResponseHeadDTO<>(false,"","笔记不存在");
         }
         notebookNoteMapper.deleteById(id);

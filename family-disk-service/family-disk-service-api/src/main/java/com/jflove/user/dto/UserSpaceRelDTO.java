@@ -1,5 +1,6 @@
 package com.jflove.user.dto;
 
+import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,4 +37,9 @@ public class UserSpaceRelDTO implements Serializable {
      * 空间权限
      */
     private UserSpaceRoleENUM role;
+
+    /**
+     * 关系状态
+     */
+    private UserRelStateENUM state;
 }
