@@ -126,6 +126,13 @@ public class UserSpaceImpl implements IUserSpace {
         if(usp == null){
             return new ResponseHeadDTO(false,"空间编码不存在");
         }
+        if(userSpaceRelMapper.exists(new LambdaQueryWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getUserId,userId)
+                .eq(UserSpaceRelPO::getSpaceId,usp.getId())
+        )){
+            return new ResponseHeadDTO(false,"不需要重复提交申请");
+        }
+
         UserSpaceRelPO usrp = new UserSpaceRelPO();
         usrp.setSpaceId(usp.getId());
         usrp.setCreateUserId(usp.getCreateUserId());
