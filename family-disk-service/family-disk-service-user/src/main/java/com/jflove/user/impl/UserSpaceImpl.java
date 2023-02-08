@@ -130,6 +130,7 @@ public class UserSpaceImpl implements IUserSpace {
         usrp.setSpaceId(usp.getId());
         usrp.setCreateUserId(usp.getCreateUserId());
         usrp.setUserId(userId);
+        usrp.setTitle(usp.getTitle());
         usrp.setState(UserRelStateENUM.APPROVAL.getCode());//设置成待审批
         userSpaceRelMapper.insert(usrp);
         return new ResponseHeadDTO(true,"已申请加入,等待空间所有者审批");
