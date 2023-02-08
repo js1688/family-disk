@@ -110,6 +110,7 @@ public class UserSpaceImpl implements IUserSpace {
         usrp.setUserId(createUserId);
         usrp.setRole(UserSpaceRoleENUM.WRITE.getCode());
         usrp.setState(UserRelStateENUM.USE.getCode());//默认设置正在使用
+        usrp.setTitle(usp.getTitle());
         userSpaceRelMapper.insert(usrp);
         UserSpaceDTO dto = new UserSpaceDTO();
         BeanUtils.copyProperties(usp,dto);

@@ -13,7 +13,7 @@ import java.io.Serial;
 
 /**
  * @author tanjun
- * @date Wed Feb 08 11:03:21 CST 2023
+ * @date Wed Feb 08 11:50:09 CST 2023
  * @describe 用户与空间关联关系
  */
 @Getter
@@ -22,7 +22,7 @@ import java.io.Serial;
 @TableName("user_space_rel")
 public class UserSpaceRelPO implements Serializable{
 	@Serial
-	private static final long serialVersionUID =  2051994686124309704L;
+	private static final long serialVersionUID =  7502894231552320557L;
 
   /**
    * null
@@ -59,4 +59,8 @@ public class UserSpaceRelPO implements Serializable{
    * 关系状态
    */
   private String state;
+  /**
+   * 空间主题
+   */
+  private String title;
 }

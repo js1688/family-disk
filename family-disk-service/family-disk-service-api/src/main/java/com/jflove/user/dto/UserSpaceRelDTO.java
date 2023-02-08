@@ -42,4 +42,9 @@ public class UserSpaceRelDTO implements Serializable {
      * 关系状态
      */
     private UserRelStateENUM state;
+
+    /**
+     * 空间主题
+     */
+    private String title;
 }

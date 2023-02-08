@@ -37,4 +37,7 @@ public class UserSpaceRelVO implements Serializable {
 
     @ApiModelProperty(value="文件来源(USE=正在使用,APPROVAL=待审批,NOTUSED=未使用)")
     private String state;
+
+    @ApiModelProperty(value="空间主题")
+    private String title;
 }
