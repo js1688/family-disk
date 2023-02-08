@@ -7,6 +7,7 @@ let data = {
     userEmail:'USER_EMAIL',
     userId:'USER_ID',
     useSpaceRole:'USE_SPACE_ROLE',
+    userAllSpaceRole:'USER_ALL_SPACE_ROLE',
     // 公网
     baseURL:'//api.jflove.cn/',
     // 局域网

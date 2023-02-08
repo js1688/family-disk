@@ -114,6 +114,59 @@
   <van-cell is-link title="创建空间" @click="createSpaceShow = true" v-if="notLoginShow == false" />
   <van-action-sheet close-on-click-action v-model:show="createSpaceShow" :actions="okActions" @select="createSpace" />
 
+  <van-cell is-link title="加入空间" @click="joinSpaceShow = true" v-if="notLoginShow == false" />
+  <van-action-sheet
+      v-model:show="joinSpaceShow"
+      @open="spaceCode=''"
+      title="申请加入空间">
+    <div>
+      <van-form @submit="joinSpace">
+        <van-cell-group inset>
+          <van-field required v-model="spaceCode"
+                     :rules="[{ required: true, message: '请输入要加入的空间编码' }]"
+                     label="空间编码" placeholder="请输入要加入的空间编码" />
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交申请
+          </van-button>
+        </div>
+      </van-form>
+    </div>
+  </van-action-sheet>
+
+  <van-cell is-link title="管理空间" @click="adminSpaceShow = true" v-if="notLoginShow == false" />
+  <van-action-sheet
+      v-model:show="adminSpaceShow"
+      :lock-scroll="false"
+      @open="spaceAdminOpen"
+      title="空间关联的账号">
+    <div>
+      <van-list
+          :v-model:loading="false"
+          :finished="true"
+          finished-text="没有更多了"
+      >
+        <van-swipe-cell v-for="item in list">
+          <van-cell is-link arrow-direction="right"
+                    :title="item.userName">
+            <van-tag plain type="primary">{{item.state == 'USE' ? '正在使用' :
+                item.state == 'APPROVAL' ? '待审批' :
+                    item.state == 'NOTUSED' ? '未使用' : ''}}</van-tag>
+          </van-cell>
+          <template #right>
+            <van-button square hairline type="danger"  @click="removeRel(item)" text="移除" />
+            <van-button square hairline type="success"  @click="setRelRole('READ',item)" text="设置只读" />
+            <van-button square hairline type="success"  @click="setRelRole('WRITE',item)" text="设置读写" />
+          </template>
+        </van-swipe-cell>
+      </van-list>
+    </div>
+  </van-action-sheet>
+
+  <van-cell is-link title="切换空间" @click="switchSpaceShow = true" v-if="notLoginShow == false"/>
+  <van-action-sheet close-on-click-action v-model:show="switchSpaceShow" :actions="spaceOptions" @select="switchSpaceOnSelect" />
+
   <van-cell is-link title="查看空间" @click="getSpaceInfo" v-if="notLoginShow == false" />
   <van-action-sheet v-model:show="querySpaceShow" title="查看空间信息">
     <div class="content">
@@ -129,12 +182,13 @@
 
 <script>
 import { ref } from 'vue';
-import {showToast} from 'vant';
-import { Cell, ActionSheet,Image,Form, Field, CellGroup,Button } from 'vant';
+import {showConfirmDialog, showToast} from 'vant';
+import { Cell,Image,Form, Field, CellGroup,Button,ActionSheet,Tag,SwipeCell,List} from 'vant';
 import { Overlay,Loading } from 'vant';
 import axios from 'axios';
 import gws from "@/global/WebSocket";
 import {key} from "@/global/KeyGlobal";
+import '@vant/touch-emulator';//vant适配桌面端
 
 export default {
   name: "User",
@@ -144,13 +198,18 @@ export default {
     const logoutShow = ref(false);
     const createSpaceShow = ref(false);
     const querySpaceShow = ref(false);
-
+    const joinSpaceShow = ref(false);
+    const adminSpaceShow = ref(false);
+    const switchSpaceShow = ref(false);
     const okActions = [
       { name: '确定',code:1 },
       { name: '取消',code:0 }
     ];
 
     return {
+      switchSpaceShow,
+      joinSpaceShow,
+      adminSpaceShow,
       logoutShow,
       registerShow,
       logonShow,
@@ -160,8 +219,11 @@ export default {
     };
   },
   components: {
+    [SwipeCell.name]:SwipeCell,
+    [List.name]:List,
+    [Tag.name]:Tag,
     [Cell.name]: Cell,
-    [ActionSheet.name]: ActionSheet,
+    [ActionSheet.name]:ActionSheet,
     [Image.name]: Image,
     [Form.name]: Form,
     [Field.name]: Field,
@@ -174,6 +236,8 @@ export default {
   },
   data: function() {
     return {
+      loading:false,
+      finished:false,
       email:"",
       password:"",
       pwd:"",
@@ -188,10 +252,85 @@ export default {
       notLoginShow: localStorage.getItem(key().authorization) == null ? true : false,
       maxSize:0,
       title:"",
-      useSize:0
+      useSize:0,
+      spaceOptions:null,
+      spaceCode:'',
+      list:[]
     };
   },
+  created() {
+    this.getUserInfo();
+  },
   methods: {
+    //设置用户与空间的权限级别
+    setRelRole:function (role,item) {
+      let self = this;
+      this.isOverlay = true;
+      axios.post('/user/space/setRelRole', {
+        targetUserId: item.userId,
+        role:role
+      }).then(function (response) {
+        if(response.data.result){
+          self.spaceAdminOpen();
+        }
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //删除用户与空间关系
+    removeRel:function (item) {
+      let self = this;
+      showConfirmDialog({
+        title: '删除',
+        message:'是否删除权限:' + item.userName + ',删除后不可恢复!'
+      }).then(() => {
+        this.isOverlay = true;
+        axios.post('/user/space/removeRel', {
+          removeUserId: item.userId
+        }).then(function (response) {
+          if(response.data.result){
+            self.spaceAdminOpen();
+          }
+          showToast(response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }).catch(function (error) {
+      });
+    },
+    //空间管理面板打开时
+    spaceAdminOpen:function (){
+      this.isOverlay = true;
+      let self = this;
+      axios.get('/user/space/getUserInfoBySpaceId').then(function (res){
+        if(res.data.result){
+          self.list = res.data.datas;
+        }
+        self.isOverlay = false;
+      }).catch(function (err){
+        self.isOverlay = false;
+        console.log(err);
+      });
+    },
+    //加入空间
+    joinSpace:function (){
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/user/space/joinSpace', {
+        targetSpaceCode: this.spaceCode
+      }).then(function (response) {
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
     //查看空间
     getSpaceInfo: function(){
       this.querySpaceShow = true;
@@ -281,6 +420,24 @@ export default {
         })
       }
     },
+    //切换空间
+    switchSpaceOnSelect:function (item) {
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/user/space/switchSpace', {
+        targetSpaceId: item.code
+      }).then(function (response) {
+        if(response.data.result){
+          localStorage.removeItem(key().useSpaceId);
+          self.getUserInfo();//重新获取用户信息并设置
+        }
+        self.isOverlay = false;
+        showToast(response.data.message);
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
     //退出登录
     logoutOnSelect: function(item){
       if(item.code == 1){
@@ -294,8 +451,40 @@ export default {
         localStorage.removeItem(key().userId);
         localStorage.removeItem(key().useSpaceId);
         localStorage.removeItem(key().useSpaceRole);
+        localStorage.removeItem(key().userAllSpaceRole);
         gws.methods.wsDisconnect();//断开socket
       }
+    },
+    //获取用户信息并设置在本地缓存
+    getUserInfo:function (){
+      this.isOverlay = true;
+      let self = this;
+      axios.get('/user/info/getUserInfo').then(function (res){
+        if(res.data.result){//获得信息成功
+          //登录后存储一堆数据到本地
+          localStorage.setItem(key().userName,res.data.data.name);
+          localStorage.setItem(key().userEmail,res.data.data.email);
+          localStorage.setItem(key().userId,res.data.data.id);
+          self.spaceOptions = [];
+          if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
+            //找出正在使用的空间设置到缓存
+            for (let i = 0; i < res.data.data.spaces.length; i++) {
+              let tp = res.data.data.spaces[i];
+              if(tp.state == 'USE'){
+                localStorage.setItem(key().useSpaceId,tp.spaceId);
+                localStorage.setItem(key().useSpaceRole,tp.role);
+              }
+              self.spaceOptions.push({name:tp.title,code:tp.spaceId});
+            }
+            localStorage.setItem(key().userAllSpaceRole,JSON.stringify(res.data.data.spaces));
+          }
+          self.userName = res.data.data.name;
+        }
+        self.isOverlay = false;
+      }).catch(function (err){
+        self.isOverlay = false;
+        console.log(err);
+      });
     },
     //登录
     logon: function(){
@@ -308,30 +497,15 @@ export default {
         if(response.data.result){//登录成功
           localStorage.setItem(key().authorization,response.data.data);//将token存储
           //登录成功后获取用户信息
-          axios.get('/user/info/getUserInfo').then(function (res){
-            if(res.data.result){//获得信息成功
-              //登录后存储一堆数据到本地
-              localStorage.setItem(key().userName,res.data.data.name);
-              localStorage.setItem(key().userEmail,res.data.data.email);
-              localStorage.setItem(key().userId,res.data.data.id);
-              if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
-                localStorage.setItem(key().useSpaceId,res.data.data.spaces[0].spaceId);
-                localStorage.setItem(key().useSpaceRole,res.data.data.spaces[0].role);
-              }
-              gws.methods.wsConnection(null);//连接socket
-              self.logonPng = "/logon1.png";
-              self.notLoginShow = false;
-              self.logonShow = false;
-              self.userName = res.data.data.name;
-              //登录成功后,清除字段值
-              self.email = "";
-              self.password = "";
-            }
-            self.isOverlay = false;
-          }).catch(function (err){
-            self.isOverlay = false;
-            console.log(err);
-          });
+          self.isOverlay = false;
+          self.getUserInfo();
+          gws.methods.wsConnection(null);//连接socket
+          //登录成功后,清除字段值
+          self.email = "";
+          self.password = "";
+          self.notLoginShow = false;
+          self.logonShow = false;
+          self.logonPng = "/logon1.png";
         }else{//登录失败
           showToast(response.data.message);
           self.isOverlay = false;
