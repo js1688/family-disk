@@ -8,6 +8,8 @@ import Notepad from "@/views/formal/Notepad.vue";
 import Journal from "@/views/formal/Journal.vue";
 import NotepadShare from "@/views/share/NotepadShare.vue";
 import Share from "@/views/share/Share.vue";
+import HTTP404 from "@/views/public/Http404.vue";
+
 import {key} from "@/global/KeyGlobal";
 const routes = [
     {
@@ -16,6 +18,7 @@ const routes = [
         redirect: localStorage.getItem(key().authorization) == null ? '/formal/user' : '/formal/disk'
     },
     {
+        //正式功能路由
         path: '/formal',
         component: Formal,
         children: [
@@ -38,6 +41,7 @@ const routes = [
         ]
     },
     {
+        //分享展示面板路由
         path: '/share',
         component: Share,
         children: [
@@ -46,6 +50,16 @@ const routes = [
                 component: NotepadShare,
             }
         ]
+    },
+    {
+        //404
+        path: '/404',
+        component: HTTP404
+    },
+    {
+        path: '/:pathMatch(.*)',
+        redirect: '/404',
+        hidden: true
     }
 ]
 const router = createRouter({

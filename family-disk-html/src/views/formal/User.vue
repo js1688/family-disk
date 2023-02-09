@@ -178,6 +178,13 @@
       </van-cell-group>
     </div>
   </van-action-sheet>
+
+  <van-cell is-link title="分享管理" @click="queryShareShow = true" v-if="notLoginShow == false" />
+  <van-action-sheet v-model:show="queryShareShow" title="管理分享链接">
+    <div class="content">
+      管理分享链接面板
+    </div>
+  </van-action-sheet>
 </template>
 
 <script>
@@ -201,6 +208,7 @@ export default {
     const joinSpaceShow = ref(false);
     const adminSpaceShow = ref(false);
     const switchSpaceShow = ref(false);
+    const queryShareShow = ref(false);
     const okActions = [
       { name: '确定',code:1 },
       { name: '取消',code:0 }
@@ -215,7 +223,8 @@ export default {
       logonShow,
       okActions,
       createSpaceShow,
-      querySpaceShow
+      querySpaceShow,
+      queryShareShow
     };
   },
   components: {
