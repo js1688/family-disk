@@ -1,7 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import 'vant/lib/index.css';
-import router from "./router/index";
 import axios from 'axios';
 import {isSpace, isToken, key, keyPut} from '@/global/KeyGlobal';
 import gws from "@/global/WebSocket";
@@ -61,6 +60,10 @@ axios.options(key().lanURL).then(function (res2){
 }).catch(function (err) {
 });
 
+import router from "./router/index";//主路由
 const app = createApp(App);
 app.use(router);
 app.mount('#app');
+
+
+
