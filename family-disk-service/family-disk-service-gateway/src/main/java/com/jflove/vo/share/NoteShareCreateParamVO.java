@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serial;
 import java.io.Serializable;
@@ -32,7 +31,6 @@ public class NoteShareCreateParamVO implements Serializable {
     private Long bodyId;
 
     @ApiModelProperty(value="解锁密码")
-    @NotBlank(message = "解锁密码不能为空")
     private String password;
 
     @ApiModelProperty(value="失效时间(yyyy-MM-dd HH:mm:ss)")
