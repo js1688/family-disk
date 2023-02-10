@@ -9,12 +9,16 @@ import com.jflove.notebook.mapper.NotebookNoteMapper;
 import com.jflove.notebook.mapper.ShareLinkMapper;
 import com.jflove.share.ShareLinkPO;
 import com.jflove.share.api.INoteShare;
+import com.jflove.share.dto.ShareLinkDTO;
 import com.jflove.share.em.ShareBodyTypeENUM;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,9 +65,15 @@ public class NoteShareImpl implements INoteShare {
                 .eq(ShareLinkPO::getPassword, Optional.ofNullable(password).orElse(""))
         );
         if(po == null){
+            if(StringUtils.hasLength(password)){
+                return new ResponseHeadDTO<>(false,"分享已失效或密码错误,请刷新网页后重试.");
+            }
             return new ResponseHeadDTO<>(false,"分享已失效或不存在.");
         }
         NotebookNotePO nnp = notebookNoteMapper.selectById(po.getBodyId());
+        if(nnp == null){
+            return new ResponseHeadDTO<>(false,"分享的内容已经被删除了");
+        }
         return new ResponseHeadDTO<String>(nnp.getText());
     }
 
@@ -77,5 +87,31 @@ public class NoteShareImpl implements INoteShare {
         }
         shareLinkMapper.deleteById(id);
         return new ResponseHeadDTO<>(true,"","删除成功");
+    }
+
+    @Override
+    public ResponseHeadDTO<ShareLinkDTO> getLinkList(long spaceId) {
+        List<ShareLinkPO> pos =  shareLinkMapper.selectList(new LambdaQueryWrapper<ShareLinkPO>()
+                .eq(ShareLinkPO::getSpaceId,spaceId)
+        );
+        List<ShareLinkDTO> dtoList = new ArrayList<>(pos.size());
+        pos.forEach(v->{
+            ShareLinkDTO listDTO = new ShareLinkDTO();
+            BeanUtils.copyProperties(v,listDTO);
+            listDTO.setBodyType(ShareBodyTypeENUM.valueOf(v.getBodyType()));
+            listDTO.setKeyword("分享的内容已经被删除");
+            switch (listDTO.getBodyType()){
+                case NOTE:
+                    NotebookNotePO notePO = notebookNoteMapper.selectOne(new LambdaQueryWrapper<NotebookNotePO>()
+                            .eq(NotebookNotePO::getId,v.getBodyId())
+                            .select(NotebookNotePO::getKeyword)
+                    );
+                    if(notePO != null){
+                        listDTO.setKeyword(notePO.getKeyword());
+                    }
+            }
+            dtoList.add(listDTO);
+        });
+        return new ResponseHeadDTO<>(true,dtoList,"查询成功");
     }
 }

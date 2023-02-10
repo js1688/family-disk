@@ -3,20 +3,26 @@ package com.jflove.controller.share;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.share.api.INoteShare;
+import com.jflove.share.dto.ShareLinkDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.share.NoteShareCreateParamVO;
+import com.jflove.vo.share.ShareLinkVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author: tanjun
@@ -45,6 +51,26 @@ public class NoteShareController {
         Assert.notNull(uuid,"错误的请求:链接id不能为空");
         ResponseHeadDTO<String> dto = noteShare.getBody(uuid,password);
         return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "获取分享内容列表")
+    @GetMapping("/getLinkList")
+    public ResponseHeadVO<ShareLinkVO> getLinkList(){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        ResponseHeadDTO<ShareLinkDTO> dto = noteShare.getLinkList(useSpaceId);
+        if(dto.isResult()){
+            List<ShareLinkVO> vos = new ArrayList<>(dto.getDatas().size());
+            dto.getDatas().forEach(v->{
+                ShareLinkVO vo = new ShareLinkVO();
+                BeanUtils.copyProperties(v,vo);
+                vo.setBodyType(v.getBodyType().getCode());
+                vo.setInvalidTime(new Date(v.getInvalidTime() * 1000));
+                vos.add(vo);
+            });
+            return new ResponseHeadVO<>(dto.isResult(),vos,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
     @ApiOperation(value = "删除笔记")

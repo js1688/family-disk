@@ -1,8 +1,7 @@
 package com.jflove.share.api;
 
 import com.jflove.ResponseHeadDTO;
-
-import java.util.Date;
+import com.jflove.share.dto.ShareLinkDTO;
 
 /**
  * @author: tanjun
@@ -36,4 +35,11 @@ public interface INoteShare {
      * @param spaceId
      */
     ResponseHeadDTO delLink(long id,long spaceId);
+
+    /**
+     * 获取分享链接列表
+     * @param spaceId
+     * @return
+     */
+    ResponseHeadDTO<ShareLinkDTO> getLinkList(long spaceId);
 }
