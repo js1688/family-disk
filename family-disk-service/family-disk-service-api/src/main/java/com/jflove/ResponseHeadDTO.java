@@ -31,9 +31,6 @@ public class ResponseHeadDTO<T> implements Serializable {
         this.datas = datas;
     }
 
-    public ResponseHeadDTO(String message) {
-        this.message = message;
-    }
 
     public ResponseHeadDTO(boolean result, String message) {
         this.result = result;

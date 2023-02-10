@@ -64,7 +64,7 @@ public class NoteShareImpl implements INoteShare {
             return new ResponseHeadDTO<>(false,"分享已失效或不存在.");
         }
         NotebookNotePO nnp = notebookNoteMapper.selectById(po.getBodyId());
-        return new ResponseHeadDTO<>(nnp.getText());
+        return new ResponseHeadDTO<String>(nnp.getText());
     }
 
     @Override
