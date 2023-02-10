@@ -5,7 +5,6 @@ import com.jflove.config.HttpConstantConfig;
 import com.jflove.share.api.INoteShare;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
-import com.jflove.vo.notebook.GetByIdParamVO;
 import com.jflove.vo.share.NoteShareCreateParamVO;
 import com.jflove.vo.share.NoteShareGetBodyParamVO;
 import io.swagger.annotations.Api;
@@ -71,7 +70,7 @@ public class NoteShareController {
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有创建权限");
         }
-        ResponseHeadDTO<String> ret = noteShare.create(param.getPassword(),param.getBodyId(),useSpaceId,param.getInvalidTime())
+        ResponseHeadDTO<String> ret = noteShare.create(param.getPassword(),param.getBodyId(),useSpaceId,param.getInvalidTime());
         return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
     }
 }
