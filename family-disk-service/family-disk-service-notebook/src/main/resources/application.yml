@@ -12,7 +12,7 @@ spring:
   application:
     name: family-disk-notebook
   datasource:
-    url: jdbc:mysql://ip:port/family?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
+    url: jdbc:mysql://ip:port/schema?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
     username:
     password:
     driver-class-name: com.mysql.cj.jdbc.Driver
