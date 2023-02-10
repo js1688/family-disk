@@ -18,6 +18,8 @@
     <property name="log.maxHistory" value="30"/>
     <property name="log.level" value="debug"/>
     <property name="log.maxSize" value="5MB" />
+    <!-- 打印sql语句 需要指定dao层包的位置 -->
+    <property name="mapper.package" value="com.jflove.*.mapper" />
 
     <!-- ConsoleAppender 控制台输出日志 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -132,6 +134,15 @@
         <!--<appender-ref ref="ERROR" />-->
         <!--<appender-ref ref="INFO" />-->
     <!--</logger>-->
+
+
+    <!--dao层包下的类的日志输出-->
+    <logger name="${mapper.package}" additivity="false" level="DEBUG">
+        <appender-ref ref="app"/>
+        <appender-ref ref="ERROR"/>
+        <!--打印控制台-->
+        <appender-ref ref="CONSOLE"/>
+    </logger>
 
     <!-- root级别   DEBUG -->
     <root>
