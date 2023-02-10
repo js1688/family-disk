@@ -128,7 +128,7 @@ export default {
       let self = this;
       axios.get(`/note/share/getBody/${this.param.uuid}/${this.param.password}`).then(function (res){
         if(res.data.result){
-          this.text = '# 这是大标题';
+          this.text = res.data.data;
           this.showNote = true;
         }
         self.isOverlay = false;

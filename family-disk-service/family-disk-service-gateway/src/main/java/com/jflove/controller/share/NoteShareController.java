@@ -40,10 +40,9 @@ public class NoteShareController {
     @GetMapping("/getBody/{uuid}/{password}")
     public ResponseHeadVO<String> getBody(
         @ApiParam("链接id") @PathVariable("uuid") String uuid,
-        @ApiParam("解锁密码") @PathVariable("fileMd5") String password
+        @ApiParam("解锁密码") @PathVariable("password") String password
     ){
         Assert.notNull(uuid,"错误的请求:链接id不能为空");
-        Assert.notNull(password,"错误的请求:解锁密码不能为空");
         ResponseHeadDTO<String> dto = noteShare.getBody(uuid,password);
         return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
     }
