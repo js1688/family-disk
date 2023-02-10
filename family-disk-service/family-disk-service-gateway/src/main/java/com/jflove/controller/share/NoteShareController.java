@@ -6,9 +6,9 @@ import com.jflove.share.api.INoteShare;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.share.NoteShareCreateParamVO;
-import com.jflove.vo.share.NoteShareGetBodyParamVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +38,13 @@ public class NoteShareController {
 
     @ApiOperation(value = "获取分享内容")
     @GetMapping("/getBody")
-    public ResponseHeadVO<String> getBody(@RequestBody @Valid NoteShareGetBodyParamVO param){
-        ResponseHeadDTO<String> dto = noteShare.getBody(param.getUuid(),param.getPassword());
+    public ResponseHeadVO<String> getBody(
+        @ApiParam("链接id") @PathVariable("uuid") String uuid,
+        @ApiParam("解锁密码") @PathVariable("fileMd5") String password
+    ){
+        Assert.notNull(uuid,"错误的请求:链接id不能为空");
+        Assert.notNull(password,"错误的请求:解锁密码不能为空");
+        ResponseHeadDTO<String> dto = noteShare.getBody(uuid,password);
         return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
     }
 

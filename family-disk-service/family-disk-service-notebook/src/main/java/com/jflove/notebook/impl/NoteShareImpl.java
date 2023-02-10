@@ -54,6 +54,9 @@ public class NoteShareImpl implements INoteShare {
         return new ResponseHeadDTO<>(true,link,"创建分享成功,地址已复制");
     }
 
+    public static void main(String[] args) {
+        System.out.println(DateUtil.parse("2023-02-10 11:36:30", DatePattern.NORM_DATETIME_PATTERN).getTime() / 1000);
+    }
     @Override
     public ResponseHeadDTO<String> getBody(String uuid, String password) {
         ShareLinkPO po = shareLinkMapper.selectOne(new LambdaQueryWrapper<ShareLinkPO>()
