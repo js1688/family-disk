@@ -1,5 +1,7 @@
 package com.jflove.notebook.impl;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.notebook.NotebookNotePO;
@@ -13,7 +15,6 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
-import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,7 +33,7 @@ public class NoteShareImpl implements INoteShare {
     private NotebookNoteMapper notebookNoteMapper;
 
     @Override
-    public ResponseHeadDTO<String> create(String password, long bodyId, long spaceId, Date invalidTime) {
+    public ResponseHeadDTO<String> create(String password, long bodyId, long spaceId, String invalidTime) {
         if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
                 .eq(NotebookNotePO::getId,bodyId)
                 .eq(NotebookNotePO::getSpaceId,spaceId)
@@ -40,7 +41,7 @@ public class NoteShareImpl implements INoteShare {
             return new ResponseHeadDTO<>(false,"笔记不存在");
         }
         String uuid = UUID.randomUUID().toString();
-        long dqsj = invalidTime.getTime() / 1000;
+        long dqsj = DateUtil.parse(invalidTime, DatePattern.NORM_DATETIME_PATTERN).getTime() / 1000;
         ShareLinkPO po = new ShareLinkPO();
         po.setBodyType(ShareBodyTypeENUM.NOTE.getCode());
         po.setBodyId(bodyId);

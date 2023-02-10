@@ -19,7 +19,7 @@ public interface INoteShare {
      * @param invalidTime
      * @return
      */
-    ResponseHeadDTO<String> create(String password, long bodyId, long spaceId, Date invalidTime);
+    ResponseHeadDTO<String> create(String password, long bodyId, long spaceId, String invalidTime);
 
 
     /**

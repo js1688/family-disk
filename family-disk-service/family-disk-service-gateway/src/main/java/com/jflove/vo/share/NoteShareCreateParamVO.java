@@ -9,7 +9,6 @@ import lombok.ToString;
 import javax.validation.constraints.NotNull;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * @author: tanjun
@@ -35,5 +34,5 @@ public class NoteShareCreateParamVO implements Serializable {
 
     @ApiModelProperty(value="失效时间(yyyy-MM-dd HH:mm:ss)")
     @NotNull(message = "失效时间不能为空")
-    private Date invalidTime;
+    private String invalidTime;
 }
