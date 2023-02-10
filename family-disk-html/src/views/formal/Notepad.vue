@@ -33,6 +33,9 @@
       <template #right>
         <van-button style="height: 66px;" square hairline type="danger"  @click="del(item)" text="删除" />
         <van-button style="height: 66px;" square hairline type="primary"  @click="update(item)" text="修改" />
+        <van-button
+            :disabled="shareDisabled"
+                    style="height: 66px;" square hairline type="success"  @click="share(item)" text="分享" />
       </template>
     </van-swipe-cell>
   </van-list>
@@ -59,6 +62,43 @@
   </van-popup>
 
   <van-action-sheet
+      v-model:show="showShare"
+      title="创建分享链接">
+    <div>
+      <van-form @submit="createShare">
+        <van-cell-group inset>
+          <van-field v-model="shareParam.password"
+                     type="password"
+                     label="解锁密码" placeholder="请输入解锁密码" />
+          <van-field label="失效日期" required readonly
+                     v-model="shareParam.invalidTime"
+                     placeholder="点击选择日期"
+                     :rules="[{ required: true, message: '请选择失效日期' }]"
+                     @click="showShareDate = true"
+          />
+          <van-field v-model="shareParam.url" readonly label="分享地址" >
+            <template #button>
+              <van-button
+                  size="small"
+                  type="primary"
+                  @click="doCopy"
+                  :disabled="shareParam.url == null || shareParam.url == ''"
+              >复制</van-button>
+            </template>
+          </van-field>
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交申请
+          </van-button>
+        </div>
+      </van-form>
+    </div>
+  </van-action-sheet>
+
+  <van-calendar v-model:show="showShareDate" :show-confirm="false" @confirm="onConfirmShare" :max-date="maxDate"/>
+
+  <van-action-sheet
       :lock-scroll="false"
       v-model:show="showNote" :round="false"
       title="笔记查看">
@@ -78,8 +118,6 @@
       </v-md-editor>
     </div>
   </van-action-sheet>
-
-
 
   <van-back-top ight="15vw" bottom="10vh" />
 </template>
@@ -102,8 +140,14 @@ import {
   Tag,
   SwipeCell,
   DropdownItem,
+  Form,
+  CellGroup,
+  DatePicker,
+  Field,
+  Calendar,
   ActionSheet, showConfirmDialog
 } from 'vant';
+import {key} from "@/global/KeyGlobal";
 //vant适配桌面端
 import '@vant/touch-emulator';
 import VMdEditor from '@kangc/v-md-editor';
@@ -116,12 +160,17 @@ VMdEditor.use(githubTheme, {
   Hljs: hljs,
 });
 import axios from "axios";
-
-
+import VueClipboard from 'vue-clipboard2'
 export default {
   name: "Notepad",
   components: {
     VMdEditor,
+    VueClipboard,
+    [Calendar.name]:Calendar,
+    [CellGroup.name]:CellGroup,
+    [Form.name]:Form,
+    [Field.name]:Field,
+    [DatePicker.name]:DatePicker,
     [Popup.name]:Popup,
     [Picker.name]:Picker,
     [Cell.name]:Cell,
@@ -149,8 +198,8 @@ export default {
       { text: '笔记', value: 0 },
       // { text: '待办', value: 1 }
     ];
-
     return {
+      maxDate: new Date(new Date().getFullYear() + 1, 12, 31),
       addActions,
       showPopover,
       menuTypeOptions
@@ -196,6 +245,8 @@ export default {
       }
     };
     return {
+      showShareDate:false,
+      shareDisabled:localStorage.getItem(key().useSpaceRole) != 'WRITE',
       defaultFullscreen:true,
       mode:"edit",
       disabledMenus:['image/upload-image','h/h4','h/h5','h/h6'],
@@ -216,7 +267,9 @@ export default {
       tags:{1:'个人',2:'生活',3:'工作'},
       showPickerOptions:[],
       showPicker:false,
-      docId:0
+      docId:0,
+      showShare:false,
+      shareParam:{password:null,bodyId:null,invalidTime:null,url:null}
     };
   },
   //页面打开时初始化
@@ -224,6 +277,46 @@ export default {
     this.getMenuLabelOption();
   },
   methods:{
+    doCopy:function (){
+      let self = this;
+      this.$copyText(this.shareParam.url).then(function (e) {
+        showToast('分享地址已复制,请粘贴给有需要的人');
+        self.showShare = false;
+      }, function (e) {
+        showToast('复制失败,请手动复制地址');
+      })
+    },
+    //格式化日期
+    formatDate:function(date){
+      return `${date.getFullYear()}-${(date.getMonth() + 1) < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1)}-${date.getDate() < 10 ? '0' + date.getDate() : date.getDate()} 23:59:59`;
+    },
+    //日期选择回调
+    onConfirmShare:function (value){
+      this.showShareDate = false;
+      this.shareParam.invalidTime = this.formatDate(value);
+    },
+    //创建分享
+    createShare:function () {
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/note/share/create', this.shareParam).then(function (response) {
+        if(response.data.result){
+          self.shareParam.url = window.location.host + '#/share/notepad/?' + response.data.data;
+          self.doCopy();
+        }else{
+          showToast(response.data.message);
+        }
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //打开分享面板
+    share:function (item) {
+      this.shareParam = {password:null,bodyId:item.id,invalidTime:this.formatDate(new Date()),url:null}
+      this.showShare = true;
+    },
     //修改
     update:function (item) {
       this.selectdLabelValue = ref([item.tag + '']);

@@ -15,7 +15,7 @@
         </van-cell-group>
         <div style="margin: 16px;">
           <van-button round block type="primary" native-type="submit">
-            提交申请
+            提交
           </van-button>
         </div>
       </van-form>
@@ -126,11 +126,13 @@ export default {
       this.passwordShow = false;
       this.isOverlay = true;
       let self = this;
-      axios.get(`/note/share/getBody/${this.param.uuid}/${this.param.password}`).then(function (res){
+      axios.get(`/note/share/getBody/${this.param.uuid}?password=${this.param.password == null ? '' : this.param.password}`).then(function (res){
         if(res.data.result){
-          this.text = res.data.data;
-          this.showNote = true;
+          self.text = res.data.data;
+        }else{
+          self.text = res.data.message;
         }
+        self.showNote = true;
         self.isOverlay = false;
       }).catch(function (err){
         self.isOverlay = false;

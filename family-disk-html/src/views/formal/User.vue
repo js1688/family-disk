@@ -180,9 +180,25 @@
   </van-action-sheet>
 
   <van-cell is-link title="分享管理" @click="queryShareShow = true" v-if="notLoginShow == false" />
-  <van-action-sheet v-model:show="queryShareShow" title="管理分享链接">
+  <van-action-sheet :lock-scroll="false" v-model:show="queryShareShow" title="管理分享链接" @open="linkShareOpen">
     <div class="content">
-      管理分享链接面板
+      <van-list
+          :v-model:loading="false"
+          :finished="true"
+          finished-text="没有更多了"
+      >
+        <van-swipe-cell v-for="item in linkList">
+          <van-cell is-link arrow-direction="right" :label="item.invalidTime"
+                    :title="item.keyword">
+            <van-tag plain type="primary">{{item.bodyType == 'NOTE' ? '笔记' : ''}}</van-tag>
+          </van-cell>
+          <template #right>
+            <van-button square hairline type="danger"  @click="delLink(item)" text="移除" />
+            <van-button square hairline type="primary"  @click="openPassword(item.password)" text="复制密码" />
+            <van-button square hairline type="success"  @click="copyLink(item.url)" text="复制地址" />
+          </template>
+        </van-swipe-cell>
+      </van-list>
     </div>
   </van-action-sheet>
 </template>
@@ -196,7 +212,7 @@ import axios from 'axios';
 import gws from "@/global/WebSocket";
 import {key} from "@/global/KeyGlobal";
 import '@vant/touch-emulator';//vant适配桌面端
-
+import VueClipboard from 'vue-clipboard2'
 export default {
   name: "User",
   setup() {
@@ -228,6 +244,7 @@ export default {
     };
   },
   components: {
+    VueClipboard,
     [SwipeCell.name]:SwipeCell,
     [List.name]:List,
     [Tag.name]:Tag,
@@ -264,13 +281,52 @@ export default {
       useSize:0,
       spaceOptions:null,
       spaceCode:'',
-      list:[]
+      list:[],
+      linkList:[]
     };
   },
   created() {
     this.getUserInfo();
   },
   methods: {
+    //删除链接
+    delLink:function (item){
+      let self = this;
+      showConfirmDialog({
+        title: '删除',
+        message:'是否删除分享:' + item.keyword + ',删除后不可恢复!'
+      }).then(() => {
+        this.isOverlay = true;
+        axios.post('/note/share/delNote', {bodyId:item.id}).then(function (response) {
+          if(response.data.result){
+            self.linkShareOpen();
+          }
+          self.isOverlay = false;
+          showToast(response.data.message);
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }).catch(function (error) {
+      });
+    },
+    //显示密码并复制
+    openPassword:function (password) {
+      this.$copyText(password).then(function (e) {
+        showToast(`密码已复制:${password}`);
+      }, function (e) {
+        showToast(`复制失败:${password}`);
+      })
+    },
+    //复制分享地址
+    copyLink:function (url){
+      let link = window.location.host + '#/share/notepad/?' + url;
+      this.$copyText(link).then(function (e) {
+        showToast('分享地址已复制,请粘贴给有需要的人');
+      }, function (e) {
+        showToast(`复制失败:${link}`);
+      })
+    },
     //设置用户与空间的权限级别
     setRelRole:function (role,item) {
       let self = this;
@@ -312,10 +368,26 @@ export default {
       }).catch(function (error) {
       });
     },
+    //链接分享管理面板打开时
+    linkShareOpen:function () {
+      this.isOverlay = true;
+      let self = this;
+      this.linkList = [];
+      axios.get('/note/share/getLinkList').then(function (res){
+        if(res.data.result){
+          self.linkList = res.data.datas;
+        }
+        self.isOverlay = false;
+      }).catch(function (err){
+        self.isOverlay = false;
+        console.log(err);
+      });
+    },
     //空间管理面板打开时
     spaceAdminOpen:function (){
       this.isOverlay = true;
       let self = this;
+      this.list = [];
       axios.get('/user/space/getUserInfoBySpaceId').then(function (res){
         if(res.data.result){
           self.list = res.data.datas;

@@ -59,10 +59,11 @@ axios.options(key().lanURL).then(function (res2){
     }
 }).catch(function (err) {
 });
-
+import VueClipboard from 'vue-clipboard2';
 import router from "./router/index";//主路由
 const app = createApp(App);
 app.use(router);
+app.use(VueClipboard);//必须这样子引用 否则会报错的
 app.mount('#app');
 
 
