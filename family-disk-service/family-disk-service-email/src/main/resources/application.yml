@@ -35,4 +35,4 @@ dubbo:
 logging:
   config: logback.xml
   level:
-    com.jflove.*.mapper: debug
+    com.jflove.email.mapper: debug

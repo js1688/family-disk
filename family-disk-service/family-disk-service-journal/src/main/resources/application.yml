@@ -23,4 +23,4 @@ dubbo:
 logging:
   config: logback.xml
   level:
-    com.jflove.*.mapper: debug
+    com.jflove.journal.mapper: debug
