@@ -106,7 +106,7 @@ export default {
       this.param[key] = v;
     }
     //是否需要输入密码
-    if(this.param.lock){
+    if(this.param.lock == 'true'){
       this.passwordShow = true;
     }else{
       this.getBody();//不需要密码,直接获得内容
@@ -124,9 +124,18 @@ export default {
     //获得分享内容
     getBody:function (){
       this.passwordShow = false;
-      console.log(this.param);
-      this.text = '# 这是大标题';
-      this.showNote = true;
+      this.isOverlay = true;
+      let self = this;
+      axios.get(`/note/share/getBody/${this.param.uuid}/${this.param.password}`).then(function (res){
+        if(res.data.result){
+          this.text = '# 这是大标题';
+          this.showNote = true;
+        }
+        self.isOverlay = false;
+      }).catch(function (err){
+        self.isOverlay = false;
+        console.log(err);
+      });
     }
   }
 }

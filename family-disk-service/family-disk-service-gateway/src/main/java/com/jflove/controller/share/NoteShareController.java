@@ -37,7 +37,7 @@ public class NoteShareController {
 
 
     @ApiOperation(value = "获取分享内容")
-    @GetMapping("/getBody")
+    @GetMapping("/getBody/{uuid}/{password}")
     public ResponseHeadVO<String> getBody(
         @ApiParam("链接id") @PathVariable("uuid") String uuid,
         @ApiParam("解锁密码") @PathVariable("fileMd5") String password
