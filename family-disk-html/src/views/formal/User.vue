@@ -320,7 +320,7 @@ export default {
     },
     //复制分享地址
     copyLink:function (url){
-      let link = window.location.protocol + '//' + window.location.host + '#/share/notepad/?' + url;
+      let link = window.location.protocol + '//' + window.location.host + '/#/share/notepad/?' + url;
       this.$copyText(link).then(function (e) {
         showToast('分享地址已复制,请粘贴给有需要的人');
       }, function (e) {

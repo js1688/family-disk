@@ -301,7 +301,7 @@ export default {
       let self = this;
       axios.post('/note/share/create', this.shareParam).then(function (response) {
         if(response.data.result){
-          self.shareParam.url = window.location.protocol + '//' + window.location.host + '#/share/notepad/?' + response.data.data;
+          self.shareParam.url = window.location.protocol + '//' + window.location.host + '/#/share/notepad/?' + response.data.data;
           self.doCopy();
         }else{
           showToast(response.data.message);
