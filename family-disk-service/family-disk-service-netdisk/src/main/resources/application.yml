@@ -6,9 +6,9 @@ spring:
     username:
     password:
     driver-class-name: com.mysql.cj.jdbc.Driver
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#mybatis-plus:
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 dubbo:
   consumer:
     timeout: 10000 # 超时时间
