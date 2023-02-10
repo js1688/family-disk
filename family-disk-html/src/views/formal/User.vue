@@ -554,8 +554,9 @@ export default {
               if(tp.state == 'USE'){
                 localStorage.setItem(key().useSpaceId,tp.spaceId);
                 localStorage.setItem(key().useSpaceRole,tp.role);
+              }else{//切换空间只能切到未使用的空间中去
+                self.spaceOptions.push({name:tp.title,code:tp.spaceId});
               }
-              self.spaceOptions.push({name:tp.title,code:tp.spaceId});
             }
             localStorage.setItem(key().userAllSpaceRole,JSON.stringify(res.data.data.spaces));
           }
