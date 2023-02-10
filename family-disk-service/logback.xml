@@ -19,9 +19,6 @@
     <property name="log.level" value="debug"/>
     <property name="log.maxSize" value="5MB" />
 
-    <!-- 打印sql语句 需要指定dao层包的位置 -->
-    <logger name="com.jflove.*.mapper" level="DEBUG" />
-
     <!-- ConsoleAppender 控制台输出日志 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

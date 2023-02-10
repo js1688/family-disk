@@ -25,3 +25,5 @@ user:
 
 logging:
   config: logback.xml
+  level:
+    com.jflove.*.mapper: debug
