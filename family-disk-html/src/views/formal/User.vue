@@ -194,7 +194,7 @@
           </van-cell>
           <template #right>
             <van-button square hairline type="danger"  @click="delLink(item)" text="移除" />
-            <van-button square hairline type="primary"  @click="openPassword(item.password)" text="复制密码" />
+            <van-button :disabled="item.password == null || item.password == ''" square hairline type="primary"  @click="openPassword(item.password)" text="复制密码" />
             <van-button square hairline type="success"  @click="copyLink(item.url)" text="复制地址" />
           </template>
         </van-swipe-cell>
@@ -320,7 +320,7 @@ export default {
     },
     //复制分享地址
     copyLink:function (url){
-      let link = window.location.host + '#/share/notepad/?' + url;
+      let link = window.location.protocol + '//' + window.location.host + '#/share/notepad/?' + url;
       this.$copyText(link).then(function (e) {
         showToast('分享地址已复制,请粘贴给有需要的人');
       }, function (e) {
