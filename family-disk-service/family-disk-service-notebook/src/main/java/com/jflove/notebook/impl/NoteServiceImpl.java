@@ -10,6 +10,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ public class NoteServiceImpl implements INoteService {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO<Long> saveNote(NotebookNoteDTO dto) {
         NotebookNotePO po = new NotebookNotePO();
         BeanUtils.copyProperties(dto,po);
@@ -74,6 +76,7 @@ public class NoteServiceImpl implements INoteService {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO del(long spaceId, long id) {
         if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
                 .eq(NotebookNotePO::getSpaceId,spaceId)
