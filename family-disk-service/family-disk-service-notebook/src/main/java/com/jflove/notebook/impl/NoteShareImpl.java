@@ -110,6 +110,8 @@ public class NoteShareImpl implements INoteShare {
                         listDTO.setKeyword(notePO.getKeyword());
                     }
             }
+            String link = String.format("lock=%s&uuid=%s", StringUtils.hasLength(v.getPassword()),v.getUuid());
+            listDTO.setUrl(link);
             dtoList.add(listDTO);
         });
         return new ResponseHeadDTO<>(true,dtoList,"查询成功");

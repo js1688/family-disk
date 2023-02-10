@@ -42,4 +42,6 @@ public class ShareLinkVO implements Serializable{
   private long bodyId;
   @ApiModelProperty(value="标题关键字")
   private String keyword;
+  @ApiModelProperty(value="分享地址")
+  private String url;
 }

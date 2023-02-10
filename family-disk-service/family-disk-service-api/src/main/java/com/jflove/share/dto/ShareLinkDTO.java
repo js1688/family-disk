@@ -63,4 +63,9 @@ public class ShareLinkDTO implements Serializable{
    * 标题关键字
    */
   private String keyword;
+
+  /**
+   * 分享地址
+   */
+  private String url;
 }
