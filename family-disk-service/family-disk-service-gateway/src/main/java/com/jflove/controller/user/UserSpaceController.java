@@ -133,6 +133,7 @@ public class UserSpaceController {
                 UserSpaceRelVO vo = new UserSpaceRelVO();
                 BeanUtils.copyProperties(v, vo);
                 vo.setState(v.getState().getCode());
+                vo.setRole(v.getRole().getCode());
                 list.add(vo);
             });
             return new ResponseHeadVO<>(dto.isResult(),list,dto.getMessage());
