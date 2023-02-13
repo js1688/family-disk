@@ -31,7 +31,8 @@
 
 <script>
 import { Tabbar, TabbarItem } from 'vant';
-
+import {isToken} from "@/global/KeyGlobal";
+import gws from "@/global/WebSocket";
 export default {
   name: 'Formal',
   setup() {
@@ -55,6 +56,12 @@ export default {
   },
   props: {
 
+  },
+  created() {
+    //如果有token,则自动发起连接websocket
+    if(isToken()){
+      gws.methods.wsConnection(null);
+    }
   },
   data: function() {
     return {

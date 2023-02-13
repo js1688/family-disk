@@ -28,14 +28,6 @@ axios.interceptors.response.use(response => {
     return error;
 });
 
-
-//如果有token,则自动发起连接websocket
-if(isToken()){
-    gws.methods.wsConnection(null);
-}
-
-
-
 //检查网络环境,是否可以切换至内网
 //切换到内网时,会碰到网页端是https,内网地址是http,无法访问过去,需要在服务端启动nginx将ip默认的443端口做一下转发,可以使用openssl工具生成一个本地证书试试
 //访问本地的https时会发生浏览器提示证书不安全,每次都无法直接跳转到本地地址,需要手动安装一下ca证书,同时使用openssl的时候需要生成这个ca证书
