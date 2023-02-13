@@ -4,11 +4,13 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
+import com.jflove.netdisk.NetdiskDirectoryPO;
 import com.jflove.notebook.NotebookNotePO;
 import com.jflove.share.ShareLinkPO;
 import com.jflove.share.api.IShareAdmin;
 import com.jflove.share.dto.ShareLinkDTO;
 import com.jflove.share.em.ShareBodyTypeENUM;
+import com.jflove.share.mapper.NetdiskDirectoryMapper;
 import com.jflove.share.mapper.NotebookNoteMapper;
 import com.jflove.share.mapper.ShareLinkMapper;
 import lombok.extern.log4j.Log4j2;
@@ -36,16 +38,31 @@ public class ShareAdminImpl implements IShareAdmin {
 
     @Autowired
     private NotebookNoteMapper notebookNoteMapper;
+    @Autowired
+    private NetdiskDirectoryMapper netdiskDirectoryMapper;
 
     @Override
     @Transactional
     public ResponseHeadDTO<ShareLinkDTO> create(ShareBodyTypeENUM bodyType,String password, long bodyId, long spaceId, String invalidTime) {
-        if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
-                .eq(NotebookNotePO::getId,bodyId)
-                .eq(NotebookNotePO::getSpaceId,spaceId)
-        )){
-            return new ResponseHeadDTO<>(false,"笔记不存在");
+        switch (bodyType){
+            case NOTE:
+                if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
+                        .eq(NotebookNotePO::getId,bodyId)
+                        .eq(NotebookNotePO::getSpaceId,spaceId)
+                )){
+                    return new ResponseHeadDTO<>(false,"笔记不存在");
+                }
+                break;
+            case NETDISK:
+                if(!netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                        .eq(NetdiskDirectoryPO::getId,bodyId)
+                        .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+                )){
+                    return new ResponseHeadDTO<>(false,"网盘目录不存在");
+                }
+                break;
         }
+
         String uuid = UUID.randomUUID().toString();
         long dqsj = DateUtil.parse(invalidTime, DatePattern.NORM_DATETIME_PATTERN).getTime() / 1000;
         ShareLinkPO po = new ShareLinkPO();
@@ -97,6 +114,16 @@ public class ShareAdminImpl implements IShareAdmin {
                     if(notePO != null){
                         listDTO.setKeyword(notePO.getKeyword());
                     }
+                    break;
+                case NETDISK:
+                    NetdiskDirectoryPO diskPO = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                            .eq(NetdiskDirectoryPO::getId,v.getBodyId())
+                            .select(NetdiskDirectoryPO::getName)
+                    );
+                    if(diskPO != null){
+                        listDTO.setKeyword(diskPO.getName());
+                    }
+                    break;
             }
             String link = String.format("lock=%s&uuid=%s", StringUtils.hasLength(v.getPassword()),v.getUuid());
             listDTO.setUrl(link);
