@@ -57,20 +57,19 @@ public class UserInfoImpl implements IUserInfo {
         BeanUtils.copyProperties(po,dto);
         List<UserSpaceRelPO> spacesPO = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getUserId,po.getId())
+                .in(UserSpaceRelPO::getState,UserRelStateENUM.USE.getCode(),UserRelStateENUM.NOTUSED.getCode())//只查正在使用或者未使用的关系,过滤掉审批中的
         );
         List<UserSpaceRelDTO> spacesDTOs = new ArrayList<>(spacesPO.size());
         spacesPO.forEach(v->{
-            if(!UserRelStateENUM.APPROVAL.getCode().equals(v.getState())) {//过滤掉还在审批的关系
-                UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
-                BeanUtils.copyProperties(v, spacesDto);
-                spacesDto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
-                spacesDto.setState(UserRelStateENUM.valueOf(v.getState()));
-                spacesDTOs.add(spacesDto);
-            }
+            UserSpaceRelDTO spacesDto = new UserSpaceRelDTO();
+            BeanUtils.copyProperties(v, spacesDto);
+            spacesDto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
+            spacesDto.setState(UserRelStateENUM.valueOf(v.getState()));
+            spacesDTOs.add(spacesDto);
         });
         dto.setRole(UserRoleENUM.valueOf(po.getRole()));
         dto.setSpaces(spacesDTOs);
-        return new ResponseHeadDTO<UserInfoDTO>(dto);
+        return new ResponseHeadDTO<>(dto);
     }
 
     @Override

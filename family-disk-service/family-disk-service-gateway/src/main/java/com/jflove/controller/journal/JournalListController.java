@@ -50,7 +50,9 @@ public class JournalListController {
     @PostMapping("/getJournalList")
     public ResponseHeadVO<JournalListVO> getJournalList(@RequestBody @Valid GetJournalListParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO<JournalListDTO> dto = journalList.getList(useSpaceId,param.getKeyword());
         if(dto.isResult()){
             List<JournalListVO> vos = new ArrayList<>(dto.getDatas().size());
@@ -78,7 +80,7 @@ public class JournalListController {
     public ResponseHeadVO<Integer> delJournalList(@RequestBody @Valid DelJournalListParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有删除权限");
@@ -93,10 +95,10 @@ public class JournalListController {
     @PostMapping("/addJournalList")
     public ResponseHeadVO addJournalList(@RequestBody @Valid JournalListVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有添加权限");
         }

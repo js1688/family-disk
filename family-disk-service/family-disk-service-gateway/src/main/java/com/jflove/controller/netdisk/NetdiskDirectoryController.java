@@ -48,7 +48,7 @@ public class NetdiskDirectoryController {
     public ResponseHeadVO<AddDirectoryParamVO> addDirectory(@RequestBody @Valid AddDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有添加权限");
@@ -72,7 +72,7 @@ public class NetdiskDirectoryController {
     public ResponseHeadVO<Integer> delDirectory(@RequestBody @Valid DelDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有删除权限");
@@ -88,7 +88,7 @@ public class NetdiskDirectoryController {
     public ResponseHeadVO<AddDirectoryParamVO> moveDirectory(@RequestBody @Valid MoveDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有移动权限");
@@ -106,7 +106,9 @@ public class NetdiskDirectoryController {
     @PostMapping("/findDirectory")
     public ResponseHeadVO<AddDirectoryParamVO> findDirectory(@RequestBody @Valid FindDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(useSpaceId,param.getPid(),param.getKeyword(),
                 StringUtils.hasLength(param.getType()) ? NetdiskDirectoryENUM.valueOf(param.getType()) : null);
         if(dto.isResult()){
@@ -126,8 +128,8 @@ public class NetdiskDirectoryController {
     @PostMapping("/updateName")
     public ResponseHeadVO updateName(@RequestBody @Valid UpdateDirectoryNameParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有修改权限");

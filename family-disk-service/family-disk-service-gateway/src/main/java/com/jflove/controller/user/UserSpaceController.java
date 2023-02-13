@@ -42,7 +42,9 @@ public class UserSpaceController {
     @GetMapping("/getSpaceInfo")
     public ResponseHeadVO<UserSpaceVO> getSpaceInfo(){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO<UserSpaceDTO> dto = userSpace.getSpaceInfo(useSpaceId);
         if(dto.isResult()){
             UserSpaceVO vo = new UserSpaceVO();
@@ -56,7 +58,6 @@ public class UserSpaceController {
     @PostMapping("/createSpace")
     public ResponseHeadVO<UserSpaceVO> createSpace(@RequestBody @Valid CreateSpaceParamVO param){
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         ResponseHeadDTO<UserSpaceDTO> dto = userSpace.createSpace(useUserId,param.getTitle());
         if(dto.isResult()){
             UserSpaceVO vo = new UserSpaceVO();
@@ -69,10 +70,11 @@ public class UserSpaceController {
     @ApiOperation(value = "切换空间")
     @PostMapping("/switchSpace")
     public ResponseHeadVO switchSpace(@RequestBody @Valid SwitchSpaceParamVO param){
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         ResponseHeadDTO dto = userSpace.switchSpace(param.getTargetSpaceId(),useSpaceId,useUserId);
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
@@ -81,7 +83,6 @@ public class UserSpaceController {
     @PostMapping("/joinSpace")
     public ResponseHeadVO joinSpace(@RequestBody @Valid JoinSpaceParamVO param){
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         ResponseHeadDTO dto = userSpace.joinSpace(param.getTargetSpaceCode(),useUserId);
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
@@ -89,12 +90,11 @@ public class UserSpaceController {
     @ApiOperation(value = "移除空间与用户关系")
     @PostMapping("/removeRel")
     public ResponseHeadVO removeRel(@RequestBody @Valid RemoveRelParamVO param){
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有移除权限");
         }
@@ -106,10 +106,9 @@ public class UserSpaceController {
     @PostMapping("/setRelRole")
     public ResponseHeadVO setRelRole(@RequestBody @Valid SetRelRoleParamVO param){
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有设置权限");
@@ -121,11 +120,11 @@ public class UserSpaceController {
     @ApiOperation(value = "查找用户创建的空间下有多少关联用户")
     @GetMapping("/getUserInfoBySpaceId")
     public ResponseHeadVO<UserSpaceRelVO> getUserInfoBySpaceId(){
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:空间ID不能为空");
-
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         ResponseHeadDTO<UserSpaceRelDTO> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
         if(dto.isResult()){
             List<UserSpaceRelVO> list = new ArrayList<>(dto.getDatas().size());

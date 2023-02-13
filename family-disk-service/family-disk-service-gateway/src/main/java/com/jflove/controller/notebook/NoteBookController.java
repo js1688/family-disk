@@ -49,7 +49,9 @@ public class NoteBookController {
     @PostMapping("/getList")
     public ResponseHeadVO<NotebookListVO> getList(@RequestBody @Valid GetListParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO<NotebookNoteDTO> dto = noteService.getList(useSpaceId,param.getKeyword(),param.getTag());
         if(dto.isResult()){
             List<NotebookListVO> vos = new ArrayList<>(dto.getDatas().size());
@@ -69,7 +71,7 @@ public class NoteBookController {
     public ResponseHeadVO delNote(@RequestBody @Valid GetByIdParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有删除权限");
@@ -82,7 +84,9 @@ public class NoteBookController {
     @PostMapping("/getNoteText")
     public ResponseHeadVO getNoteText(@RequestBody @Valid GetByIdParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO<String> ret = noteService.getText(useSpaceId,param.getId());
         return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
     }
@@ -91,13 +95,13 @@ public class NoteBookController {
     @PostMapping("/saveNote")
     public ResponseHeadVO saveNote(@RequestBody @Valid NotebookNoteVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有添加权限");
         }
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         NotebookNoteDTO dto = new NotebookNoteDTO();
         BeanUtils.copyProperties(param,dto);
         dto.setSpaceId(useSpaceId);

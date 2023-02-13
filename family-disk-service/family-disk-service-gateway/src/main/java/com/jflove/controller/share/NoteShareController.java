@@ -57,7 +57,9 @@ public class NoteShareController {
     @GetMapping("/getLinkList")
     public ResponseHeadVO<ShareLinkVO> getLinkList(){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO<ShareLinkDTO> dto = noteShare.getLinkList(useSpaceId);
         if(dto.isResult()){
             List<ShareLinkVO> vos = new ArrayList<>(dto.getDatas().size());
@@ -78,7 +80,7 @@ public class NoteShareController {
     public ResponseHeadVO delNote(@RequestBody NoteShareCreateParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有删除权限");
@@ -95,7 +97,7 @@ public class NoteShareController {
     public ResponseHeadVO create(@RequestBody @Valid NoteShareCreateParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有创建权限");

@@ -7,7 +7,6 @@ import com.jflove.user.api.IUserInfo;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.user.em.UserRelStateENUM;
-import com.jflove.user.em.UserSpaceRoleENUM;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -19,11 +18,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author tanjun
@@ -48,25 +47,20 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         //token验证通过,返回用户信息
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(claims.getId());
         Assert.notNull(dto.getData(),dto.getMessage());
-        String useSpaceId =  autowiredRequest.getHeader(HttpConstantConfig.USE_SPACE_ID);
-        //如果头部信息中包含了当前使用的空间ID则判断是否有权限
-        if(StringUtils.hasLength(useSpaceId) && dto.getData().getSpaces() != null){
-            if(!dto.getData().getSpaces().stream()
-                    .filter(e->e.getState() == UserRelStateENUM.USE)
-                    .map(UserSpaceRelDTO::getSpaceId)
-                    .map(String::valueOf).toList().contains(useSpaceId)){
-                throw new SecurityException("该用户没有使用当前空间的权限");
+        if(dto.getData().getSpaces() != null){//获取用户所关联的空间,然后找到正在使用的空间
+            Optional<UserSpaceRelDTO> rel = dto.getData().getSpaces().stream()
+                    .filter(e->e.getState() == UserRelStateENUM.USE).findFirst();
+            if(!rel.isEmpty()){//正在使用的空间不为空,才设置这两个属性
+                autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ROLE,rel.get().getRole());
+                autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ID,rel.get().getSpaceId());
             }
-            UserSpaceRoleENUM em = dto.getData().getSpaces().stream().filter(e->String.valueOf(e.getSpaceId()).equals(useSpaceId)).toList().get(0).getRole();
-            autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ROLE,em);
-            autowiredRequest.setAttribute(HttpConstantConfig.USE_SPACE_ID,Long.parseLong(useSpaceId));
         }
         autowiredRequest.setAttribute(HttpConstantConfig.USE_USER_ID,dto.getData().getId());
         autowiredRequest.setAttribute(HttpConstantConfig.USE_USER_EMAIL,dto.getData().getEmail());
         return new UserDetails() {
             @Override
             public Collection<? extends GrantedAuthority> getAuthorities() {
-                return List.of(new SimpleGrantedAuthority("ROLE_" + dto.getData().getRole()));
+                return List.of(new SimpleGrantedAuthority("ROLE_" + dto.getData().getRole().getCode()));
             }
 
             @Override

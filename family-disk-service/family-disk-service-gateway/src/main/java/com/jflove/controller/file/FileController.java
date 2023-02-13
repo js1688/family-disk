@@ -13,6 +13,8 @@ import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
+import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.file.DelFileParamVO;
@@ -46,6 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -84,29 +87,29 @@ public class FileController {
 
 
     @ApiOperation(value = "媒体资源边播边下")
-    @GetMapping("/media/play/{source}/{fileMd5}/{useSpaceId}/{token}")
+    @GetMapping("/media/play/{source}/{fileMd5}/{token}")
     public void mediaPlay(HttpServletRequest request,HttpServletResponse response,
                               @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @PathVariable("source") String source,
                               @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5,
-                              @ApiParam("正在使用的空间") @PathVariable("useSpaceId") Long useSpaceId,
                               @ApiParam("token") @PathVariable("token") String token
     )throws IOException, ServletException {
         Assert.notNull(fileMd5,"错误的请求:文件md5不能为空");
         Assert.notNull(source,"错误的请求:文件来源不能为空");
         Assert.notNull(token,"错误的请求:token不能为空");
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
         Jws<Claims> jws = jJwtTool.parseJwt(token);
         Claims claims = jws.getBody();
         //token验证通过,返回用户信息
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(claims.getId());
         Assert.notNull(dto.getData(),dto.getMessage());
-        UserSpaceRoleENUM useSpacerRole = dto.getData().getSpaces().stream().filter(
-                e->String.valueOf(e.getSpaceId()).equals(String.valueOf(useSpaceId))
-        ).toList().get(0).getRole();
-        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        Optional<UserSpaceRelDTO> rel = dto.getData().getSpaces().stream()
+                .filter(e->e.getState() == UserRelStateENUM.USE).findFirst();
+        if(rel.isEmpty()){
+            throw new SecurityException("请先切换到空间");
+        }
+        Assert.notNull(rel.get().getRole(),"错误的请求:正在使用的空间权限不能为空");
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,fileMd5);
         request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE,source);
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,useSpaceId);
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,rel.get().getSpaceId());
         resourceHttpRequestHandle.handleRequest(request, response);
     }
 
@@ -115,7 +118,7 @@ public class FileController {
     public ResponseHeadVO<Boolean> delFile(@RequestBody @Valid DelFileParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有删除权限");
@@ -133,7 +136,7 @@ public class FileController {
             @RequestBody @Valid GetFileParamVO param) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,param.getFileMd5());
         request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE,param.getSource());
@@ -147,7 +150,7 @@ public class FileController {
     public void getFile(HttpServletResponse response,@RequestBody @Valid GetFileParamVO param) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.attachment().build());
@@ -200,12 +203,11 @@ public class FileController {
                                                @ApiParam("文件真实名称") @RequestParam("originalFileName") String originalFileName,
                                                @ApiParam("前端计算的文件md5") @RequestParam("fileMd5") String fileMd5
     ) throws Exception {
-        Long useSpaceId = (Long) autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         Long useUserId = (Long) autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM) autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId, "错误的请求:正在使用的空间ID不能为空");
-        Assert.notNull(useUserId, "错误的请求:用户ID不能为空");
-        Assert.notNull(useSpacerRole, "错误的请求:正在使用的空间权限不能为空");
         if (useSpacerRole != UserSpaceRoleENUM.WRITE) {
             throw new SecurityException("用户对该空间没有写入权限");
         }
@@ -286,11 +288,10 @@ public class FileController {
                                           @ApiParam("文件多媒体类型") @RequestParam("m") String m
     ) throws Exception{
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"错误的请求:正在使用的空间ID不能为空");
-        Assert.notNull(useUserId,"错误的请求:用户ID不能为空");
+        Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有写入权限");
         }
