@@ -37,7 +37,7 @@
         <van-button v-if="!roleWrite" square hairline type="primary"  @click="moveDirectory(item)" text="移动" />
         <van-button v-if="!roleWrite" square hairline type="primary"   @click="updateName(item)" text="重命名" />
         <van-button v-if="item.type == 'FILE'" square hairline type="success"  @click="download(item)" text="下载" />
-        <van-button v-if="roleWrite" square hairline type="success"  @click="share(item)" text="分享" />
+        <van-button v-if="!roleWrite" square hairline type="success"  @click="share(item)" text="分享" />
       </template>
     </van-swipe-cell>
   </van-list>

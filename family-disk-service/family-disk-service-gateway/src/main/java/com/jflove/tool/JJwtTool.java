@@ -43,7 +43,7 @@ public class JJwtTool {
      * @return
      */
     public String createJwt(String id, String name){
-        return createJwt(id,name,null);
+        return createJwt(id,name,null,null);
     }
 
     /**
@@ -51,9 +51,10 @@ public class JJwtTool {
      * @param id   用户id
      * @param name 用户名称
      * @param map  token负载信息
+     * @param expire 到期时间戳 到毫秒
      * @return token
      */
-    public String createJwt(String id, String name, Map<String, Object> map) {
+    public String createJwt(String id, String name, Map<String, Object> map,Long expire) {
         // 创建 JwtBuilder 设置基本的信息
         JwtBuilder jwtBuilder = Jwts.builder().setId(id).setSubject(name) //token使用方id和名称
                 .setIssuedAt(new Date()) //token发布时间
@@ -64,7 +65,12 @@ public class JJwtTool {
             map.forEach(jwtBuilder::claim);
         }
         // 设置失效时间
-        long exp = DateUtil.offset(new Date(), DateField.MINUTE,43776).getTime();
+        long exp = 0;
+        if(expire != null){
+            exp = expire.longValue();
+        }else {
+            exp = DateUtil.offset(new Date(), DateField.MINUTE, ttlMinute).getTime();
+        }
         jwtBuilder.setExpiration(new Date(exp));
         // 生成token
         return jwtBuilder.compact();

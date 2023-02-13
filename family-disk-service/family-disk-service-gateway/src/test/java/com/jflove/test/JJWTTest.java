@@ -28,7 +28,7 @@ public class JJWTTest {
 
     @Test
     void createJwt(){
-        log.info("------------------------{}",jJwtTool.createJwt("1","谭峻",null));
+        log.info("------------------------{}",jJwtTool.createJwt("1","谭峻",null,null));
     }
 
     @Test
