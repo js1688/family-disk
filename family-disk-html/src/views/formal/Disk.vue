@@ -33,15 +33,16 @@
         <van-tag plain type="primary">{{item.type == 'FOLDER' ? '目录':'文件'}}</van-tag>
       </van-cell>
       <template #right>
-        <van-button square hairline type="danger"  @click="delDirectory(item)" text="删除" />
-        <van-button square hairline type="primary"  @click="moveDirectory(item)" text="移动" />
-        <van-button square hairline type="primary"   @click="updateName(item)" text="重命名" />
-        <van-button :disabled="item.type != 'FILE'" square hairline type="success"  @click="download(item)" text="下载" />
+        <van-button v-if="!roleWrite" square hairline type="danger"  @click="delDirectory(item)" text="删除" />
+        <van-button v-if="!roleWrite" square hairline type="primary"  @click="moveDirectory(item)" text="移动" />
+        <van-button v-if="!roleWrite" square hairline type="primary"   @click="updateName(item)" text="重命名" />
+        <van-button v-if="item.type == 'FILE'" square hairline type="success"  @click="download(item)" text="下载" />
+        <van-button v-if="roleWrite" square hairline type="success"  @click="share(item)" text="分享" />
       </template>
     </van-swipe-cell>
   </van-list>
 
-  <div style="position: fixed;right: 25px;bottom: 200px;">
+  <div v-if="!roleWrite" style="position: fixed;right: 25px;bottom: 200px;">
     <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
       <template #reference>
         <van-button icon="plus" type="primary"/>
@@ -131,6 +132,43 @@
     </div>
   </van-action-sheet>
 
+  <van-action-sheet
+      v-model:show="showShare"
+      title="创建分享链接">
+    <div>
+      <van-form @submit="createShare">
+        <van-cell-group inset>
+          <van-field v-model="shareParam.password"
+                     type="password"
+                     label="解锁密码" placeholder="请输入解锁密码" />
+          <van-field label="失效日期" required readonly
+                     v-model="shareParam.invalidTime"
+                     placeholder="点击选择日期"
+                     :rules="[{ required: true, message: '请选择失效日期' }]"
+                     @click="showShareDate = true"
+          />
+          <van-field v-model="shareParam.url" readonly label="分享地址" >
+            <template #button>
+              <van-button
+                  size="small"
+                  type="primary"
+                  @click="doCopy"
+                  :disabled="shareParam.url == null || shareParam.url == ''"
+              >复制</van-button>
+            </template>
+          </van-field>
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交申请
+          </van-button>
+        </div>
+      </van-form>
+    </div>
+  </van-action-sheet>
+
+  <van-calendar v-model:show="showShareDate" :show-confirm="false" @confirm="onConfirmShare" :max-date="maxDate"/>
+
   <van-action-sheet @opened="playVideo" @close="pauseVideo" title="媒体播放" round v-model:show="showVideo">
     <div style="max-width: 1200px;" id="videoBody">
     </div>
@@ -192,7 +230,7 @@ import {
   Progress,
   showImagePreview,
   NumberKeyboard,
-  Dialog
+  Dialog, Calendar
 } from 'vant';
 import { Overlay,Loading,Collapse,CollapseItem,ImagePreview} from 'vant';
 import {createApp, ref, shallowRef} from "vue";
@@ -200,7 +238,7 @@ import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
-import {isToken, key,fileMd5} from "@/global/KeyGlobal";
+import {isToken, key, fileMd5, formatDate} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 import { saveAs } from 'file-saver';
@@ -210,6 +248,7 @@ import '@vant/touch-emulator';//vant适配桌面端
 export default {
   name: "Disk",
   components: {
+    [Calendar.name]:Calendar,
     [Search.name]: Search,
     [List.name]: List,
     [Cell.name]: Cell,
@@ -246,6 +285,7 @@ export default {
     };
     const activeNames = ref([]);
     return {
+      maxDate: new Date(new Date().getFullYear() + 1, 12, 31),
       activeNames,
       addActions,
       showPopover,
@@ -254,6 +294,10 @@ export default {
   },
   data: function (){
     return {
+      showShareDate:false,
+      roleWrite:localStorage.getItem(key().useSpaceRole) != 'WRITE',
+      showShare:false,
+      shareParam:{password:null,bodyId:null,invalidTime:null,url:null},
       keyword:"",
       directoryName:"",
       pid:0,
@@ -316,6 +360,43 @@ export default {
     }
   },
   methods:{
+    doCopy:function (){
+      let self = this;
+      this.$copyText(this.shareParam.url).then(function (e) {
+        showToast('分享地址已复制,请粘贴给有需要的人');
+        self.showShare = false;
+      }, function (e) {
+        showToast('复制失败,请手动复制地址');
+      })
+    },
+    //日期选择回调
+    onConfirmShare:function (value){
+      this.showShareDate = false;
+      this.shareParam.invalidTime = formatDate(value);
+    },
+    //创建分享
+    createShare:function () {
+      this.isOverlay = true;
+      let self = this;
+      this.shareParam.bodyType = 'NETDISK';
+      axios.post('/share/admin/create', this.shareParam).then(function (response) {
+        if(response.data.result){
+          self.shareParam.url = window.location.protocol + '//' + window.location.host + '/#/share/netdisk/?' + response.data.data.url;
+          self.doCopy();
+        }else{
+          showToast(response.data.message);
+        }
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //打开分享面板
+    share:function (item) {
+      this.shareParam = {password:null,bodyId:item.id,invalidTime:formatDate(new Date()),url:null}
+      this.showShare = true;
+    },
     //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
     chickVideo:function (){
       this.chickVideoValue = true;

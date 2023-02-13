@@ -23,13 +23,13 @@
     <van-swipe-cell v-for="item in journalList">
       <van-cell is-link :title="item.title" :label="item.happenTime" @click="open(item)" />
       <template #right>
-        <van-button style="height: 66px;" square hairline type="danger"  @click="delJournal(item)" text="删除" />
+        <van-button v-if="!roleWrite" style="height: 66px;" square hairline type="danger"  @click="delJournal(item)" text="删除" />
       </template>
     </van-swipe-cell>
   </van-list>
 
 
-  <div style="position: fixed;right: 25px;bottom: 200px;">
+  <div v-if="!roleWrite" style="position: fixed;right: 25px;bottom: 200px;">
     <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
       <template #reference>
         <van-button icon="plus" type="primary"/>
@@ -164,6 +164,7 @@ export default {
   },
   data(){
     return {
+      roleWrite:localStorage.getItem(key().useSpaceRole) != 'WRITE',
       isOverlay:false,
       loading:false,
       finished:false,

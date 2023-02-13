@@ -31,6 +31,10 @@ export function isToken(){
     return false;
 }
 
+export function formatDate(date){
+    return `${date.getFullYear()}-${(date.getMonth() + 1) < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1)}-${date.getDate() < 10 ? '0' + date.getDate() : date.getDate()} 23:59:59`;
+}
+
 /**
  * 计算文件md5值
  * 分片数量为1,直接计算完整md5值,

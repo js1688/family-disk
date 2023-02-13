@@ -31,16 +31,16 @@
         <van-tag plain type="primary">{{tags[item.tag]}}</van-tag>
       </van-cell>
       <template #right>
-        <van-button style="height: 66px;" square hairline type="danger"  @click="del(item)" text="删除" />
-        <van-button style="height: 66px;" square hairline type="primary"  @click="update(item)" text="修改" />
+        <van-button v-if="!roleWrite" style="height: 66px;" square hairline type="danger"  @click="del(item)" text="删除" />
+        <van-button v-if="!roleWrite" style="height: 66px;" square hairline type="primary"  @click="update(item)" text="修改" />
         <van-button
-            :disabled="shareDisabled"
+            v-if="!roleWrite"
                     style="height: 66px;" square hairline type="success"  @click="share(item)" text="分享" />
       </template>
     </van-swipe-cell>
   </van-list>
 
-  <div style="position: fixed;right: 25px;bottom: 200px;">
+  <div v-if="!roleWrite" style="position: fixed;right: 25px;bottom: 200px;">
     <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
       <template #reference>
         <van-button icon="plus" type="primary"/>
@@ -147,7 +147,7 @@ import {
   Calendar,
   ActionSheet, showConfirmDialog
 } from 'vant';
-import {key} from "@/global/KeyGlobal";
+import {formatDate, key} from "@/global/KeyGlobal";
 //vant适配桌面端
 import '@vant/touch-emulator';
 import VMdEditor from '@kangc/v-md-editor';
@@ -246,7 +246,7 @@ export default {
     };
     return {
       showShareDate:false,
-      shareDisabled:localStorage.getItem(key().useSpaceRole) != 'WRITE',
+      roleWrite:localStorage.getItem(key().useSpaceRole) != 'WRITE',
       defaultFullscreen:true,
       mode:"edit",
       disabledMenus:['image/upload-image','h/h4','h/h5','h/h6'],
@@ -269,7 +269,7 @@ export default {
       showPicker:false,
       docId:0,
       showShare:false,
-      shareParam:{password:null,bodyId:null,invalidTime:null,url:null}
+      shareParam:{bodyType:null,password:null,bodyId:null,invalidTime:null,url:null}
     };
   },
   //页面打开时初始化
@@ -286,19 +286,16 @@ export default {
         showToast('复制失败,请手动复制地址');
       })
     },
-    //格式化日期
-    formatDate:function(date){
-      return `${date.getFullYear()}-${(date.getMonth() + 1) < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1)}-${date.getDate() < 10 ? '0' + date.getDate() : date.getDate()} 23:59:59`;
-    },
     //日期选择回调
     onConfirmShare:function (value){
       this.showShareDate = false;
-      this.shareParam.invalidTime = this.formatDate(value);
+      this.shareParam.invalidTime = formatDate(value);
     },
     //创建分享
     createShare:function () {
       this.isOverlay = true;
       let self = this;
+      this.shareParam.bodyType = 'NOTE';
       axios.post('/share/admin/create', this.shareParam).then(function (response) {
         if(response.data.result){
           self.shareParam.url = window.location.protocol + '//' + window.location.host + '/#/share/notepad/?' + response.data.data.url;
@@ -314,7 +311,7 @@ export default {
     },
     //打开分享面板
     share:function (item) {
-      this.shareParam = {password:null,bodyId:item.id,invalidTime:this.formatDate(new Date()),url:null}
+      this.shareParam = {password:null,bodyId:item.id,invalidTime:formatDate(new Date()),url:null}
       this.showShare = true;
     },
     //修改

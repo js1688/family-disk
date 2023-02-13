@@ -196,12 +196,12 @@
         <van-swipe-cell v-for="item in linkList">
           <van-cell is-link arrow-direction="right" :label="item.invalidTime"
                     :title="item.keyword">
-            <van-tag plain type="primary">{{item.bodyType == 'NOTE' ? '笔记' : ''}}</van-tag>
+            <van-tag plain type="primary">{{item.bodyType == 'NOTE' ? '笔记' : item.bodyType == 'NETDISK' ? '网盘' : ''}}</van-tag>
           </van-cell>
           <template #right>
             <van-button square hairline type="danger"  @click="delLink(item)" text="移除" />
             <van-button :disabled="item.password == null || item.password == ''" square hairline type="primary"  @click="openPassword(item.password)" text="复制密码" />
-            <van-button square hairline type="success"  @click="copyLink(item.url)" text="复制地址" />
+            <van-button square hairline type="success"  @click="copyLink(item)" text="复制地址" />
           </template>
         </van-swipe-cell>
       </van-list>
@@ -303,7 +303,7 @@ export default {
         message:'是否删除分享:' + item.keyword + ',删除后不可恢复!'
       }).then(() => {
         this.isOverlay = true;
-        axios.post('/share/admin/delNote', {bodyId:item.id}).then(function (response) {
+        axios.post('/share/admin/delLink', {bodyId:item.id}).then(function (response) {
           if(response.data.result){
             self.linkShareOpen();
           }
@@ -325,8 +325,19 @@ export default {
       })
     },
     //复制分享地址
-    copyLink:function (url){
-      let link = window.location.protocol + '//' + window.location.host + '/#/share/notepad/?' + url;
+    copyLink:function (item){
+      let link = window.location.protocol + '//' + window.location.host;
+      switch (item.bodyType){
+        case 'NOTE':
+          link += '/#/share/notepad/?';
+          break
+        case 'NETDISK':
+          link += '/#/share/netdisk/?';
+          break
+        default:
+          showToast("复制失败,链接内容不识别");
+      }
+      link += item.url;
       this.$copyText(link).then(function (e) {
         showToast('分享地址已复制,请粘贴给有需要的人');
       }, function (e) {

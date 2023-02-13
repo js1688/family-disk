@@ -11,6 +11,7 @@ import Share from "@/views/share/Share.vue";
 import HTTP404 from "@/views/public/Http404.vue";
 
 import {key} from "@/global/KeyGlobal";
+import DiskShare from "@/views/share/DiskShare.vue";
 const routes = [
     {
         path: '/',
@@ -48,7 +49,11 @@ const routes = [
             {
                 path: 'notepad',
                 component: NotepadShare,
-            }
+            },
+            {
+                path: 'netdisk',
+                component: DiskShare,
+            },
         ]
     },
     {
