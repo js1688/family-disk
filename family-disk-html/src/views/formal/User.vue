@@ -16,7 +16,9 @@
 
 
   <van-cell is-link title="登录" @click="logonShow = true" v-if="notLoginShow == true"/>
-  <van-action-sheet v-model:show="logonShow" title="用户登录">
+  <van-action-sheet v-model:show="logonShow" @open="
+      email = '';
+      password = '';" title="用户登录">
     <div class="content">
       <van-form @submit="logon">
         <van-cell-group inset>
@@ -48,7 +50,12 @@
   </van-action-sheet>
 
   <van-cell is-link title="注册" @click="registerShow = true" v-if="notLoginShow == true" />
-  <van-action-sheet v-model:show="registerShow" title="用户注册">
+  <van-action-sheet v-model:show="registerShow" @open="
+      email = '';
+      name = '';
+      password = '';
+      captcha = '';
+      pwd = '';" title="用户注册">
     <div class="content">
       <van-form @submit="register">
         <van-cell-group inset>
@@ -150,9 +157,7 @@
         <van-swipe-cell v-for="item in list">
           <van-cell is-link arrow-direction="right"
                     :title="item.userName">
-            <van-tag plain type="primary">{{item.state == 'USE' ? '正在使用' :
-                item.state == 'APPROVAL' ? '待审批' :
-                    item.state == 'NOTUSED' ? '未使用' : ''}}</van-tag>
+            <van-tag plain type="primary">{{item.state == 'APPROVAL' ? '待审批' : item.role == 'READ' ? '只读' : item.role == 'WRITE' ? '读写' : ''}}</van-tag>
           </van-cell>
           <template #right>
             <van-button square hairline type="danger"  @click="removeRel(item)" text="移除" />
@@ -171,6 +176,7 @@
   <van-action-sheet v-model:show="querySpaceShow" title="查看空间信息">
     <div class="content">
       <van-cell-group inset>
+        <van-field label="空间编码：" label-align="top" :model-value="spaceCode" readonly  />
         <van-field label="空间名：" label-align="top" :model-value="title" readonly  />
         <van-field label="最大存储(MB)：" label-align="top" :model-value="maxSize" readonly  />
         <van-field label="已使用存储(MB)：" label-align="top" :model-value="useSize" readonly  />
@@ -422,6 +428,7 @@ export default {
           self.title = res.data.data.title;
           self.maxSize = res.data.data.maxSize;
           self.useSize = res.data.data.useSize;
+          self.spaceCode = res.data.data.code;
         }
         self.isOverlay = false;
       }).catch(function (err){
@@ -438,7 +445,6 @@ export default {
           title: localStorage.getItem(key().userName) + "的空间"
         }).then(function (response) {
           if(response.data.result){
-            localStorage.setItem(key().useSpaceId,response.data.data.id);
             localStorage.setItem(key().useSpaceRole,'WRITE');//自己创建的空间,权限是读写
           }
           showToast(response.data.message);
@@ -465,6 +471,7 @@ export default {
           self.name="";
           self.password="";
           self.captcha="";
+          self.pwd = '';
           self.registerShow=false;
         }
         showToast(response.data.message);
@@ -509,7 +516,6 @@ export default {
         targetSpaceId: item.code
       }).then(function (response) {
         if(response.data.result){
-          localStorage.removeItem(key().useSpaceId);
           self.getUserInfo();//重新获取用户信息并设置
         }
         self.isOverlay = false;
@@ -528,9 +534,6 @@ export default {
         //退出登录后移除本地存储的数据
         localStorage.removeItem(key().authorization);//移除token
         localStorage.removeItem(key().userName);
-        localStorage.removeItem(key().userEmail);
-        localStorage.removeItem(key().userId);
-        localStorage.removeItem(key().useSpaceId);
         localStorage.removeItem(key().useSpaceRole);
         localStorage.removeItem(key().userAllSpaceRole);
         gws.methods.wsDisconnect();//断开socket
@@ -544,16 +547,14 @@ export default {
         if(res.data.result){//获得信息成功
           //登录后存储一堆数据到本地
           localStorage.setItem(key().userName,res.data.data.name);
-          localStorage.setItem(key().userEmail,res.data.data.email);
-          localStorage.setItem(key().userId,res.data.data.id);
           self.spaceOptions = [];
           if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
             //找出正在使用的空间设置到缓存
             for (let i = 0; i < res.data.data.spaces.length; i++) {
               let tp = res.data.data.spaces[i];
               if(tp.state == 'USE'){
-                localStorage.setItem(key().useSpaceId,tp.spaceId);
                 localStorage.setItem(key().useSpaceRole,tp.role);
+                self.spaceOptions.push({name:`${tp.title}(当前空间)`,code:tp.spaceId});
               }else{//切换空间只能切到未使用的空间中去
                 self.spaceOptions.push({name:tp.title,code:tp.spaceId});
               }

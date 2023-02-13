@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import 'vant/lib/index.css';
 import axios from 'axios';
-import {isSpace, isToken, key, keyPut} from '@/global/KeyGlobal';
+import {isToken, key, keyPut} from '@/global/KeyGlobal';
 import gws from "@/global/WebSocket";
 
 axios.defaults.withCredentials = true
@@ -14,9 +14,6 @@ axios.interceptors.request.use(config => {//声明请求拦截器
     if(isToken()){//如果本地保存了token,则在头部传送token
         config.headers[key().authorization] = localStorage.getItem(key().authorization);
     }
-    if(isSpace()){//如果本地保存了正在使用的空间id,则在头部传送使用中空间id
-        config.headers[key().useSpaceId] = localStorage.getItem(key().useSpaceId);
-    }
     return config;//一定要返回
 });
 //响应拦截器
@@ -24,7 +21,6 @@ axios.interceptors.response.use(response => {
     if(response.data.result == false && response.data.message == 'token已过期'){
         //token失效了,清空token存储,空间id存储
         localStorage.removeItem(key().authorization);
-        localStorage.removeItem(key().useSpaceId);
         gws.methods.wsDisconnect();//断开socket
     }
     return response;

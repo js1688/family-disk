@@ -200,7 +200,7 @@ import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
-import {isSpace, isToken, key,fileMd5} from "@/global/KeyGlobal";
+import {isToken, key,fileMd5} from "@/global/KeyGlobal";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 import { saveAs } from 'file-saver';
@@ -501,7 +501,7 @@ export default {
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
     openVideo:function (item,gs){
       //判断使用哪种播放器,如果是苹果公司的媒体资源则使用原生播放器播放
-      let url = key().baseURL+"file/media/play/CLOUDDISK/"+item.fileMd5+"/"+localStorage.getItem(key().useSpaceId)+"/"+localStorage.getItem(key().authorization);
+      let url = key().baseURL+"file/media/play/CLOUDDISK/"+item.fileMd5+"/"+localStorage.getItem(key().authorization);
       switch (gs) {
         case "MP4":
           this.videoOptions.sources.push({src:url,type:item.mediaType});
