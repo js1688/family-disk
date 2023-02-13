@@ -2,6 +2,7 @@ package com.jflove.share.api;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.share.dto.ShareLinkDTO;
+import com.jflove.share.em.ShareBodyTypeENUM;
 
 /**
  * @author: tanjun
@@ -12,13 +13,14 @@ public interface IShareAdmin {
 
     /**
      * 创建分享
+     * @param bodyType
      * @param password
      * @param bodyId
      * @param spaceId
      * @param invalidTime
      * @return
      */
-    ResponseHeadDTO<ShareLinkDTO> create(String password, long bodyId, long spaceId, String invalidTime);
+    ResponseHeadDTO<ShareLinkDTO> create(ShareBodyTypeENUM bodyType, String password, long bodyId, long spaceId, String invalidTime);
 
     /**
      * 删除分享链接

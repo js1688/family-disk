@@ -4,6 +4,7 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.share.api.IShareAdmin;
 import com.jflove.share.dto.ShareLinkDTO;
+import com.jflove.share.em.ShareBodyTypeENUM;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.share.NoteShareCreateParamVO;
@@ -62,8 +63,8 @@ public class ShareAdminController {
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
-    @ApiOperation(value = "删除笔记")
-    @PostMapping("/delNote")
+    @ApiOperation(value = "删除分享")
+    @PostMapping("/delLink")
     public ResponseHeadVO delNote(@RequestBody NoteShareCreateParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
@@ -79,7 +80,7 @@ public class ShareAdminController {
         return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
     }
 
-    @ApiOperation(value = "创建笔记分享")
+    @ApiOperation(value = "创建分享")
     @PostMapping("/create")
     public ResponseHeadVO create(@RequestBody @Valid NoteShareCreateParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
@@ -89,7 +90,9 @@ public class ShareAdminController {
         if(useSpacerRole != UserSpaceRoleENUM.WRITE){
             throw new SecurityException("用户对该空间没有创建权限");
         }
-        ResponseHeadDTO<ShareLinkDTO> ret = shareAdmin.create(param.getPassword(),param.getBodyId(),useSpaceId,param.getInvalidTime());
+
+        ResponseHeadDTO<ShareLinkDTO> ret = shareAdmin.create(ShareBodyTypeENUM.valueOf(param.getBodyType()),
+                param.getPassword(),param.getBodyId(),useSpaceId,param.getInvalidTime());
         return new ResponseHeadVO(ret.isResult(),ret.getData(),ret.getMessage());
     }
 }

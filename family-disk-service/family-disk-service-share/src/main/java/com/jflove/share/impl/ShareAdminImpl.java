@@ -39,7 +39,7 @@ public class ShareAdminImpl implements IShareAdmin {
 
     @Override
     @Transactional
-    public ResponseHeadDTO<ShareLinkDTO> create(String password, long bodyId, long spaceId, String invalidTime) {
+    public ResponseHeadDTO<ShareLinkDTO> create(ShareBodyTypeENUM bodyType,String password, long bodyId, long spaceId, String invalidTime) {
         if(!notebookNoteMapper.exists(new LambdaQueryWrapper<NotebookNotePO>()
                 .eq(NotebookNotePO::getId,bodyId)
                 .eq(NotebookNotePO::getSpaceId,spaceId)
@@ -49,7 +49,7 @@ public class ShareAdminImpl implements IShareAdmin {
         String uuid = UUID.randomUUID().toString();
         long dqsj = DateUtil.parse(invalidTime, DatePattern.NORM_DATETIME_PATTERN).getTime() / 1000;
         ShareLinkPO po = new ShareLinkPO();
-        po.setBodyType(ShareBodyTypeENUM.NOTE.getCode());
+        po.setBodyType(bodyType.getCode());
         po.setBodyId(bodyId);
         po.setPassword(password);
         po.setSpaceId(spaceId);

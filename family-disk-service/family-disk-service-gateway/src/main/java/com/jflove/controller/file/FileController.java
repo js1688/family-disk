@@ -93,9 +93,9 @@ public class FileController {
                               @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5,
                               @ApiParam("token") @PathVariable("token") String token
     )throws IOException, ServletException {
-        Assert.notNull(fileMd5,"错误的请求:文件md5不能为空");
-        Assert.notNull(source,"错误的请求:文件来源不能为空");
-        Assert.notNull(token,"错误的请求:token不能为空");
+        Assert.hasLength(fileMd5,"错误的请求:文件md5不能为空");
+        Assert.hasLength(source,"错误的请求:文件来源不能为空");
+        Assert.hasLength(token,"错误的请求:token不能为空");
         Jws<Claims> jws = jJwtTool.parseJwt(token);
         Claims claims = jws.getBody();
         //token验证通过,返回用户信息

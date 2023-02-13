@@ -31,7 +31,7 @@ public class NoteShareController {
         @ApiParam("链接id") @PathVariable("uuid") String uuid,
         @ApiParam("解锁密码") @RequestParam("password") String password
     ){
-        Assert.notNull(uuid,"错误的请求:链接id不能为空");
+        Assert.hasLength(uuid,"错误的请求:链接id不能为空");
         ResponseHeadDTO<String> dto = noteShare.getBody(uuid,password);
         return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
     }

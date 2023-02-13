@@ -13,7 +13,6 @@ import io.swagger.annotations.ApiOperation;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,7 +53,6 @@ public class UserInfoController {
     @GetMapping("/getUserInfo")
     public ResponseHeadVO<UserInfoVO> getUserInfo(){
         String useUserEmail = (String)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_EMAIL);
-        Assert.hasLength(useUserEmail,"错误的请求:正在使用的用户邮箱不能为空");
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(useUserEmail);
         if(dto.isResult()){
             UserInfoVO vo = new UserInfoVO();
