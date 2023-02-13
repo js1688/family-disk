@@ -303,7 +303,7 @@ export default {
         message:'是否删除分享:' + item.keyword + ',删除后不可恢复!'
       }).then(() => {
         this.isOverlay = true;
-        axios.post('/note/share/delNote', {bodyId:item.id}).then(function (response) {
+        axios.post('/share/admin/delNote', {bodyId:item.id}).then(function (response) {
           if(response.data.result){
             self.linkShareOpen();
           }
@@ -379,7 +379,7 @@ export default {
       this.isOverlay = true;
       let self = this;
       this.linkList = [];
-      axios.get('/note/share/getLinkList').then(function (res){
+      axios.get('/share/admin/getLinkList').then(function (res){
         if(res.data.result){
           self.linkList = res.data.datas;
         }

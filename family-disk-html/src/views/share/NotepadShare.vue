@@ -1,4 +1,9 @@
 <template>
+  <van-overlay :show="isOverlay">
+    <div class="wrapper">
+      <van-loading />
+    </div>
+  </van-overlay>
 
   <van-action-sheet
       v-model:show="passwordShow"
@@ -114,6 +119,7 @@ export default {
   },
   data(){
     return {
+      isOverlay:false,
       passwordShow:false,
       showNote:false,
       text:'',

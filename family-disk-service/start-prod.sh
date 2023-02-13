@@ -25,6 +25,7 @@ family-disk-service-file/target/family-disk-service-file.jar
 family-disk-service-netdisk/target/family-disk-service-netdisk.jar
 family-disk-service-journal/target/family-disk-service-journal.jar
 family-disk-service-notebook/target/family-disk-service-notebook.jar
+family-disk-service-share/target/family-disk-service-share.jar
 family-disk-service-gateway/target/family-disk-service-gateway.jar
 )
 # shellcheck disable=SC2068

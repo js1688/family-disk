@@ -13,6 +13,7 @@
     - family-disk-service-api rpc接口标准
     - family-disk-service-plugins 插件模块
     - family-disk-service-journal 日记
+    - family-disk-service-share 分享
 ```
 
 # 启动参数

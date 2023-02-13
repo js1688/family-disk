@@ -32,6 +32,7 @@
         <module>family-disk-service-netdisk</module>
         <module>family-disk-service-plugins</module>
         <module>family-disk-service-journal</module>
+        <module>family-disk-service-share</module>
     </modules>
     <dependencyManagement>
         <dependencies>

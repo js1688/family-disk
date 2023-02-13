@@ -1,4 +1,4 @@
-package com.jflove.notebook.mapper;
+package com.jflove.share.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.jflove.share.ShareLinkPO;
