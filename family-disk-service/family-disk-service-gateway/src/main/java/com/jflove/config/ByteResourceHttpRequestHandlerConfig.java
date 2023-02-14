@@ -137,7 +137,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         } else if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             response.setHeader("Allow", this.getAllowHeader());
         } else {
-            if(rangeEnd.longValue() == 1l){//探测请求,返回200
+            if(rangeEnd != null && rangeEnd.longValue() == 1l){//探测请求,返回200
                 response.setStatus(HttpStatus.OK.value());
                 response.setContentLength((int) request.getAttribute(MAX_SIZE));
             }else {
