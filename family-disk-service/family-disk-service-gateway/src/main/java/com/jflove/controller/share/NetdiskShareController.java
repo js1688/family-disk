@@ -49,17 +49,17 @@ public class NetdiskShareController {
     ){
         Assert.hasLength(uuid,"错误的请求:链接id不能为空");
         ResponseHeadDTO<NetdiskShareDTO> dto = netdiskShare.getDirectory(uuid,password);
-        //将分享的目录下所有文件的md5值添加到临时签发的token负载信息中,以便校验越权问题
+        //将分享的目录下所有文件类型的目录id值添加到临时签发的token负载信息中,以便校验越权问题
         //todo token有可能会很大,到时候可以在网盘模块中创建分享的时候,校验目录下有多少个文件,如果大于了临界点就不让创建分享
         if(dto.isResult()){
-            List<String> fileMd5s = new ArrayList<>();
-            getFileMd5(fileMd5s,dto.getData().getList());
+            List<Long> fileIds = new ArrayList<>();
+            getFileMd5(fileIds,dto.getData().getList());
             NetdiskShareDirectoryVO vo = new NetdiskShareDirectoryVO();
             List<DirectoryInfoVO> list = JSONUtil.toList(JSONUtil.toJsonStr(dto.getData().getList()),DirectoryInfoVO.class);
             vo.setList(list);
             //签发临时token,有效期至分享失效日期
             Map<String, Object> map = new HashMap<>();
-            map.put("fileMd5s", String.join(",", fileMd5s));
+            map.put("fileIds", String.join(",", fileIds.stream().map(String::valueOf).toList()));
             String token = jJwtTool.createJwt(null,null,map,dto.getData().getInvalidTime() * 1000l);
             vo.setTempToken(token);
             return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
@@ -67,11 +67,11 @@ public class NetdiskShareController {
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
-    private void getFileMd5(List<String> s,List<DirectoryInfoDTO> dtos){
+    private void getFileMd5(List<Long> s,List<DirectoryInfoDTO> dtos){
         if(dtos != null){
             dtos.forEach(v->{
                 if(v.getType() == NetdiskDirectoryENUM.FILE){
-                    s.add(v.getFileMd5());
+                    s.add(v.getId());
                 }
                 getFileMd5(s,v.getChild());
             });
