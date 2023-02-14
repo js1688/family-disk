@@ -18,6 +18,8 @@ spring:
     jjwt:
       # token 发布者
       issuer: jflove.cn
+      # token 签发秘钥
+      secretkey: jflove.cn
       # token生成后有效时长(单位:分钟)
       ttlMinute: 1440
 

@@ -26,14 +26,18 @@ public class JJwtTool {
 
     @Value("${spring.security.jjwt.issuer}")
     private String issuer;//token 发布者
+
+    @Value("${spring.security.jjwt.secretkey}")
+    private String secretKey;//token 签发秘钥
+
     @Value("${spring.security.jjwt.ttlMinute}")
     private Integer ttlMinute; //有效时长,分钟
 
-    private String secretKey; //token 签名key
+    private String secretKeyBase64; //token 签名key
 
     @PostConstruct
     public void initSecretKey(){
-        secretKey = createSecretKey(issuer);
+        secretKeyBase64 = createSecretKey(secretKey);
     }
 
     /**
@@ -59,7 +63,7 @@ public class JJwtTool {
         JwtBuilder jwtBuilder = Jwts.builder().setId(id).setSubject(name) //token使用方id和名称
                 .setIssuedAt(new Date()) //token发布时间
                 .setIssuer(issuer) //token 发布者
-                .signWith(SignatureAlgorithm.HS256, secretKey);//接口调用方不需要解密token,故选择 hs256 对称加密方式
+                .signWith(SignatureAlgorithm.HS256, secretKeyBase64);//接口调用方不需要解密token,故选择 hs256 对称加密方式
         // 设置token 负载信息
         if(map != null){
             map.forEach(jwtBuilder::claim);
@@ -83,7 +87,7 @@ public class JJwtTool {
      */
     public Jws<Claims> parseJwt(String token) throws SecurityException{
         try{
-            return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            return Jwts.parser().setSigningKey(secretKeyBase64).parseClaimsJws(token);
         }catch (Exception e){
             String errMsg = e instanceof SignatureException ? "token签名验证不通过" :
                                 e instanceof ExpiredJwtException ? "token已过期" :
@@ -100,7 +104,7 @@ public class JJwtTool {
      * @throws Exception
      */
     public String createSecretKey(String str){
-        byte [] encodedKey = Base64.getEncoder().encode(issuer.getBytes(Charset.defaultCharset()));
+        byte [] encodedKey = Base64.getEncoder().encode(str.getBytes(Charset.defaultCharset()));
         SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, SignatureAlgorithm.HS256.getValue());
         return new String(key.getEncoded(), Charset.defaultCharset());
     }
