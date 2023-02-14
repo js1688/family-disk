@@ -95,7 +95,6 @@ public class NetdiskShareController {
         Assert.hasLength(uuid,"错误的请求:链接id不能为空");
         ResponseHeadDTO<NetdiskShareDTO> dto = netdiskShare.getDirectory(uuid,password);
         //将分享的目录下所有文件类型的目录id值添加到临时签发的token负载信息中,以便校验越权问题
-        //todo token有可能会很大,到时候可以在网盘模块中创建分享的时候,校验目录下有多少个文件,如果大于了临界点就不让创建分享
         if(dto.isResult()){
             List<Long> fileIds = new ArrayList<>();
             getFileId(fileIds,dto.getData().getList());

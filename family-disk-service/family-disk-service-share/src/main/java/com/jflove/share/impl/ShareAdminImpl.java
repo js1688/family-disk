@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.netdisk.NetdiskDirectoryPO;
+import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.notebook.NotebookNotePO;
 import com.jflove.share.ShareLinkPO;
 import com.jflove.share.api.IShareAdmin;
@@ -54,11 +55,27 @@ public class ShareAdminImpl implements IShareAdmin {
                 }
                 break;
             case NETDISK:
-                if(!netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                //判断给定的目录下有多少文件,如果超过了100个则拒绝分享,这样做的目的是防止生成的越权token太大了
+                NetdiskDirectoryPO root = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                         .eq(NetdiskDirectoryPO::getId,bodyId)
                         .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
-                )){
+                );
+                if(root == null){
                     return new ResponseHeadDTO<>(false,"网盘目录不存在");
+                }
+                if(NetdiskDirectoryENUM.FOLDER.getCode().equals(root.getType())){
+                    List<Long> ids = new ArrayList<>();
+                    addChildDirectory(ids,List.of(root),spaceId);
+                    //查找所有目录下的文件
+                    Long count = netdiskDirectoryMapper.selectCount(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                            .in(NetdiskDirectoryPO::getPid,ids)
+                            .eq(NetdiskDirectoryPO::getType,NetdiskDirectoryENUM.FILE.getCode())
+                            .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+                    );
+                    int max = 50;
+                    if(count > 50){
+                        return new ResponseHeadDTO<>(false,String.format("该目录下文件内容大于了%s个,大量文件请先压缩上传再分享",max));
+                    }
                 }
                 break;
         }
@@ -79,6 +96,25 @@ public class ShareAdminImpl implements IShareAdmin {
         dto.setBodyType(ShareBodyTypeENUM.valueOf(po.getBodyType()));
         dto.setUrl(link);
         return new ResponseHeadDTO<>(true,dto,"创建分享成功,地址已复制");
+    }
+
+    /**
+     * 递归查出一个目录下所有的子目录
+     * @param ids
+     * @param p
+     */
+    private void addChildDirectory(List<Long> ids,List<NetdiskDirectoryPO> p,long spaceId){
+        if(p == null){
+            return;
+        }
+        List<Long> pids = p.stream().map(NetdiskDirectoryPO::getId).toList();
+        ids.addAll(pids);
+        List<NetdiskDirectoryPO> child = netdiskDirectoryMapper.selectList(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .in(NetdiskDirectoryPO::getPid,pids)
+                .eq(NetdiskDirectoryPO::getType,NetdiskDirectoryENUM.FOLDER.getCode())
+                .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+        );
+        addChildDirectory(ids,child,spaceId);
     }
 
     @Override
