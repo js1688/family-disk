@@ -150,6 +150,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             }else {
                 response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
             }
+            response.setContentLength((int) request.getAttribute(RANGE_LEN));
             try(ServletOutputStream sos = response.getOutputStream()){
                 sos.write(resource.getByteArray());
             }
