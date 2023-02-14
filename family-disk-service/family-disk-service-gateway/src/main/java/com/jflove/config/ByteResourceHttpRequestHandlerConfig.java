@@ -127,7 +127,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         String [] sp = rangeString.split("-");
         Long rangeEnd = null;
         if(sp.length == 2) {//有发送结束位置
-            rangeStart = Long.parseLong(sp[1]);
+            rangeEnd = Long.parseLong(sp[1]);
         }
         request.setAttribute(RANGE_START,rangeStart);
         request.setAttribute(RANGE_END,rangeEnd);
