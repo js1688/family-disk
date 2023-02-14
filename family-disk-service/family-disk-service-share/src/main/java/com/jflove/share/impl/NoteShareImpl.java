@@ -5,6 +5,7 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.notebook.NotebookNotePO;
 import com.jflove.share.ShareLinkPO;
 import com.jflove.share.api.INoteShare;
+import com.jflove.share.em.ShareBodyTypeENUM;
 import com.jflove.share.mapper.NotebookNoteMapper;
 import com.jflove.share.mapper.ShareLinkMapper;
 import lombok.extern.log4j.Log4j2;
@@ -33,12 +34,13 @@ public class NoteShareImpl implements INoteShare {
         ShareLinkPO po = shareLinkMapper.selectOne(new LambdaQueryWrapper<ShareLinkPO>()
                 .eq(ShareLinkPO::getUuid,uuid)
                 .eq(ShareLinkPO::getPassword, Optional.ofNullable(password).orElse(""))
+                .eq(ShareLinkPO::getBodyType, ShareBodyTypeENUM.NOTE.getCode())
         );
         if(po == null){
             if(StringUtils.hasLength(password)){
                 return new ResponseHeadDTO<>(false,"分享已失效或密码错误,请刷新网页后重试.");
             }
-            return new ResponseHeadDTO<>(false,"分享已失效或不存在.");
+            return new ResponseHeadDTO<>(false,"分享已失效.");
         }
         NotebookNotePO nnp = notebookNoteMapper.selectById(po.getBodyId());
         if(nnp == null){
