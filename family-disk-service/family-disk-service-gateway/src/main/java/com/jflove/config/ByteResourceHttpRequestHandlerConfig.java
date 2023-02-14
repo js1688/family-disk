@@ -148,7 +148,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
                 }
                 response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
                         (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
-                        (long)request.getAttribute(MAX_SIZE)));
+                        (int)request.getAttribute(MAX_SIZE)));
                 try(ServletOutputStream sos = response.getOutputStream()){
                     sos.write(resource.getByteArray());
                 }
