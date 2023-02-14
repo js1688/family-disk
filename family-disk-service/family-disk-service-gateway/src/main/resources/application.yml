@@ -29,6 +29,7 @@ spring:
       admin: #管理员角色的账号才能访问名单
         - /disk/manage/**
       urls: #安全路径白名单
+        - /netdisk/share/getBody/**
         - /note/share/getBody/**
         - /file/media/play/**
         - /gateway/stomp/**

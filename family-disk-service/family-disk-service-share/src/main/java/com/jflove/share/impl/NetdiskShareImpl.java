@@ -78,7 +78,9 @@ public class NetdiskShareImpl implements INetdiskShare {
             DirectoryInfoDTO d = new DirectoryInfoDTO();
             BeanUtils.copyProperties(v,d);
             d.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
-            addChildDirectory(d);
+            if(NetdiskDirectoryENUM.FOLDER.getCode().equals(v.getType())) {
+                addChildDirectory(d);
+            }
             cdto.add(d);
         });
         dto.setChild(cdto);
