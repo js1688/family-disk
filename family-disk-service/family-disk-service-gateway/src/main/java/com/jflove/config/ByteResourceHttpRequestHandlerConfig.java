@@ -69,7 +69,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             //如果被分片,每一片大小最多是最大允许上传的10%
             ds = DataSize.of((long) (maxFileSize.toMegabytes() * 0.1), DataUnit.MEGABYTES);
         }else{//如果设置了结束长度,则以设置为准
-            ds = DataSize.of(rangeEnd,DataUnit.MEGABYTES);
+            ds = DataSize.of(rangeEnd,DataUnit.BYTES);
         }
         try{
             AtomicBoolean ab = new AtomicBoolean(false);
