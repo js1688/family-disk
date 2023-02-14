@@ -104,7 +104,7 @@ public class ShareAdminImpl implements IShareAdmin {
      * @param p
      */
     private void addChildDirectory(List<Long> ids,List<NetdiskDirectoryPO> p,long spaceId){
-        if(p == null){
+        if(p == null || p.size() == 0){
             return;
         }
         List<Long> pids = p.stream().map(NetdiskDirectoryPO::getId).toList();
