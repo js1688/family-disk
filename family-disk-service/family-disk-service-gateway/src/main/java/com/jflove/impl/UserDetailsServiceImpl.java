@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collection;
@@ -45,6 +46,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         Jws<Claims> jws = jJwtTool.parseJwt(token);
         Claims claims = jws.getBody();
         //token验证通过,返回用户信息
+        if(!StringUtils.hasLength(claims.getId())){
+            throw new UsernameNotFoundException("token不正确");
+        }
         ResponseHeadDTO<UserInfoDTO> dto = userInfo.getUserInfoByEmail(claims.getId());
         Assert.notNull(dto.getData(),dto.getMessage());
         if(dto.getData().getSpaces() != null){//获取用户所关联的空间,然后找到正在使用的空间
