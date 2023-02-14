@@ -9,25 +9,6 @@ axios.defaults.withCredentials = true
 //全局配置axios的请求根路径
 axios.defaults.baseURL = key().baseURL;
 
-//请求拦截设置头部
-axios.interceptors.request.use(config => {//声明请求拦截器
-    if(isToken()){//如果本地保存了token,则在头部传送token
-        config.headers[key().authorization] = localStorage.getItem(key().authorization);
-    }
-    return config;//一定要返回
-});
-//响应拦截器
-axios.interceptors.response.use(response => {
-    if(response.data.result == false && response.data.message == 'token已过期'){
-        //token失效了,清空token存储,空间id存储
-        localStorage.removeItem(key().authorization);
-        gws.methods.wsDisconnect();//断开socket
-    }
-    return response;
-}, error => {
-    return error;
-});
-
 //检查网络环境,是否可以切换至内网
 //切换到内网时,会碰到网页端是https,内网地址是http,无法访问过去,需要在服务端启动nginx将ip默认的443端口做一下转发,可以使用openssl工具生成一个本地证书试试
 //访问本地的https时会发生浏览器提示证书不安全,每次都无法直接跳转到本地地址,需要手动安装一下ca证书,同时使用openssl的时候需要生成这个ca证书

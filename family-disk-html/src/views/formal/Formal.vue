@@ -31,8 +31,9 @@
 
 <script>
 import { Tabbar, TabbarItem } from 'vant';
-import {isToken} from "@/global/KeyGlobal";
+import {isToken, key} from "@/global/KeyGlobal";
 import gws from "@/global/WebSocket";
+import axios from "axios";
 export default {
   name: 'Formal',
   setup() {
@@ -58,6 +59,24 @@ export default {
 
   },
   created() {
+    //请求拦截设置头部
+    axios.interceptors.request.use(config => {//声明请求拦截器
+      if(isToken()){//如果本地保存了token,则在头部传送token
+        config.headers[key().authorization] = localStorage.getItem(key().authorization);
+      }
+      return config;//一定要返回
+    });
+    //响应拦截器
+    axios.interceptors.response.use(response => {
+      if(response.data.result == false && response.data.message == 'token已过期'){
+        //token失效了,清空token存储,空间id存储
+        localStorage.removeItem(key().authorization);
+        gws.methods.wsDisconnect();//断开socket
+      }
+      return response;
+    }, error => {
+      return error;
+    });
     //如果有token,则自动发起连接websocket
     if(isToken()){
       gws.methods.wsConnection(null);

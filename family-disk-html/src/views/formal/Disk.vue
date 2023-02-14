@@ -554,35 +554,25 @@ export default {
       myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
       this.myPlayer = videojs("videoPlayer",this.videoOptions);
     },
-    //打开图片,图片文件通常不会很大,直接下载完打开即可
+    //打开图片
     openImage:function (item){
-      this.isOverlay = true;
-      let self = this;
-      axios.post('/file/getFile', {
-        fileMd5: item.fileMd5,
-        name: item.name,
-        source:"CLOUDDISK"
-      },{
-        responseType:"blob"
-      }).then(function (response) {
-        self.isOverlay = false;
-        const { data, headers } = response;
-        const blob = new Blob([data], {type: headers['content-type']});
-        let url = window.URL.createObjectURL(blob);
+      this.showDownloadProgress = true;
+      this.downloadFileName = item.name;
+      this.downloadFileProgress = 0;
+      this.downloadFileSliceNum = 0;
+      this.sliceDownload(item,0,function (bl){
+        let url = window.URL.createObjectURL(bl);
         showImagePreview({
           images: [url],
           closeable: true,
           showIndex: false
         });
-      }).catch(function (error) {
-        self.isOverlay = false;
-        console.log(error);
-      });
+      });//使用分片下载方式
     },
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
     openVideo:function (item,gs){
       //判断使用哪种播放器,如果是苹果公司的媒体资源则使用原生播放器播放
-      let url = key().baseURL+"file/media/play/CLOUDDISK/"+item.fileMd5+"/"+localStorage.getItem(key().authorization);
+      let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
       switch (gs) {
         case "MP4":
           this.videoOptions.sources.push({src:url,type:item.mediaType});
@@ -611,7 +601,7 @@ export default {
       }
     },
     //大文件下载,分片方式
-    sliceDownload:function (item,s) {
+    sliceDownload:function (item,s,callback) {
       let self = this;
       axios.post('/file/slice/getFile', {
         fileMd5: item.fileMd5,
@@ -649,14 +639,14 @@ export default {
           if(a < 100){
             self.downloadFileProgress = a;
           }
-          self.sliceDownload(item,start+contentLength);
+          self.sliceDownload(item,start+contentLength,callback);
         }else{
           //下载完毕
           let bl = new Blob([self.largeDownloadTemporaryStorage]);
           self.downloadFileProgress = 100;
-          saveAs(bl,item.name);
           self.largeDownloadTemporaryStorage = null;
           self.showDownloadProgress = false;
+          callback(bl);
         }
       }).catch(function (error) {
         self.largeDownloadTemporaryStorage = null;
@@ -670,7 +660,9 @@ export default {
       this.downloadFileName = item.name;
       this.downloadFileProgress = 0;
       this.downloadFileSliceNum = 0;
-      this.sliceDownload(item,0);//使用分片下载方式
+      this.sliceDownload(item,0,function (bl){
+        saveAs(bl,item.name);
+      });//使用分片下载方式
     },
     //检查文件是否都上传完毕
     checkEnd:function (){

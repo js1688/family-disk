@@ -1,6 +1,7 @@
 import SparkMD5 from "spark-md5";
 
 let data = {
+    shareToken:'SHARE_TOKEN',
     authorization:'Authorization',
     userName:'USER_NAME',
     useSpaceRole:'USE_SPACE_ROLE',
@@ -10,6 +11,10 @@ let data = {
     // 局域网
     lanURL:'//192.168.3.20/'
 };
+
+export function getUrlParam(key){
+    return decodeURIComponent((new RegExp('[?|&]'+key+'=' + '([^&;]+?)(&|#|;|$)').exec(location.href) || [, ""])[1].replace(/\+/g, '%20')) || null;
+}
 
 export function keyPut(k,v){
     data[k] = v;
