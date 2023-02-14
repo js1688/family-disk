@@ -104,7 +104,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             }
             repStream.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
             request.setAttribute(CONTENT_TYPE,dto.getMediaType());
-            request.setAttribute(MAX_SIZE,dto.getTotalSize());
+            request.setAttribute(MAX_SIZE,(int)dto.getTotalSize());
             request.setAttribute(RANGE_LEN,(int)dto.getReadLength());
             ByteArrayResource file = new ByteArrayResource(dto.getShardingStream());
             return file;
