@@ -1,3 +1,4 @@
+import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.share.Application;
 import com.jflove.share.api.INetdiskShare;
@@ -22,6 +23,6 @@ public class TestFunction {
     @Test
     void getDirectory(){
         ResponseHeadDTO<NetdiskShareDTO> dto =  iNetdiskShare.getDirectory("9c119087-cb77-42b7-ab38-12edb9d455e3",null);
-        log.info("{}",dto);
+        log.info("{}", JSONUtil.toJsonStr(dto));
     }
 }

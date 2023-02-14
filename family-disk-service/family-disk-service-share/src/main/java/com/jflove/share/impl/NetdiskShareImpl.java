@@ -60,7 +60,9 @@ public class NetdiskShareImpl implements INetdiskShare {
         d.setType(NetdiskDirectoryENUM.valueOf(ndp.getType()));
         addChildDirectory(d);
         NetdiskShareDTO ret = new NetdiskShareDTO();
-        ret.setList(List.of(d));
+        List<DirectoryInfoDTO> array = new ArrayList(1);
+        array.add(d);
+        ret.setList(array);
         ret.setInvalidTime(po.getInvalidTime());
         return new ResponseHeadDTO<>(ret);
     }
