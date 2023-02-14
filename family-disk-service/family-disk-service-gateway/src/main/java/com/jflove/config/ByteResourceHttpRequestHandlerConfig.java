@@ -139,22 +139,24 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         } else if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             response.setHeader("Allow", this.getAllowHeader());
         } else {
-            if(rangeEnd != null && rangeEnd.longValue() == 1l){//探测请求,返回200
-                response.setStatus(HttpStatus.OK.value());
-                response.setContentLength((int) request.getAttribute(MAX_SIZE));
-            }else {
-                response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
-                response.setContentLength((int) request.getAttribute(RANGE_LEN));
-            }
             if(request.getAttribute(CONTENT_TYPE) != null) {
                 response.setContentType((String) request.getAttribute(CONTENT_TYPE));
             }
             response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
                     (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
                     (int)request.getAttribute(MAX_SIZE)));
-            try(ServletOutputStream sos = response.getOutputStream()){
-                sos.write(resource.getByteArray());
+            if(rangeEnd != null && rangeEnd.longValue() == 1l){//探测请求,返回200
+                response.setStatus(HttpStatus.OK.value());
+                response.setContentLength((int) request.getAttribute(MAX_SIZE));
+                response.getOutputStream().flush();
+            }else {
+                response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
+                response.setContentLength((int) request.getAttribute(RANGE_LEN));
+                try(ServletOutputStream sos = response.getOutputStream()){
+                    sos.write(resource.getByteArray());
+                }
             }
+            log.info("读取文件最大长度:{},总文件长度:{}",request.getAttribute(RANGE_LEN),request.getAttribute(MAX_SIZE));
         }
     }
 }
