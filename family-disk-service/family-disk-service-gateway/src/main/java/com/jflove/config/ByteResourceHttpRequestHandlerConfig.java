@@ -10,7 +10,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
@@ -22,7 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -143,15 +145,15 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             }else {
                 response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
                 response.setContentLength((int) request.getAttribute(RANGE_LEN));
-                if(request.getAttribute(CONTENT_TYPE) != null) {
-                    response.setContentType((String) request.getAttribute(CONTENT_TYPE));
-                }
-                response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
-                        (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
-                        (int)request.getAttribute(MAX_SIZE)));
-                try(ServletOutputStream sos = response.getOutputStream()){
-                    sos.write(resource.getByteArray());
-                }
+            }
+            if(request.getAttribute(CONTENT_TYPE) != null) {
+                response.setContentType((String) request.getAttribute(CONTENT_TYPE));
+            }
+            response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
+                    (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
+                    (int)request.getAttribute(MAX_SIZE)));
+            try(ServletOutputStream sos = response.getOutputStream()){
+                sos.write(resource.getByteArray());
             }
         }
     }
