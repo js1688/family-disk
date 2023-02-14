@@ -55,7 +55,7 @@ public class NetdiskShareController {
             List<String> fileMd5s = new ArrayList<>();
             getFileMd5(fileMd5s,dto.getData().getList());
             NetdiskShareDirectoryVO vo = new NetdiskShareDirectoryVO();
-            List<DirectoryInfoVO> list = JSONUtil.toBean(JSONUtil.toJsonStr(dto.getDatas()),List.class);
+            List<DirectoryInfoVO> list = JSONUtil.toBean(JSONUtil.toJsonStr(dto.getData().getList()),List.class);
             vo.setList(list);
             //签发临时token,有效期至分享失效日期
             Map<String, Object> map = new HashMap<>();
