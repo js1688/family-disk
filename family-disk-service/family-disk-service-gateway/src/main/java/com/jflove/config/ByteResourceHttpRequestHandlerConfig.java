@@ -106,7 +106,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             }
             repStream.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
             request.setAttribute(CONTENT_TYPE,dto.getMediaType());
-            request.setAttribute(MAX_SIZE,(int)dto.getTotalSize());
+            request.setAttribute(MAX_SIZE,dto.getTotalSize());
             request.setAttribute(RANGE_LEN,(int)dto.getReadLength());
             ByteArrayResource file = new ByteArrayResource(dto.getShardingStream());
             return file;
@@ -144,17 +144,14 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             }
             response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
                     (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
-                    (int)request.getAttribute(MAX_SIZE)));
+                    (long)request.getAttribute(MAX_SIZE)));
             if(rangeEnd != null && rangeEnd.longValue() == 1l){//探测请求,返回200
                 response.setStatus(HttpStatus.OK.value());
-                response.setContentLength((int) request.getAttribute(MAX_SIZE));
-                response.getOutputStream().flush();
             }else {
                 response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
-                response.setContentLength((int) request.getAttribute(RANGE_LEN));
-                try(ServletOutputStream sos = response.getOutputStream()){
-                    sos.write(resource.getByteArray());
-                }
+            }
+            try(ServletOutputStream sos = response.getOutputStream()){
+                sos.write(resource.getByteArray());
             }
             log.info("读取文件最大长度:{},总文件长度:{}",request.getAttribute(RANGE_LEN),request.getAttribute(MAX_SIZE));
         }
