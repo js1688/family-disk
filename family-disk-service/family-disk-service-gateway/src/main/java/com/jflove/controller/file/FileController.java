@@ -87,7 +87,7 @@ public class FileController {
 
 
     @ApiOperation(value = "媒体资源边播边下")
-    @GetMapping("/media/play/{source}/{fileMd5}/{token}")
+    @GetMapping("/media/play/{source}/{token}/{fileMd5}")
     public void mediaPlay(HttpServletRequest request,HttpServletResponse response,
                               @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @PathVariable("source") String source,
                               @ApiParam("文件md5值") @PathVariable("fileMd5") String fileMd5,

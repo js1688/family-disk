@@ -24,6 +24,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -59,6 +60,19 @@ public class NetdiskShareController {
 
     private final static String SHARE_TOKEN = "SHARE_TOKEN";//分享token 头部key
 
+
+    @ApiOperation(value = "媒体资源边播边下")
+    @GetMapping("/media/play/{token}/{id}")
+    public void mediaPlay(HttpServletRequest request,HttpServletResponse response,
+                          @ApiParam("目录id") @PathVariable("id") Long id,
+                          @ApiParam("token") @PathVariable("token") String token
+    )throws Exception {
+        Assert.hasLength(token,"错误的请求:token不能为空");
+        request.setAttribute(SHARE_TOKEN,token);
+        sliceGetFile(request,response,id);
+    }
+
+
     @ApiOperation(value = "下载文件(分片下载方式)")
     @GetMapping("/slice/getFile/{id}")
     public void sliceGetFile(
@@ -66,6 +80,9 @@ public class NetdiskShareController {
             @ApiParam("目录id") @PathVariable("id") Long id) throws Exception{
         Assert.notNull(id,"目录id不能为空");
         String token = request.getHeader(SHARE_TOKEN);
+        if(!StringUtils.hasLength(token)){
+            token = (String) request.getAttribute(SHARE_TOKEN);
+        }
         //从token中的负载信息中拿出被授权的文件id,防止越权
         Jws<Claims> jws = jJwtTool.parseJwt(token);
         String fileIds = jws.getBody().get("fileIds",String.class);
