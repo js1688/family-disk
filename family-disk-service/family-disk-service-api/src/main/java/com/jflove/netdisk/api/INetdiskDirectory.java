@@ -53,4 +53,11 @@ public interface INetdiskDirectory {
      * @return
      */
     ResponseHeadDTO<NetdiskDirectoryDTO> moveDirectory(Long spaceId,Long dirId,Long targetDirId);
+
+    /**
+     * 根据id查询目录
+     * @param id
+     * @return
+     */
+    ResponseHeadDTO<NetdiskDirectoryDTO> getDirectoryById(long id);
 }

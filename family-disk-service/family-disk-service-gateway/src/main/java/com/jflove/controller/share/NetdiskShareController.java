@@ -2,6 +2,10 @@ package com.jflove.controller.share;
 
 import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
+import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
+import com.jflove.file.em.FileSourceENUM;
+import com.jflove.netdisk.api.INetdiskDirectory;
+import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.share.api.INetdiskShare;
 import com.jflove.share.dto.DirectoryInfoDTO;
@@ -10,15 +14,21 @@ import com.jflove.tool.JJwtTool;
 import com.jflove.vo.ResponseHeadVO;
 import com.jflove.vo.share.DirectoryInfoVO;
 import com.jflove.vo.share.NetdiskShareDirectoryVO;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.HandlerMapping;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +48,43 @@ public class NetdiskShareController {
     @DubboReference
     private INetdiskShare netdiskShare;
 
+    @DubboReference
+    private INetdiskDirectory netdiskDirectory;
+
     @Autowired
     private JJwtTool jJwtTool;
+
+    @Autowired
+    private ByteResourceHttpRequestHandlerConfig resourceHttpRequestHandle;
+
+    private final static String SHARE_TOKEN = "SHARE_TOKEN";//分享token 头部key
+
+    @ApiOperation(value = "下载文件(分片下载方式)")
+    @GetMapping("/slice/getFile/{id}")
+    public void sliceGetFile(
+            HttpServletRequest request, HttpServletResponse response,
+            @ApiParam("目录id") @PathVariable("id") Long id) throws Exception{
+        Assert.notNull(id,"目录id不能为空");
+        String token = request.getHeader(SHARE_TOKEN);
+        //从token中的负载信息中拿出被授权的文件id,防止越权
+        Jws<Claims> jws = jJwtTool.parseJwt(token);
+        String fileIds = jws.getBody().get("fileIds",String.class);
+        Assert.hasLength(fileIds,"token中的授权id为空");
+        List<String> authIds = List.of(fileIds.split(","));
+        if(!authIds.contains(id.toString())){
+            throw new SecurityException("越权访问");
+        }
+        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.getDirectoryById(id);
+        if(!dto.isResult()){
+            throw new NullPointerException(dto.getMessage());
+        }
+        request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,dto.getData().getFileMd5());
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE, FileSourceENUM.CLOUDDISK.getCode());
+        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,dto.getData().getSpaceId());
+        response.setHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,HttpHeaders.CONTENT_RANGE);
+        resourceHttpRequestHandle.handleRequest(request, response);
+    }
+
 
     @ApiOperation(value = "获取笔记分享内容")
     @GetMapping("/getBody/{uuid}")
@@ -53,7 +98,7 @@ public class NetdiskShareController {
         //todo token有可能会很大,到时候可以在网盘模块中创建分享的时候,校验目录下有多少个文件,如果大于了临界点就不让创建分享
         if(dto.isResult()){
             List<Long> fileIds = new ArrayList<>();
-            getFileMd5(fileIds,dto.getData().getList());
+            getFileId(fileIds,dto.getData().getList());
             NetdiskShareDirectoryVO vo = new NetdiskShareDirectoryVO();
             List<DirectoryInfoVO> list = JSONUtil.toList(JSONUtil.toJsonStr(dto.getData().getList()),DirectoryInfoVO.class);
             vo.setList(list);
@@ -67,13 +112,13 @@ public class NetdiskShareController {
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
-    private void getFileMd5(List<Long> s,List<DirectoryInfoDTO> dtos){
+    private void getFileId(List<Long> s,List<DirectoryInfoDTO> dtos){
         if(dtos != null){
             dtos.forEach(v->{
                 if(v.getType() == NetdiskDirectoryENUM.FILE){
                     s.add(v.getId());
                 }
-                getFileMd5(s,v.getChild());
+                getFileId(s,v.getChild());
             });
         }
     }

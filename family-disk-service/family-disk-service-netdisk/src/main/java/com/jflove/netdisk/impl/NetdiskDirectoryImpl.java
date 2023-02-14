@@ -193,4 +193,16 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
         BeanUtils.copyProperties(po,dto);
         return new ResponseHeadDTO<>(true,dto,"移动成功");
     }
+
+    @Override
+    public ResponseHeadDTO<NetdiskDirectoryDTO> getDirectoryById(long id) {
+        NetdiskDirectoryPO po = netdiskDirectoryMapper.selectById(id);
+        if(po == null){
+            return new ResponseHeadDTO<>(false,"目录不存在");
+        }
+        NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
+        BeanUtils.copyProperties(po,dto);
+        dto.setType(NetdiskDirectoryENUM.valueOf(po.getType()));
+        return new ResponseHeadDTO(dto);
+    }
 }
