@@ -1,5 +1,6 @@
 package com.jflove.config;
 
+import com.jflove.user.em.UserRoleENUM;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -107,7 +108,7 @@ public class SecurityConfig{
                 .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS).permitAll() //options 类型的请求,直接通过
                 .antMatchers(ignoreUrlsConfig.getUrlStrings()).permitAll() //无需认证
-                .antMatchers(ignoreUrlsConfig.getAdminStrings()).hasRole("admin") //设置需要管理员角色的路径
+                .antMatchers(ignoreUrlsConfig.getAdminStrings()).hasRole(UserRoleENUM.ADMIN.getCode()) //设置需要管理员角色的路径
                 .antMatchers("/**").authenticated()//进行验证
                 .and()
                 //将权限和认证异常抛到全局异常处理

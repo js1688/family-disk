@@ -26,8 +26,7 @@ spring:
     ignored:
       origins: #允许跨域地址
         - http://localhost:5173/
-        - https://www.jflove.cn/
-        - https://m.jflove.cn/
+        - http://127.0.0.1:8800/
       admin: #管理员角色的账号才能访问名单
         - /disk/manage/**
       urls: #安全路径白名单
