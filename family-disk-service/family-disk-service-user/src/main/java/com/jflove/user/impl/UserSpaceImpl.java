@@ -20,6 +20,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
 import java.util.ArrayList;
@@ -198,7 +199,9 @@ public class UserSpaceImpl implements IUserSpace {
             );
             if(uip != null){
                 dto.setState(UserRelStateENUM.valueOf(v.getState()));
-                dto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
+                if(StringUtils.hasLength(v.getRole())) {
+                    dto.setRole(UserSpaceRoleENUM.valueOf(v.getRole()));
+                }
                 dto.setUserName(uip.getName());
                 uids.add(dto);
             }
