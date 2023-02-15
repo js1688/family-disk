@@ -59,3 +59,4 @@ build/
 *.sln
 *.sw?
 
+family-disk-service/family-disk-service-share/src/test/resources/application.yml
