@@ -1,29 +1,25 @@
-# family-disk-html
-
-This template should help get you started developing with Vue 3 in Vite.
-
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+# 前言
+> 使用的是移动端vant-ui,当然pc端也可以使用,这个ui兼容了pc端,但是pc端不太好用.
+> 
+> 因为浏览器的限制有很多,比如上传太大的文件时,浏览器会崩溃,这个会根据设备的性能而有所不同,因为上传大文件时使用的是分片上传,基本上不做限制,只要浏览器不崩溃
+>
+# 环境准备
 ```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
+npm 8.19.2
+vite 4.0.2 
+darwin-x64 
+node v18.12.1
 ```
-
-### Compile and Minify for Production
-
+# 开始
+## 编译
 ```sh
 npm run build
 ```
+## 启动
+```sh
+npm run dev
+```
+## 部署
+> 编译后,dist文件夹就是应用静态文件,可以使用nginx提供服务端口,指向这个编译后的静态文件
+
+
