@@ -9,6 +9,7 @@ npm 8.19.2
 vite 4.0.2 
 darwin-x64 
 node v18.12.1
+@vue/cli 4.3.1
 ```
 # 开始
 ## 编译
