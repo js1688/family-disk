@@ -38,7 +38,7 @@
   </div>
 
   <!-- 日记编辑面板 -->
-  <van-action-sheet @close="closeJournalSave" v-model:show="showJournalSave" :title="journalDate">
+  <van-action-sheet @close="closeJournalSave" v-model:show="showJournalSave" :lock-scroll="false" :title="journalDate">
     <div>
       <van-field
           v-model="journalTitle"
