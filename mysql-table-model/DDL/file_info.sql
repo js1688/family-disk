@@ -15,7 +15,7 @@ create table file_info
     file_md5       varchar(64)   null comment '文件MD5值',
     mark_delete    int default 0 not null comment '标记删除(1是,0否)',
     delete_time    int           null comment '执行删除时间(10位长度)',
-    media_type     varchar(32)   null comment '文件多媒体类型',
+    media_type     varchar(128)  null comment '文件多媒体类型',
     constraint file_info_file_md5_space_id_source_uindex
         unique (file_md5, space_id, source),
     constraint file_info_user_info_null_fk
