@@ -139,12 +139,6 @@ public class FileServiceImpl implements IFileService {
             public void onNext(FileTransmissionDTO data) {
                 log.info("dubbo文件传输流,接收到传输,文件名称:{},文件类型:{},文件总大小:{},当前分片起:{},当前分片止:{},分片数量:{},第{}分片",
                         data.getName(),data.getType(),data.getTotalSize(),data.getRangeStart(),data.getRangeEnd(),data.getShardingNum(),data.getShardingSort());
-                //这个分片写入前,已写入的分片
-                File[] fs = new File(tempPath).listFiles(e->e.getName().startsWith(data.getFileMd5()));
-                if(fs.length == data.getShardingNum()){//磁盘中的分片数量已经是最大的分片,则不执行下面的逻辑,是某些极少数以外导致的,等第二天系统会自动清理昨天的临时文件,到时候就可以重新上传了
-                    response.onNext(new FileTransmissionRepDTO(data.getName(),data.getFileMd5(),true,"磁盘分片已全部写入,跳过重复写入"));
-                    return;
-                }
                 try {
                     Path p = Path.of(String.format("%s/%s-%s%s", tempPath,data.getFileMd5(), String.valueOf(data.getShardingSort()), tempFileSuffix));
                     if(Files.notExists(p)) {
