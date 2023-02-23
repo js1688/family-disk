@@ -10,7 +10,7 @@ create table netdisk_directory
     create_time timestamp    null comment '创建时间',
     update_time timestamp    null comment '修改时间',
     name        varchar(256) null comment '目录名称',
-    media_type  varchar(32)  null comment '文件多媒体类型',
+    media_type  varchar(128)  null comment '文件多媒体类型',
     constraint netdisk_directory_name_space_id_pid_uindex
         unique (name, space_id, pid)
 )

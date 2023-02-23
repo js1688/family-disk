@@ -8,7 +8,7 @@ create table journal_list_files
     file_name   varchar(256) null comment '文件名',
     create_time timestamp    null comment '创建日期',
     update_time timestamp    null comment '修改日期',
-    media_type  varchar(64)  null comment '多媒体类型',
+    media_type  varchar(128)  null comment '多媒体类型',
     constraint journal_list_files_journal_list_id_fk
         foreign key (journal_id) references journal_list (id)
 )
