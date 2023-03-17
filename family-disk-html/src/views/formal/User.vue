@@ -502,17 +502,19 @@ export default {
         axios.post('/user/info/sendRegisterEmailCaptcha', {
           email: this.email
         }).then(function (response) {
-          self.sendyzm = true;
+          if(response.data.result){
+            self.sendyzm = true;
+            self.sendyzmjs = 60;
+            let timer = setInterval(function (){
+              self.sendyzmjs--;
+              if(self.sendyzmjs == 0){
+                clearInterval(timer);
+                self.sendyzm = false;
+              }
+            }, 1000);
+          }
           showToast(response.data.message);
           self.isOverlay = false;
-          self.sendyzmjs = 60;
-          let timer = setInterval(function (){
-            self.sendyzmjs--;
-            if(self.sendyzmjs == 0){
-              clearInterval(timer);
-              self.sendyzm = false;
-            }
-          }, 1000);
         }).catch(function (error) {
           self.isOverlay = false;
           console.log(error);
