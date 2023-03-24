@@ -275,7 +275,7 @@ export default {
       pwd:"",
       captcha:"",
       name:"",
-      logonPng:localStorage.getItem(key().authorization) == null ? "/logon0.png" : "/logon1.png",
+      logonPng:localStorage.getItem(key().authorization) == null ? "/img/mobile/logon0.png" : "/img/mobile/logon1.png",
       userName: localStorage.getItem(key().authorization) == null ? "请先登录" : localStorage.getItem(key().userName),
       isOverlay: false,
       sendyzm:false,
@@ -326,13 +326,13 @@ export default {
     },
     //复制分享地址
     copyLink:function (item){
-      let link = window.location.protocol + '//' + window.location.host;
+      let link = window.location.protocol + '//' + window.location.host + window.location.pathname;
       switch (item.bodyType){
         case 'NOTE':
-          link += '/#/share/notepad/?';
+          link += '#/share/notepad/?';
           break
         case 'NETDISK':
-          link += '/#/share/netdisk/?';
+          link += '#/share/netdisk/?';
           break
         default:
           showToast("复制失败,链接内容不识别");

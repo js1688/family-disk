@@ -1,14 +1,17 @@
-<!-- 移动端浏览器 -->
+<!-- 默认入口 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
       <meta charset="UTF-8">
-      <link rel="icon" href="/family.png">
+      <link rel="icon" href="/img/family.png">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>家庭网盘</title>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <h1>默认入口做不同版本的跳转,服务配置应该主动指定html入口文件,不能使用默认的index.html</h1>
+    <ul>
+        <li><a href="index-mobile.html">点击进入移动端</a></li>
+        <li><a href="index-pc.html">点击进入pc端</a></li>
+    </ul>
   </body>
 </html>

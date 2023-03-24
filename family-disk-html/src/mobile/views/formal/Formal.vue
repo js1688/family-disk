@@ -38,14 +38,14 @@ export default {
   name: 'Formal',
   setup() {
     const icon = {
-      user0: '/yonghu0.png',
-      user1: '/yonghu1.png',
-      journal0: '/riji0.png',
-      journal1: '/riji1.png',
-      disk0: '/disk0.png',
-      disk1: '/disk1.png',
-      notepad0: '/notepad0.png',
-      notepad1: '/notepad1.png'
+      user0: '/img/mobile/yonghu0.png',
+      user1: '/img/mobile/yonghu1.png',
+      journal0: '/img/mobile/riji0.png',
+      journal1: '/img/mobile/riji1.png',
+      disk0: '/img/mobile/disk0.png',
+      disk1: '/img/mobile/disk1.png',
+      notepad0: '/img/mobile/notepad0.png',
+      notepad1: '/img/mobile/notepad1.png'
     };
     return {
       icon

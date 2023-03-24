@@ -1,17 +1,14 @@
 import { createRouter } from "vue-router";
 import { createWebHashHistory } from "vue-router";
 
-import Formal from "@/views/formal/Formal.vue";
-import User from "@/views/formal/User.vue";
-import Disk from "@/views/formal/Disk.vue";
-import Notepad from "@/views/formal/Notepad.vue";
-import Journal from "@/views/formal/Journal.vue";
-import NotepadShare from "@/views/share/NotepadShare.vue";
-import Share from "@/views/share/Share.vue";
-import HTTP404 from "@/views/public/Http404.vue";
+import Formal from "@/pc/views/formal/Formal.vue";
+import HTTP404 from "@/pc/views/public/Http404.vue";
 
 import {key} from "@/global/KeyGlobal";
-import DiskShare from "@/views/share/DiskShare.vue";
+import User from "@/pc/views/formal/User.vue";
+import Disk from "@/pc/views/formal/Disk.vue";
+import Notepad from "@/pc/views/formal/Notepad.vue";
+import {Journal} from "@vicons/ionicons5";
 const routes = [
     {
         path: '/',
@@ -41,21 +38,21 @@ const routes = [
             }
         ]
     },
-    {
-        //分享展示面板路由
-        path: '/share',
-        component: Share,
-        children: [
-            {
-                path: 'notepad',
-                component: NotepadShare,
-            },
-            {
-                path: 'netdisk',
-                component: DiskShare,
-            },
-        ]
-    },
+    // {
+    //     //分享展示面板路由
+    //     path: '/share',
+    //     component: Share,
+    //     children: [
+    //         {
+    //             path: 'notepad',
+    //             component: NotepadShare,
+    //         },
+    //         {
+    //             path: 'netdisk',
+    //             component: DiskShare,
+    //         },
+    //     ]
+    // },
     {
         //404
         path: '/404',
