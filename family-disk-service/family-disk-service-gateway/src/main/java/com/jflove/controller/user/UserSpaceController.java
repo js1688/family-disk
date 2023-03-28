@@ -120,14 +120,7 @@ public class UserSpaceController {
     @PostMapping("/setRelRole")
     public ResponseHeadVO setRelRole(@RequestBody @Valid SetRelRoleParamVO param){
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"请先切换到空间");
-        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
-        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
-            throw new SecurityException("用户对该空间没有设置权限");
-        }
-        ResponseHeadDTO dto = userSpace.setRelRole(useSpaceId,useUserId,param.getTargetUserId(),UserSpaceRoleENUM.valueOf(param.getRole()));
+        ResponseHeadDTO dto = userSpace.setRelRole(useUserId,param.getTargetUserId(),UserSpaceRoleENUM.valueOf(param.getRole()));
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
 

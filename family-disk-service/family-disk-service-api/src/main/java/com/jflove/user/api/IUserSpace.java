@@ -89,11 +89,10 @@ public interface IUserSpace {
 
     /**
      * 设置用户与空间的权限
-     * @param spaceId
-     * @param createUserId
+     * @param useUserId
      * @param targetUserId
      * @param role
      * @return
      */
-    ResponseHeadDTO setRelRole(long spaceId, long createUserId, long targetUserId, UserSpaceRoleENUM role);
+    ResponseHeadDTO setRelRole(long useUserId, long targetUserId, UserSpaceRoleENUM role);
 }

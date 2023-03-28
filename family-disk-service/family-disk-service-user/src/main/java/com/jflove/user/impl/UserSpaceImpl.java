@@ -300,10 +300,14 @@ public class UserSpaceImpl implements IUserSpace {
 
     @Override
     @Transactional
-    public ResponseHeadDTO setRelRole(long spaceId, long createUserId, long targetUserId, UserSpaceRoleENUM role) {
+    public ResponseHeadDTO setRelRole(long useUserId, long targetUserId, UserSpaceRoleENUM role) {
+        UserSpacePO po = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>().eq(UserSpacePO::getCreateUserId,useUserId));
+        if(po == null){
+            return new ResponseHeadDTO(false,"设置失败,你没有自己的空间");
+        }
         UserSpaceRelPO usrp = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
-                .eq(UserSpaceRelPO::getSpaceId,spaceId)
-                .eq(UserSpaceRelPO::getCreateUserId,createUserId)
+                .eq(UserSpaceRelPO::getSpaceId,po.getId())
+                .eq(UserSpaceRelPO::getCreateUserId,useUserId)
                 .eq(UserSpaceRelPO::getUserId,targetUserId)
         );
         if(usrp == null){
