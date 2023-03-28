@@ -183,10 +183,14 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
-    public ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long spaceId, long createUserId) {
+    public ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long createUserId) {
+        UserSpacePO po = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>().eq(UserSpacePO::getCreateUserId,createUserId));
+        if(po == null){
+            return new ResponseHeadDTO(false,"你没有自己的空间");
+        }
         List<UserSpaceRelPO> usrp = userSpaceRelMapper.selectList(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getCreateUserId,createUserId)
-                .eq(UserSpaceRelPO::getSpaceId,spaceId)
+                .eq(UserSpaceRelPO::getSpaceId,po.getId())
                 .ne(UserSpaceRelPO::getUserId,createUserId)
         );
         if(usrp == null || usrp.size() == 0){

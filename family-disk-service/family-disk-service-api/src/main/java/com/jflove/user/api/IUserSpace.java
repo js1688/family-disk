@@ -57,12 +57,11 @@ public interface IUserSpace {
 
 
     /**
-     * 获取空间关联的所有用户,但不包含空间创建者本身
-     * @param spaceId 空间id
+     * 获取用户空间关联的所有用户,但不包含空间创建者本身
      * @param createUserId 空间的创建用户
      * @return
      */
-    ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long spaceId, long createUserId);
+    ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long createUserId);
 
     /**
      * 将用户从我的空间中移除

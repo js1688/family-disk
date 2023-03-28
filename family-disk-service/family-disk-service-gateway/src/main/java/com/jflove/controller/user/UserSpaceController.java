@@ -134,12 +134,8 @@ public class UserSpaceController {
     @ApiOperation(value = "查找用户创建的空间下有多少关联用户")
     @GetMapping("/getUserInfoBySpaceId")
     public ResponseHeadVO<UserSpaceRelVO> getUserInfoBySpaceId(){
-        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"请先切换到空间");
-        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        ResponseHeadDTO<UserSpaceRelDTO> dto = userSpace.getUserInfoBySpaceId(useSpaceId,useUserId);
+        ResponseHeadDTO<UserSpaceRelDTO> dto = userSpace.getUserInfoBySpaceId(useUserId);
         if(dto.isResult()){
             List<UserSpaceRelVO> list = new ArrayList<>(dto.getDatas().size());
             dto.getDatas().forEach(v->{
