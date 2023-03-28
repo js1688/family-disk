@@ -9,6 +9,7 @@ import com.jflove.file.FileDiskConfigPO;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
@@ -26,6 +27,7 @@ public class DiskServiceImpl implements IDiskService {
     private FileDiskConfigMapper fileDiskConfigMapper;
 
     @Override
+    @Transactional
     public ResponseHeadDTO<Long> addDisk(FileDiskTypeENUM type, String path) {
         switch (type){
             case LOCAL:

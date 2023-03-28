@@ -65,13 +65,28 @@ public interface IUserSpace {
     ResponseHeadDTO<UserSpaceRelDTO> getUserInfoBySpaceId(long spaceId, long createUserId);
 
     /**
-     * 移除用户与空间关系
-     * @param spaceId
-     * @param createUserId
+     * 将用户从我的空间中移除
+     * @param useUserId
      * @param removeUserId
      * @return
      */
-    ResponseHeadDTO removeRel(long spaceId, long createUserId,long removeUserId);
+    ResponseHeadDTO removeRel(long useUserId,long removeUserId);
+
+    /**
+     * 用户退出空间
+     * @param spaceId
+     * @param userId
+     * @return
+     */
+    ResponseHeadDTO exitRel(long spaceId,long userId);
+
+    /**
+     * 通过邮箱邀请用户加入到我的空间
+     * @param email
+     * @param userId
+     * @return
+     */
+    ResponseHeadDTO inviteSpace(String email,long userId);
 
     /**
      * 设置用户与空间的权限

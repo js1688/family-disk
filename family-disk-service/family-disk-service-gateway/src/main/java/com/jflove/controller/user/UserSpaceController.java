@@ -90,15 +90,29 @@ public class UserSpaceController {
     @ApiOperation(value = "移除空间与用户关系")
     @PostMapping("/removeRel")
     public ResponseHeadVO removeRel(@RequestBody @Valid RemoveRelParamVO param){
-        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
-        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
-        Assert.notNull(useSpaceId,"请先切换到空间");
-        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
-        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
-            throw new SecurityException("用户对该空间没有移除权限");
+        ResponseHeadDTO dto = userSpace.removeRel(useUserId,param.getRemoveUserId());
+        return new ResponseHeadVO(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "邀请对方加入我的空间")
+    @PostMapping("/inviteSpace")
+    public ResponseHeadVO inviteSpace(@RequestBody @Valid GetUserInfoByEmailParamVO param){
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        ResponseHeadDTO dto = userSpace.inviteSpace(param.getEmail(),useUserId);
+        return new ResponseHeadVO(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "用户退出空间")
+    @PostMapping("/exitRel")
+    public ResponseHeadVO exitRel(@RequestBody @Valid ExitRelParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        if(useSpaceId.longValue() == param.getSpaceId().longValue()){
+            throw new SecurityException("退出失败,你正在使用这个空间");
         }
-        ResponseHeadDTO dto = userSpace.removeRel(useSpaceId,useUserId,param.getRemoveUserId());
+        Long useUserId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_USER_ID);
+        ResponseHeadDTO dto = userSpace.exitRel(param.getSpaceId(),useUserId);
         return new ResponseHeadVO(dto.isResult(),dto.getMessage());
     }
 

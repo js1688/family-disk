@@ -128,6 +128,7 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO joinSpace(String targetSpaceCode, long userId) {
         UserSpacePO usp = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()
                 .eq(UserSpacePO::getCode,targetSpaceCode)
@@ -154,6 +155,7 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO switchSpace(long targetSpaceId,long originalSpaceId,long userId) {
         UserSpaceRelPO po = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getUserId,userId)
@@ -210,17 +212,71 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
-    public ResponseHeadDTO removeRel(long spaceId, long createUserId, long removeUserId) {
-        if(createUserId == removeUserId){
-            return new ResponseHeadDTO(false,"不能移除空间创建者");
+    @Transactional
+    public ResponseHeadDTO inviteSpace(String email, long userId) {
+        UserSpacePO po = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>().eq(UserSpacePO::getCreateUserId,userId));
+        if(po == null){
+            return new ResponseHeadDTO(false,"邀请失败,你没有自己的空间");
+        }
+        UserInfoPO userInfoPO = userInfoMapper.selectOne(new LambdaQueryWrapper<UserInfoPO>().eq(UserInfoPO::getEmail,email));
+        if(userInfoPO == null){
+            return new ResponseHeadDTO(false,"邀请失败,用户不存在");
+        }
+        UserSpaceRelPO usrp = new UserSpaceRelPO();
+        usrp.setSpaceId(po.getId());
+        usrp.setCreateUserId(po.getCreateUserId());
+        usrp.setUserId(userInfoPO.getId());
+        usrp.setTitle(po.getTitle());
+        usrp.setState(UserRelStateENUM.NOTUSED.getCode());//设置成未使用
+        usrp.setRole(UserSpaceRoleENUM.READ.getCode());//设置成只读
+        userSpaceRelMapper.insert(usrp);
+        return new ResponseHeadDTO(true,"邀请成功,默认权限:" + UserSpaceRoleENUM.READ.getName());
+    }
+
+    @Override
+    @Transactional
+    public ResponseHeadDTO exitRel(long spaceId, long userId) {
+        UserSpacePO po = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>().eq(UserSpacePO::getId,spaceId));
+        if(po == null){
+            return new ResponseHeadDTO(false,"退出失败,没有这个空间");
+        }
+        if(po.getCreateUserId() == userId){
+            return new ResponseHeadDTO(false,"退出失败,你不能退出自己的空间");
         }
         UserSpaceRelPO usrp = userSpaceRelMapper.selectOne(new LambdaUpdateWrapper<UserSpaceRelPO>()
-                .eq(UserSpaceRelPO::getCreateUserId,createUserId)
-                .eq(UserSpaceRelPO::getUserId,removeUserId)
+                .eq(UserSpaceRelPO::getCreateUserId,po.getCreateUserId())
+                .eq(UserSpaceRelPO::getUserId,userId)
                 .eq(UserSpaceRelPO::getSpaceId,spaceId)
         );
         if(usrp == null){
-            return new ResponseHeadDTO(false,"移除失败");
+            return new ResponseHeadDTO(false,"退出失败,不存在这个关系");
+        }
+        //正在使用的空间不能退出
+        if(UserRelStateENUM.USE.getCode().equals(usrp.getState())){
+            return new ResponseHeadDTO(false,"退出失败,你正在使用这个空间");
+        }
+        userSpaceRelMapper.deleteById(usrp.getId());
+        return new ResponseHeadDTO(true,"退出成功");
+    }
+
+    @Override
+    @Transactional
+    public ResponseHeadDTO removeRel(long useUserId,long removeUserId) {
+        if(useUserId == removeUserId){
+            return new ResponseHeadDTO(false,"移除失败,不能移除自己");
+        }
+        UserSpacePO po = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>().eq(UserSpacePO::getCreateUserId,useUserId));
+        if(po == null){
+            return new ResponseHeadDTO(false,"移除失败,你没有自己的空间");
+        }
+
+        UserSpaceRelPO usrp = userSpaceRelMapper.selectOne(new LambdaUpdateWrapper<UserSpaceRelPO>()
+                .eq(UserSpaceRelPO::getCreateUserId,useUserId)
+                .eq(UserSpaceRelPO::getUserId,removeUserId)
+                .eq(UserSpaceRelPO::getSpaceId,po.getId())
+        );
+        if(usrp == null){
+            return new ResponseHeadDTO(false,"移除失败,不存在这个关系");
         }
         //如果删除的权限是正在使用的,那删除后将用户自己创建的空间设置成正在使用,关联用户id和创建用户id都是同一个id就可以确定这条关系是他创建的空间
         if(UserRelStateENUM.USE.getCode().equals(usrp.getState())){
@@ -239,6 +295,7 @@ public class UserSpaceImpl implements IUserSpace {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO setRelRole(long spaceId, long createUserId, long targetUserId, UserSpaceRoleENUM role) {
         UserSpaceRelPO usrp = userSpaceRelMapper.selectOne(new LambdaQueryWrapper<UserSpaceRelPO>()
                 .eq(UserSpaceRelPO::getSpaceId,spaceId)
