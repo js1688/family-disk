@@ -4,6 +4,7 @@ let data = {
     shareToken:'SHARE_TOKEN',
     authorization:'Authorization',
     userName:'USER_NAME',
+    userId:'USER_ID',
     useSpaceRole:'USE_SPACE_ROLE',
     userAllSpaceRole:'USER_ALL_SPACE_ROLE',
     // 公网
