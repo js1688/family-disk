@@ -11,6 +11,8 @@ import com.jflove.netdisk.em.NetdiskDirectoryENUM;
  */
 public interface INetdiskDirectory {
 
+
+
     /**
      * 修改目录名称
      * @param spaceId
@@ -29,6 +31,14 @@ public interface INetdiskDirectory {
      * @return
      */
     ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid, String keyword, NetdiskDirectoryENUM type);
+
+    /**
+     * 查询目录完整树结构
+     * @param spaceId
+     * @param type
+     * @return
+     */
+    ResponseHeadDTO<NetdiskDirectoryDTO> findDirectoryTree(Long spaceId,NetdiskDirectoryENUM type);
 
     /**
      * 添加目录

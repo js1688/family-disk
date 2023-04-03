@@ -8,6 +8,7 @@ import lombok.ToString;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -58,4 +59,9 @@ public class NetdiskDirectoryDTO implements Serializable{
    * 文件多媒体类型
    */
   private String mediaType;
+
+  /**
+   * 子目录
+   */
+  private List<NetdiskDirectoryDTO> children;
 }

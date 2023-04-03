@@ -1,5 +1,6 @@
 package com.jflove.controller.netdisk;
 
+import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.netdisk.api.INetdiskDirectory;
@@ -98,6 +99,22 @@ public class NetdiskDirectoryController {
             AddDirectoryParamVO vo = new AddDirectoryParamVO();
             BeanUtils.copyProperties(dto.getData(),vo);
             return new ResponseHeadVO<>(dto.isResult(),vo,dto.getMessage());
+        }
+        return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "查询目录树结构")
+    @PostMapping("/findDirectoryTree")
+    public ResponseHeadVO<AddDirectoryParamVO> findDirectoryTree(@RequestBody @Valid FindDirectoryParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectoryTree(useSpaceId,
+                StringUtils.hasLength(param.getType()) ? NetdiskDirectoryENUM.valueOf(param.getType()) : null);
+        if(dto.isResult()){
+            List<AddDirectoryParamVO> tree = JSONUtil.parseArray(dto.getDatas()).toList(AddDirectoryParamVO.class);
+            return new ResponseHeadVO<>(dto.isResult(),tree,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }

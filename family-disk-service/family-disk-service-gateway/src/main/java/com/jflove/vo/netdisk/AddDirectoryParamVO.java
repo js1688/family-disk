@@ -11,6 +11,7 @@ import javax.validation.constraints.NotNull;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author tanjun
@@ -55,4 +56,7 @@ public class AddDirectoryParamVO implements Serializable {
 
     @ApiModelProperty(value="文件多媒体类型")
     private String mediaType;
+
+    @ApiModelProperty(value="子目录")
+    private List<AddDirectoryParamVO> children;
 }

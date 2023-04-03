@@ -12,6 +12,7 @@ import com.jflove.netdisk.mapper.NetdiskDirectoryMapper;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,24 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
 
     @DubboReference
     private IFileAdministration fileAdministration;
+
+    @Override
+    public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectoryTree(Long spaceId, NetdiskDirectoryENUM type) {
+        List<NetdiskDirectoryDTO> listDto = getNetdiskDirectoryDTOS(spaceId, 0l, null, type);
+        appendDirectoryTree(listDto,type);
+        return new ResponseHeadDTO<>(listDto);
+    }
+
+    private void appendDirectoryTree(List<NetdiskDirectoryDTO> list,NetdiskDirectoryENUM type){
+        list.forEach(v->{
+            if(v.getType() != NetdiskDirectoryENUM.FOLDER){
+                return;
+            }
+            List<NetdiskDirectoryDTO> c = getNetdiskDirectoryDTOS(v.getSpaceId(), v.getPid(), null, type);
+            appendDirectoryTree(c,type);
+            v.setChildren(c);
+        });
+    }
 
     @Override
     @Transactional
@@ -65,12 +84,18 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
 
     @Override
     public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid,String keyword,NetdiskDirectoryENUM type) {
+        List<NetdiskDirectoryDTO> listDto = getNetdiskDirectoryDTOS(spaceId, pid, keyword, type);
+        return new ResponseHeadDTO<>(listDto);
+    }
+
+    @NotNull
+    private List<NetdiskDirectoryDTO> getNetdiskDirectoryDTOS(Long spaceId, Long pid, String keyword, NetdiskDirectoryENUM type) {
         List<NetdiskDirectoryPO> list = netdiskDirectoryMapper.selectList(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                 .eq(type != null,NetdiskDirectoryPO::getType,
                         Optional.ofNullable(type).orElse(NetdiskDirectoryENUM.FOLDER).getCode())
-                .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+                .eq(NetdiskDirectoryPO::getSpaceId, spaceId)
                 .eq(!StringUtils.hasLength(keyword),NetdiskDirectoryPO::getPid, Optional.ofNullable(pid).orElse(0l))
-                .like(StringUtils.hasLength(keyword),NetdiskDirectoryPO::getName,keyword)
+                .like(StringUtils.hasLength(keyword),NetdiskDirectoryPO::getName, keyword)
         );
         List<NetdiskDirectoryDTO> listDto = new ArrayList<>(list.size());
         list.forEach(v->{
@@ -79,7 +104,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
             listDto.add(dto);
         });
-        return new ResponseHeadDTO<>(listDto);
+        return listDto;
     }
 
     @Override
