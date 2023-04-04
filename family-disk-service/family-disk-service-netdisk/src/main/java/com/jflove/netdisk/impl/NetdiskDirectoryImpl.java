@@ -17,6 +17,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.util.unit.DataSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -104,7 +105,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
             if(dto.getType() == NetdiskDirectoryENUM.FILE){
                 ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(dto.getFileMd5(),spaceId);
-                dto.setSize(String.valueOf((int)Math.ceil((int)Math.ceil(sizeRet.getData() / 1024) / 1024)));
+                dto.setSize(String.valueOf(DataSize.ofBytes(sizeRet.getData()).toMegabytes()));
             }else{
                 dto.setSize("-");
             }
