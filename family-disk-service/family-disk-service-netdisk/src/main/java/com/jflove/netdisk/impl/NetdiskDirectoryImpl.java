@@ -104,7 +104,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
             if(dto.getType() == NetdiskDirectoryENUM.FILE){
                 ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(dto.getFileMd5());
-                dto.setSize(String.valueOf(Math.ceil(sizeRet.getData() / 1024 / 1024)));
+                dto.setSize(String.valueOf((int)Math.ceil((int)Math.ceil(sizeRet.getData() / 1024) / 1024)));
             }else{
                 dto.setSize("-");
             }
