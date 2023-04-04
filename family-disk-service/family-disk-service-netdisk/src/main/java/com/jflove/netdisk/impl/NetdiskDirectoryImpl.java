@@ -103,7 +103,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             BeanUtils.copyProperties(v,dto);
             dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
             if(dto.getType() == NetdiskDirectoryENUM.FILE){
-                ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(dto.getFileMd5());
+                ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(dto.getFileMd5(),spaceId);
                 dto.setSize(String.valueOf((int)Math.ceil((int)Math.ceil(sizeRet.getData() / 1024) / 1024)));
             }else{
                 dto.setSize("-");

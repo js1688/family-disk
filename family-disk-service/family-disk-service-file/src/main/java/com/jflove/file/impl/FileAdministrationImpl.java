@@ -76,8 +76,11 @@ public class FileAdministrationImpl implements IFileAdministration {
     }
 
     @Override
-    public ResponseHeadDTO getFileSize(String fileMd5) {
-        FileInfoPO fileInfoPO = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>().eq(FileInfoPO::getFileMd5,fileMd5));
+    public ResponseHeadDTO getFileSize(String fileMd5,long spaceId) {
+        FileInfoPO fileInfoPO = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
+                .eq(FileInfoPO::getFileMd5,fileMd5)
+                .eq(FileInfoPO::getSpaceId,spaceId)
+        );
         if(fileInfoPO == null){
             return new ResponseHeadDTO(0);
         }

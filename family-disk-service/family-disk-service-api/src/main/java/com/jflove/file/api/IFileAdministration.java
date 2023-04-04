@@ -49,9 +49,10 @@ public interface IFileAdministration {
     /**
      * 获取文件大小
      * @param fileMd5
+     * @param spaceId
      * @return
      */
-    ResponseHeadDTO<Long> getFileSize(String fileMd5);
+    ResponseHeadDTO<Long> getFileSize(String fileMd5,long spaceId);
 
     /**
      * 检查文件是否重复,如果重复则直接建立引用
