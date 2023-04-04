@@ -102,6 +102,10 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
             BeanUtils.copyProperties(v,dto);
             dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
+            if(dto.getType() == NetdiskDirectoryENUM.FILE){
+                ResponseHeadDTO<String> sizeRet = fileAdministration.getFileSize(dto.getFileMd5());
+                dto.setSize(sizeRet.getData());
+            }
             listDto.add(dto);
         });
         return listDto;

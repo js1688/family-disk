@@ -76,6 +76,15 @@ public class FileAdministrationImpl implements IFileAdministration {
     }
 
     @Override
+    public ResponseHeadDTO getFileSize(String fileMd5) {
+        FileInfoPO fileInfoPO = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>().eq(FileInfoPO::getFileMd5,fileMd5));
+        if(fileInfoPO == null){
+            return new ResponseHeadDTO("-");
+        }
+        return new ResponseHeadDTO(String.valueOf(fileInfoPO.getSize()));
+    }
+
+    @Override
     @Transactional
     public ResponseHeadDTO dustbinRecovery(String fileMd5,long spaceId,FileSourceENUM source) {
         //检查这个文件是否已经在用户的垃圾箱

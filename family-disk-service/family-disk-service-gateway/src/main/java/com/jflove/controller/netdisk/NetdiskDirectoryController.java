@@ -105,7 +105,7 @@ public class NetdiskDirectoryController {
 
     @ApiOperation(value = "查询目录树结构")
     @PostMapping("/findDirectoryTree")
-    public ResponseHeadVO<AddDirectoryParamVO> findDirectoryTree(@RequestBody @Valid FindDirectoryParamVO param){
+    public ResponseHeadVO<DirectoryInfoVO> findDirectoryTree(@RequestBody @Valid FindDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"请先切换到空间");
@@ -113,7 +113,7 @@ public class NetdiskDirectoryController {
         ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectoryTree(useSpaceId,
                 StringUtils.hasLength(param.getType()) ? NetdiskDirectoryENUM.valueOf(param.getType()) : null);
         if(dto.isResult()){
-            List<AddDirectoryParamVO> tree = JSONUtil.parseArray(dto.getDatas()).toList(AddDirectoryParamVO.class);
+            List<DirectoryInfoVO> tree = JSONUtil.parseArray(dto.getDatas()).toList(DirectoryInfoVO.class);
             return new ResponseHeadVO<>(dto.isResult(),tree,dto.getMessage());
         }
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
@@ -121,7 +121,7 @@ public class NetdiskDirectoryController {
 
     @ApiOperation(value = "查询目录")
     @PostMapping("/findDirectory")
-    public ResponseHeadVO<AddDirectoryParamVO> findDirectory(@RequestBody @Valid FindDirectoryParamVO param){
+    public ResponseHeadVO<DirectoryInfoVO> findDirectory(@RequestBody @Valid FindDirectoryParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"请先切换到空间");
@@ -129,9 +129,9 @@ public class NetdiskDirectoryController {
         ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(useSpaceId,param.getPid(),param.getKeyword(),
                 StringUtils.hasLength(param.getType()) ? NetdiskDirectoryENUM.valueOf(param.getType()) : null);
         if(dto.isResult()){
-            List<AddDirectoryParamVO> vos = new ArrayList<>(dto.getDatas().size());
+            List<DirectoryInfoVO> vos = new ArrayList<>(dto.getDatas().size());
             dto.getDatas().forEach(v->{
-                AddDirectoryParamVO vo = new AddDirectoryParamVO();
+                DirectoryInfoVO vo = new DirectoryInfoVO();
                 BeanUtils.copyProperties(v,vo);
                 vo.setType(v.getType().getCode());
                 vos.add(vo);

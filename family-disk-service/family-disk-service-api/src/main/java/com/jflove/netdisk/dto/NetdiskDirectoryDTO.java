@@ -30,6 +30,11 @@ public class NetdiskDirectoryDTO implements Serializable{
    * 类型
    */
   private NetdiskDirectoryENUM type;
+
+  /**
+   * 文件占用大小(MB)
+   */
+  private String size;
   /**
    * 文件md5值
    */

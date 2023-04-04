@@ -46,6 +46,12 @@ public interface IFileAdministration {
      */
     ResponseHeadDTO dustbinRecovery(String fileMd5,long spaceId,FileSourceENUM source);
 
+    /**
+     * 获取文件大小
+     * @param fileMd5
+     * @return
+     */
+    ResponseHeadDTO getFileSize(String fileMd5);
 
     /**
      * 检查文件是否重复,如果重复则直接建立引用
