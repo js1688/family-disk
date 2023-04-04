@@ -51,7 +51,7 @@ public interface IFileAdministration {
      * @param fileMd5
      * @return
      */
-    ResponseHeadDTO getFileSize(String fileMd5);
+    ResponseHeadDTO<Long> getFileSize(String fileMd5);
 
     /**
      * 检查文件是否重复,如果重复则直接建立引用
