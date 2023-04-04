@@ -28,8 +28,7 @@ public class Swagger2Config {
                 .enable(true)
                 .apiInfo(apiInfo())
                 .securitySchemes(List.of(
-                        new ApiKey(HttpConstantConfig.AUTHORIZATION, HttpConstantConfig.AUTHORIZATION, "header"),
-                        new ApiKey(HttpConstantConfig.USE_SPACE_ID, HttpConstantConfig.USE_SPACE_ID, "header")
+                        new ApiKey(HttpConstantConfig.AUTHORIZATION, HttpConstantConfig.AUTHORIZATION, "header")
                 ))//设置页面可以设置token到请求头部
                 .securityContexts(List.of(securityContexts()))//设置哪些url要带上token请求
                 .select()

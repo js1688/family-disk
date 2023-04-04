@@ -49,7 +49,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             if(v.getType() != NetdiskDirectoryENUM.FOLDER){
                 return;
             }
-            List<NetdiskDirectoryDTO> c = getNetdiskDirectoryDTOS(v.getSpaceId(), v.getPid(), null, type);
+            List<NetdiskDirectoryDTO> c = getNetdiskDirectoryDTOS(v.getSpaceId(), v.getId(), null, type);
             appendDirectoryTree(c,type);
             v.setChildren(c);
         });
