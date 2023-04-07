@@ -119,6 +119,10 @@ import {key} from "@/global/KeyGlobal";
 import gws from "@/global/WebSocket";
 import axios from "axios";
 
+
+import createTodoListPlugin from '@kangc/v-md-editor/lib/plugins/todo-list/index';
+import '@kangc/v-md-editor/lib/plugins/todo-list/todo-list.css';
+
 import VMdEditor from '@kangc/v-md-editor/lib/codemirror-editor';
 import '@kangc/v-md-editor/lib/style/codemirror-editor.css';
 import githubTheme from '@kangc/v-md-editor/lib/theme/github.js';
@@ -149,12 +153,25 @@ import 'codemirror/addon/scroll/simplescrollbars.css';
 // style
 import 'codemirror/lib/codemirror.css';
 
+import createCopyCodePlugin from '@kangc/v-md-editor/lib/plugins/copy-code/index';
+import '@kangc/v-md-editor/lib/plugins/copy-code/copy-code.css';
+import createTipPlugin from '@kangc/v-md-editor/lib/plugins/tip/index';
+import '@kangc/v-md-editor/lib/plugins/tip/tip.css';
+import createEmojiPlugin from '@kangc/v-md-editor/lib/plugins/emoji/index';
+import '@kangc/v-md-editor/lib/plugins/emoji/emoji.css';
+
+import createHighlightLinesPlugin from '@kangc/v-md-editor/lib/plugins/highlight-lines/index';
+import '@kangc/v-md-editor/lib/plugins/highlight-lines/highlight-lines.css';
+
 VMdEditor.Codemirror = Codemirror;
 VMdEditor.use(githubTheme, {
   Hljs: hljs,
 });
-
-
+VMdEditor.use(createCopyCodePlugin());
+VMdEditor.use(createTodoListPlugin());
+VMdEditor.use(createTipPlugin());
+VMdEditor.use(createEmojiPlugin());
+VMdEditor.use(createHighlightLinesPlugin());
 import VueClipboard from "vue-clipboard2";
 import {showConfirmDialog, showToast} from "vant";
 
@@ -191,7 +208,7 @@ export default {
       bookmarkOptions,
       tags,
       rightToolbar:'preview sync-scroll fullscreen',
-      leftToolbar:"undo redo clear h bold italic strikethrough quote ul ol table hr link image code checkboxToolbar | tagSelected save",
+      leftToolbar:"undo redo clear h bold italic strikethrough quote ul ol table hr link image code checkboxToolbar emoji tip | tagSelected save",
     }
   },
   components:{
@@ -215,18 +232,18 @@ export default {
     self.toolbar = {
       checkboxToolbar:{
         icon:"v-md-icon-checkbox",
-        title:'复选框',
+        title:'任务列表',
         action(editor) {
           editor.insert(function (selected) {
             return {
-              text: '- [ ] ',
+              text: '- [x] 任务列表',
               selected: selected,
             };
           });
         }
       },
       tagSelected:{
-        icon:"v-md-icon-checkbox",
+        icon:"v-md-icon-arrow-down",
         title:'书签',
         action(editor) {
           self.showTags = true;
