@@ -789,7 +789,7 @@ export default {
         }
         showToast(response.data.message);
         self.isOverlay = false;
-        this.directoryName = "";
+        self.directoryName = "";
       }).catch(function (error) {
         self.isOverlay = false;
         console.log(error);
