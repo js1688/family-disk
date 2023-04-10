@@ -48,6 +48,7 @@
                         <n-divider />
                         <n-space justify="end" v-if="roleWrite">
                           <n-button size="tiny" secondary strong @click="del(item)">删除</n-button>
+                          <n-button size="tiny" secondary strong @click="">分享</n-button>
                           <n-button size="tiny" secondary strong @click="openText(item);mode='editable';">修改</n-button>
                         </n-space>
                       </n-list-item>

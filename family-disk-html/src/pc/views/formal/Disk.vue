@@ -130,19 +130,6 @@
               <n-divider />
               <n-input v-model:value="simpleField" placeholder="请输入新的目录名称"/>
             </n-modal>
-<!--            -->
-<!--            <n-image-group>-->
-<!--              <n-space>-->
-<!--                <n-image-->
-<!--                    width="100"-->
-<!--                    src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"-->
-<!--                />-->
-<!--                <n-image-->
-<!--                    width="100"-->
-<!--                    src="https://gw.alipayobjects.com/zos/antfincdn/aPkFc8Sj7n/method-draw-image.svg"-->
-<!--                />-->
-<!--              </n-space>-->
-<!--            </n-image-group>-->
 
           </n-spin>
         </div>
@@ -190,6 +177,10 @@ import {key} from "@/global/KeyGlobal";
 import gws from "@/global/WebSocket";
 import axios from "axios";
 
+
+import streamSaver from 'streamsaver';
+import {FileDownload, FileSoundOut} from "@/global/FileDownload";
+
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
 const createColumns = ({
@@ -199,13 +190,13 @@ const createColumns = ({
 
   if(buttons){
     for (let i = 0; i < buttons.length; i++) {
-      const button = buttons[i];
+      const b = buttons[i];
       cols.push(
           {
-            title: button.title,
-            key: button.key,
-            width:button.width,
-            titleColSpan:button.titleColSpan,
+            title: b.title,
+            key: b.key,
+            width:b.width,
+            titleColSpan:b.titleColSpan,
             render(row) {
               return h(
                   NButton,
@@ -213,9 +204,10 @@ const createColumns = ({
                     strong: true,
                     tertiary: true,
                     size: "small",
-                    onClick: () => button.play(row)
+                    disabled: b.disabled ? b.disabled(row) : false,
+                    onClick: () => b.play(row)
                   },
-                  { default: () => button.name }
+                  { default: () => b.name }
               );
             }
           }
@@ -307,7 +299,10 @@ export default {
             name:"下载",
             width:60,
             key:"x",
-            play:null
+            disabled:(row)=> {
+              return row.type == 'FOLDER';
+            },
+            play:this.download
           },
           {
             name:"移动",
@@ -362,10 +357,25 @@ export default {
           }
         ]
       }),
-      moveData:[]
+      moveData:[],
+      fileStream:streamSaver.createWriteStream('cat.mp4')
     }
   },
   methods:{
+    //下载单个文件,支持超大文件,分片方式下载,边下边存
+    download:function (item){
+      let self = this;
+      FileSoundOut(item.fileMd5,item.name,'CLOUDDISK').then(function (ret) {
+        if(!ret.state){
+          self.showToast("error",ret.msg);
+          return;
+        }
+        //试探成功,开始下载
+        FileDownload(ret).then(function (ret){
+          self.showToast(null,ret.msg);
+        });
+      });
+    },
     //选择单个重命名
     renameSingle:function (item) {
       this.showUpdateName = true;
