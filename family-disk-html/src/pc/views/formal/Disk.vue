@@ -472,7 +472,7 @@ export default {
       });
     },
     //下载多个
-    downloads:function (){
+    downloads:async function (){
       let ds = [];
       for (let i = 0; i < this.rowKeys.length; i++) {
         for (let j = 0; j < this.folderData.length; j++) {
@@ -490,7 +490,7 @@ export default {
         return;
       }
       for (let i = 0; i < ds.length; i++) {
-        this.download(ds[i]);
+        await this.download(ds[i]);
       }
     },
     //下载单个文件,支持超大文件,分片方式下载,边下边存

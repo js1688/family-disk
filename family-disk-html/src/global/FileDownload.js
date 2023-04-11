@@ -92,6 +92,75 @@ export async function FileDoownloadSmall(soi){
     }
 }
 
+/**
+ * 执行下载,按队列顺序同步下载
+ * 每次取列表中的第一条开始下载
+ * @constructor
+ */
+let isDownload = false;
+async function queueSyncDownload(){
+    if(isDownload){//已激活下载,不需要重复激活
+        return;
+    }
+    isDownload = true;//设置正在下载
+    let soi = downloadList[Object.keys(downloadList)[0]];//每次取第一条开始执行下载
+    let sliceDownload = async function (s){
+        if(!downloadList[soi.data.fileMd5]){//下载可能已经取消了,不要下载了
+            return;
+        }
+
+        let response = await axios.post('/file/slice/getFile', {
+            fileMd5: soi.data.fileMd5,
+            name: soi.data.name,
+            source:soi.data.source
+        },{
+            responseType:"arraybuffer",
+            headers:{
+                Range:"bytes="+s+"-"
+            }
+        });
+
+        const { data, headers } = response;
+        let contentRange = headers["content-range"];
+        let end = contentRange.substring(contentRange.indexOf("-") + 1,contentRange.indexOf("/")) * 1;
+        let contentLength = headers["content-length"] * 1;
+        let start = contentRange.substring(6,contentRange.indexOf("-")) * 1;
+
+        if(!soi.data.sliceNum){//第一次下载,分析需要下载多少次
+            soi.data.sliceNum = Math.ceil(soi.data.total / contentLength);
+        }
+
+
+
+        //将二进制流写入
+        await new Blob([data]).stream().pipeTo(soi.fileStream,{preventClose:true});//设置写入后不要自动关闭文件流
+        //更新下载进度
+        soi.data.progress++;
+
+        if(end < soi.data.total-1 && response.status == 206){//还有文件分片,继续请求
+            await sliceDownload(start+contentLength);
+        }
+    }
+
+    await sliceDownload(0);//开始下载
+
+    if(!downloadList[soi.data.fileMd5]){//下载可能已经取消了,不要下载了
+        isDownload = false;
+        return;
+    }
+
+    await soi.fileStream.getWriter().close();//文件下载完成了,主动关闭写入文件流
+
+    //清除下载记录
+    delete downloadList[soi.data.fileMd5];
+
+    isDownload = false;
+
+    //判断队列中是否还有任务,有则重新激活
+    if(Object.keys(downloadList).length != 0){
+        queueSyncDownload().then(function (e){});
+    }
+}
 
 /**
  * 开始下载一个完整的文件,支持下载超大文件
@@ -108,61 +177,14 @@ export async function FileDownload(soi){
         let fileStream = streamSaver.createWriteStream(soi.data.name,{size:soi.data.total});
         soi['fileStream'] = fileStream;
         downloadList[soi.data.fileMd5] = soi;
-
-        let sliceDownload = async function (s){
-            if(!downloadList[soi.data.fileMd5]){//下载可能已经取消了,不要下载了
-                return;
-            }
-
-            let response = await axios.post('/file/slice/getFile', {
-                fileMd5: soi.data.fileMd5,
-                name: soi.data.name,
-                source:soi.data.source
-            },{
-                responseType:"arraybuffer",
-                headers:{
-                    Range:"bytes="+s+"-"
-                }
-            });
-
-            const { data, headers } = response;
-            let contentRange = headers["content-range"];
-            let end = contentRange.substring(contentRange.indexOf("-") + 1,contentRange.indexOf("/")) * 1;
-            let contentLength = headers["content-length"] * 1;
-            let start = contentRange.substring(6,contentRange.indexOf("-")) * 1;
-
-            if(!soi.data.sliceNum){//第一次下载,分析需要下载多少次
-                soi.data.sliceNum = Math.ceil(soi.data.total / contentLength);
-            }
-
-
-
-            //将二进制流写入
-            await new Blob([data]).stream().pipeTo(fileStream,{preventClose:true});//设置写入后不要自动关闭文件流
-            //更新下载进度
-            soi.data.progress++;
-
-            if(end < soi.data.total-1 && response.status == 206){//还有文件分片,继续请求
-                await sliceDownload(start+contentLength);
-            }
-        }
-
-        await sliceDownload(0);//开始下载
-
-        if(!downloadList[soi.data.fileMd5]){//下载可能已经取消了,不要下载了
-            return;
-        }
-
-        await fileStream.getWriter().close();//文件下载完成了,主动关闭写入文件流
-
-        //清除下载记录
-        delete downloadList[soi.data.fileMd5];
-
-        return {state:true,msg:`文件[${soi.data.name}]下载完成`};
+        queueSyncDownload().then(function (e){});
+        return {state:true,msg:`文件[${soi.data.name}]加入下载列表成功.`};
     }else{
         return soi;
     }
 }
+
+
 
 /**
  * 停止文件的下载
