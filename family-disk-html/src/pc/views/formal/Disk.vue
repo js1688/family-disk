@@ -16,7 +16,7 @@
                     </n-button>
                   </n-badge>
                   <n-badge value="下载" type="info" :offset="[8, -8]">
-                    <n-button text style="font-size: 24px">
+                    <n-button text style="font-size: 24px" :disabled="!rowKeys || rowKeys.length == 0" @click="downloads">
                       <n-icon>
                         <cloud-download-outline />
                       </n-icon>
@@ -117,6 +117,20 @@
               </n-drawer-content>
             </n-drawer>
 
+            <n-drawer :mask-closable="false" v-model:show="showImages" :width="500">
+              <n-drawer-content title="图片预览" closable>
+                <n-image-group>
+                  <n-space>
+                    <n-image v-for="m in openImagesUrls"
+                        width="100"
+                        :src="m.src" :alt="m.alt"
+                    />
+                  </n-space>
+                </n-image-group>
+              </n-drawer-content>
+            </n-drawer>
+
+
             <n-modal
                 v-model:show="showUpdateName"
                 :mask-closable="false"
@@ -133,7 +147,27 @@
 
           </n-spin>
         </div>
-        <!-- 回收站 -->
+        <!-- 下载列表 -->
+        <div v-if="downloadListIf" style="width: 100%;height: 100%;">
+          <n-spin :show="isOverlay">
+            <n-space vertical v-if="downloadList && Object.keys(downloadList).length !== 0">
+              <n-card :title="value.data.name" v-for="value in downloadList" :bordered="false">
+                <n-space vertical>
+                  <n-progress type="line" status="success" :percentage="value.data.scale">
+                    文件大小 {{Math.floor(value.data.total/1024/1024)}}(MB) 进度 {{value.data.scale}}%
+                  </n-progress>
+                  <n-space justify="end">
+                    <n-button @click="stopFileDownload(value.data.fileMd5)">取消</n-button>
+                  </n-space>
+                </n-space>
+                <n-divider />
+              </n-card>
+            </n-space>
+          </n-spin>
+          <div v-if="!downloadList || Object.keys(downloadList).length === 0" style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+            <n-empty size="large" description="没有正在下载的文件" />
+          </div>
+        </div>
       </n-layout-content>
       <n-layout-sider
           bordered
@@ -163,7 +197,7 @@ import { h, ref } from "vue";
 import { NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider ,NDescriptions,NDescriptionsItem,
   NAnchorLink,NAnchor,NPopconfirm,NButton,NLayoutContent,NImage,NSpin,NProgress,NDataTable,
   NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,
-  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,
+  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NEmpty,NImageGroup,
   createDiscreteApi
 } from "naive-ui";
 import {
@@ -178,8 +212,7 @@ import gws from "@/global/WebSocket";
 import axios from "axios";
 
 
-import streamSaver from 'streamsaver';
-import {FileDownload, FileSoundOut} from "@/global/FileDownload";
+import {StopFileDownload, FileDownload, FileSoundOut, getDownloadList, FileDoownloadSmall} from "@/global/FileDownload";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -252,15 +285,15 @@ export default {
       CloudUploadOutline,
       CloudDownloadOutline,
       ReturnDownForward,
-      SearchOutline
+      SearchOutline,
     }
   },
   components: {
     NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,
     NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,
-    NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,
+    NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NEmpty,
     NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,
-    ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,
+    ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NImageGroup,
   },
   props: {
 
@@ -268,10 +301,24 @@ export default {
   created() {
     if(localStorage.getItem(key().authorization) != null){
       this.onLoad();
+      //添加定时任务,刷新下载列表
+      let self = this;
+      setInterval(function (){
+        let list = getDownloadList();
+        self.downloadList = [];
+        for (const listKey in list) {
+          let v = list[listKey];
+          v.data['scale'] = v.data.progress == 0 ? 0 : Math.floor(v.data.progress/v.data.sliceNum*100);
+          self.downloadList.push(v);
+        }
+
+      }, 500);
     }
   },
   data(){
     return {
+      showImages:false,
+      downloadList:[],
       roleWrite:localStorage.getItem(key().useSpaceRole) == 'WRITE',
       showMoveDirectory:false,
       showAddDirectory:false,
@@ -279,6 +326,7 @@ export default {
       simpleField:"",
       maxHeight:document.documentElement.clientHeight - 250,
       manageIf:true,
+      downloadListIf:false,
       isOverlay:false,
       folderData:[],
       pid:0,
@@ -358,23 +406,107 @@ export default {
         ]
       }),
       moveData:[],
-      fileStream:streamSaver.createWriteStream('cat.mp4')
+      openImagesUrls:[],
+      openImagesUrlsIndex:{},
     }
   },
   methods:{
-    //下载单个文件,支持超大文件,分片方式下载,边下边存
-    download:function (item){
-      let self = this;
-      FileSoundOut(item.fileMd5,item.name,'CLOUDDISK').then(function (ret) {
-        if(!ret.state){
-          self.showToast("error",ret.msg);
-          return;
+    //打开图片
+    openImage:async function () {
+      this.openImagesUrls = [];
+      this.openImagesUrlsIndex = {};
+      let ds = [];
+      //将列表中所有是图片的文件分析出来,开始下载图片,提供预览
+      for (let j = 0; j < this.folderData.length; j++) {
+        let data = this.folderData[j];
+        if (data.type == 'FILE') {
+          let mediaType = data.mediaType.toUpperCase();
+          let mediaTypes = mediaType.split("/");
+          if (mediaTypes[0] == "IMAGE") {
+            ds.push(data);
+          }
         }
-        //试探成功,开始下载
-        FileDownload(ret).then(function (ret){
-          self.showToast(null,ret.msg);
-        });
+      }
+      if(ds.length != 0){
+        this.showImages = true;
+        let self = this;
+        //先循环一下列表,添加占位
+        for (let i = 0; i < ds.length; i++) {
+          let item = ds[i];
+          self.openImagesUrlsIndex[item.fileMd5] = self.openImagesUrls.length;
+          self.openImagesUrls.push({src: "/img/pc/loading.png", alt: null, fileMd5: item.fileMd5});//先添加进去预占位
+        }
+        //再循环列表,真正的加载照片
+        for (let i = 0; i < ds.length; i++) {
+          if(!this.showImages){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
+            return
+          }
+          let item = ds[i];
+          let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
+          if(!fso.state){
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = "/img/pc/loadfail.png";
+            self.openImagesUrls[index].alt = fso.msg;
+            return;
+          }
+          //试探成功,开始下载
+          let fd = await FileDoownloadSmall(fso);
+          if(fd.state){
+            let blob = new Blob([fd.bytes]);
+            let src = window.URL.createObjectURL(blob);
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = src;
+          }else{
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = "/img/pc/loadfail.png";
+            self.openImagesUrls[index].alt = fd.msg;
+          }
+        }
+      }
+    },
+    //取消下载
+    stopFileDownload:function (md5) {
+      let self = this;
+      StopFileDownload(md5).then(function (sf){
+        self.showToast(sf.state ? "success" : "error",sf.msg);
       });
+    },
+    //下载多个
+    downloads:function (){
+      let ds = [];
+      for (let i = 0; i < this.rowKeys.length; i++) {
+        for (let j = 0; j < this.folderData.length; j++) {
+          let data = this.folderData[j];
+          if(this.rowKeys[i] == data.id){
+            if(data.type == 'FILE'){
+              ds.push(data);
+            }
+            break;
+          }
+        }
+      }
+      if(ds.length == 0){
+        this.showToast("error","请选择要下载的文件,而不是目录.");
+        return;
+      }
+      for (let i = 0; i < ds.length; i++) {
+        this.download(ds[i]);
+      }
+    },
+    //下载单个文件,支持超大文件,分片方式下载,边下边存
+    download:async function (item){
+      let self = this;
+      let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        self.showToast("error",fso.msg);
+        return;
+      }
+      self.showToast(null,`文件[${item.name}]已添加到下载列表中`);
+      //试探成功,开始下载
+      let fd = await FileDownload(fso);
+      if(fd){
+        self.showToast(fd.state ? "success" : "error",fd.msg);
+      }
     },
     //选择单个重命名
     renameSingle:function (item) {
@@ -431,7 +563,6 @@ export default {
       };
       this.isOverlay = false;
       this.showMoveDirectory = false;
-      this.rowKeys = [];
       this.onLoad();
     },
     //表格选中时触发事件,适用单选
@@ -541,7 +672,7 @@ export default {
             //将打开的目录追加到路径中
             self.openPath.push({name:row.name,id:row.id});
           }else if(row.type == 'FILE'){
-            this.openFile(row);
+            self.openFile(row);
           }
         }
       };
@@ -552,7 +683,7 @@ export default {
       let mediaTypes = mediaType.split("/");
       switch (mediaTypes[0]) {
         case "IMAGE"://图片
-          this.openImage(item);
+          this.openImage();
           break
         case "VIDEO"://视频
         case "AUDIO"://音频
@@ -562,10 +693,6 @@ export default {
           this.showToast("warning","不识别的类型,不能在线预览,请下载文件到本地打开.");
           break
       }
-    },
-    //打开一张图片
-    openImage:function () {
-
     },
     //面包屑跳转
     jump: function (item){
@@ -592,6 +719,7 @@ export default {
       }).then(function (response) {
         if(response.data.result){
           self.folderData = response.data.datas;
+          self.rowKeys = [];
         }else{
           self.showToast(response.data.result ? "success" : "error", response.data.message);
         }
@@ -606,7 +734,7 @@ export default {
       this.manageIf = false;
       this.dustbinIf = false;
       this.uploadListIf = false;
-      this.downloadList = false;
+      this.downloadListIf = false;
 
       this[open] = true;
     },
@@ -654,10 +782,13 @@ export default {
         }
       });
     },
-  }
+  },
+  beforeCreate() {
+    //因为使用 streamSaver 下载 会生成 300*150 大小的 iframe 窗口,属性是隐藏的, 它会造成 body高度增加, 所以在页面创建之前,给body 添加忽略隐藏属性的高度
+    document.querySelector('body').setAttribute('style', 'overflow:hidden;')
+  },
 }
 </script>
 
 <style scoped>
-
 </style>
