@@ -16,7 +16,14 @@
             <n-layout-content has-sider >
               <n-layout-sider width="290" :bordered="true">
                 <n-space style="margin: 5px;">
-                  <n-button v-if="roleWrite" @click="mode='editable';originalMdText='';originalDocTag='1';mdText='';docTag='1';docId=null;" text style="font-size: 24px;margin-left: 15px;">
+                  <n-button v-if="roleWrite" @click="
+                                                    mode='editable';
+                                                    originalMdText='';
+                                                    originalDocTag=activeKey == '0' ? '1' : activeKey;
+                                                    mdText='';
+                                                    docTag=originalDocTag;
+                                                    docId=null;
+                                            " text style="font-size: 24px;margin-left: 15px;">
                     <n-icon>
                       <add-circle-outline />
                     </n-icon>
@@ -324,6 +331,7 @@ export default {
         if(response.data.result){
           self.originalMdText = text;
           self.originalDocTag = self.docTag;
+          self.docId = response.data.data;
           self.onLoad();
         }
         self.isOverlay = false;
