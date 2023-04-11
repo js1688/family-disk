@@ -121,6 +121,8 @@ async function queueSyncDownload(){
         });
 
         const { data, headers } = response;
+        //todo 可以根据响应做下载的补偿机制,这个后面再补
+
         let contentRange = headers["content-range"];
         let end = contentRange.substring(contentRange.indexOf("-") + 1,contentRange.indexOf("/")) * 1;
         let contentLength = headers["content-length"] * 1;
@@ -129,8 +131,6 @@ async function queueSyncDownload(){
         if(!soi.data.sliceNum){//第一次下载,分析需要下载多少次
             soi.data.sliceNum = Math.ceil(soi.data.total / contentLength);
         }
-
-
 
         //将二进制流写入
         await new Blob([data]).stream().pipeTo(soi.fileStream,{preventClose:true});//设置写入后不要自动关闭文件流
