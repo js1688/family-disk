@@ -19,6 +19,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -44,6 +45,9 @@ public class UserInfoImpl implements IUserInfo {
 
     @Autowired
     private IUserSpace userSpace;
+
+    @Value("${user.open.register:true}")
+    private boolean openRegister;
 
     @Override
     public ResponseHeadDTO<UserInfoDTO> getUserInfoByEmail(String email) {
@@ -90,6 +94,9 @@ public class UserInfoImpl implements IUserInfo {
     @Override
     @Transactional
     public ResponseHeadDTO<UserInfoDTO> createUserInfo(String email, String password,String name, String captcha) {
+        if(!openRegister){
+            return new ResponseHeadDTO<UserInfoDTO>(false,"注册失败,这是私人环境,不允许公众用户注册.");
+        }
         //查询账号是否已被注册
         if(userInfoMapper.selectCount(new LambdaQueryWrapper<UserInfoPO>()
                 .eq(UserInfoPO::getEmail,email)

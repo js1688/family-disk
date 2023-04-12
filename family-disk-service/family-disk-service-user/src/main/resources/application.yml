@@ -22,6 +22,9 @@ spring:
 user:
   space:
     init-size: 10240MB
+  #是否允许用户注册
+  open:
+    register: true
 
 logging:
   config: logback.xml
