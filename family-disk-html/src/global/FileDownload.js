@@ -35,6 +35,42 @@ export function getDownloadList(){
 }
 
 /**
+ * 下载一个文件指定位置的二进制流,只会下载一次,适合读取一个视频文件前几帧当做封面
+ * 它不会加入到文件下载列表中
+ * 如果长度大于了10mb,就会拒绝下载
+ * @param soi 探测信息结果
+ * @param s 起位置
+ * @param e 止位置
+ * @constructor
+ */
+export async function FileDoownloadAppoint(soi,s,e){
+    if(!(s > -1 && e > s)){ //起位置要是正数,结束位置要大于起位置
+        return {state:false,msg:'传入了错误的起止位置'};
+    }
+    let size = Math.floor((e - s )/1024/1024);
+    if(size > 10){
+        return {state:false,msg:`文件[${soi.data.name}]太大,请使用大文件下载方式`};
+    }
+    let response = await axios.post('/file/slice/getFile', {
+        fileMd5: soi.data.fileMd5,
+        name: soi.data.name,
+        source:soi.data.source
+    },{
+        responseType:"arraybuffer",
+        headers:{
+            Range:"bytes="+s+"-" + e
+        }
+    });
+
+    const { data, headers } = response;
+
+    //将分片二进制字节复制到总字节缓存中
+    let bytes = new Uint8Array(data);
+
+    return {state:true,msg:`文件[${soi.data.name}]下载分片完成`,bytes:bytes};
+}
+
+/**
  * 请求获得一个文件的二进制完整流,适合小文件下载
  * 它不会加入到文件下载列表中
  * 如果文件超过了10mb,就会拒绝下载

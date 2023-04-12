@@ -118,7 +118,7 @@
             </n-drawer>
 
             <n-drawer :mask-closable="false" v-model:show="showImages" :width="500">
-              <n-drawer-content title="图片预览" closable>
+              <n-drawer-content title="图片预览列表" closable>
                 <n-image-group>
                   <n-space>
                     <n-image v-for="m in openImagesUrls"
@@ -130,6 +130,34 @@
               </n-drawer-content>
             </n-drawer>
 
+            <n-drawer :mask-closable="false" v-model:show="showVideos" :width="500">
+              <n-drawer-content title="视频预览列表" closable>
+                <n-image-group>
+                  <n-space>
+                    <n-image v-for="m in openImagesUrls"
+                             width="100"
+                             :src="m.src" :alt="m.alt"
+                             preview-disabled
+                             @click="createPlayUrl(m)"
+                             style="cursor:pointer"
+                    />
+                  </n-space>
+                </n-image-group>
+              </n-drawer-content>
+            </n-drawer>
+
+            <n-modal
+                v-model:show="showPlayVideo"
+                :mask-closable="false"
+                preset="card"
+                :title="showPlayVideoName"
+                :style="{'max-width': '1000px'}"
+                :close-on-esc="false"
+                @after-leave="closePlayVideo"
+                @after-enter="playVideo"
+            >
+              <div id="videoBody"/>
+            </n-modal>
 
             <n-modal
                 v-model:show="showUpdateName"
@@ -210,9 +238,19 @@ import JSZip from "jszip";
 import {key} from "@/global/KeyGlobal";
 import gws from "@/global/WebSocket";
 import axios from "axios";
+import 'video.js/dist/video-js.css';
+import videojs from "video.js";
 
 
-import {StopFileDownload, FileDownload, FileSoundOut, getDownloadList, FileDoownloadSmall} from "@/global/FileDownload";
+import {
+  StopFileDownload,
+  FileDownload,
+  FileSoundOut,
+  getDownloadList,
+  FileDoownloadSmall,
+  FileDoownloadAppoint
+} from "@/global/FileDownload";
+import {Base64toBlob, GetVideoCoverBase64} from "@/global/StandaloneTools";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -318,6 +356,8 @@ export default {
   data(){
     return {
       showImages:false,
+      showVideos:false,
+      showPlayVideo:false,
       downloadList:[],
       roleWrite:localStorage.getItem(key().useSpaceRole) == 'WRITE',
       showMoveDirectory:false,
@@ -408,16 +448,123 @@ export default {
       moveData:[],
       openImagesUrls:[],
       openImagesUrlsIndex:{},
+      myPlayer:null,
+      videoOptions:{
+        controls: true,
+        playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
+        autoplay: true, //如果true,浏览器准备好时开始回放。
+        muted: false, // 默认情况下将会消除任何音频。
+        loop: false, // 导致视频一结束就重新开始。
+        preload: "auto", // 建议浏览器在<video>加载元素后是否应该开始下载视频数据。auto浏览器选择最佳行为,立即开始加载视频（如果浏览器支持）
+        language: "zh-CN",
+        aspectRatio: "16:9", // 将播放器置于流畅模式，并在计算播放器的动态大小时使用该值。值应该代表一个比例 - 用冒号分隔的两个数字（例如"16:9"或"4:3"）
+        fluid: true, // 当true时，Video.js player将拥有流体大小。换句话说，它将按比例缩放以适应其容器。
+        flash:{hls:{withCredentials:true}},//可以播放rtmp视频
+        html5:{hls:{withCredentials:true}},//可以播放m3u8视频
+        //poster: "@/assets/camera.png", //你的封面地址
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight,
+        notSupportedMessage: "此视频暂无法播放，请稍后再试", //允许覆盖Video.js无法播放媒体源时显示的默认信息。
+        controlBar: {
+          timeDivider: true,// 当前时间和持续时间的分隔符
+          durationDisplay: true,// 显示持续时间
+          remainingTimeDisplay: true,// 是否显示剩余时间功能
+          fullscreenToggle: true, //全屏按钮
+        },
+        sources:[]
+      },
+      showPlayVideoName:''
     }
   },
   methods:{
-    //打开图片预览抽屉
-    //打开苹果实况图片
-    openLivp:async function(){
+    //关闭播放视频
+    closePlayVideo:function (){
+      //停止播放
+      try {
+        this.videoOptions.sources = [];
+        this.myPlayer.dispose();
+        this.myPlayer.pause();
+      }catch (e){}
+    },
+    //播放视频
+    playVideo:function (){
+      let myVideoDiv = document.getElementById("videoBody")
+      myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
+      this.myPlayer = videojs("videoPlayer",this.videoOptions);
+    },
+    //组织在线播放视频的地址
+    createPlayUrl:function (item){
+      let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+      //todo 这里需要判断使用哪种视频播放器,或者直接解决videojs 无法播放苹果拍摄的mov视频的问题
+      this.videoOptions.sources = [{src:url,type:item.mediaType}];
+      this.showPlayVideo = true;
+      this.showPlayVideoName = item.name;
+    },
+    //打开视频预览列表,并不是播放视频
+    openVideo:async function(){
       this.openImagesUrls = [];
       this.openImagesUrlsIndex = {};
       let ds = [];
       //将列表中所有是图片的文件分析出来,开始下载图片,提供预览
+      for (let j = 0; j < this.folderData.length; j++) {
+        let data = this.folderData[j];
+        if (data.type == 'FILE') {
+          let mediaType = data.mediaType.toUpperCase();
+          let mediaTypes = mediaType.split("/");
+          if (mediaTypes[0] == "VIDEO") {
+            ds.push(data);
+          }
+        }
+      }
+      if(ds.length != 0) {
+        this.showVideos = true;
+        let self = this;
+        //先循环一下列表,添加占位
+        for (let i = 0; i < ds.length; i++) {
+          let item = ds[i];
+          self.openImagesUrlsIndex[item.fileMd5] = self.openImagesUrls.length;
+          self.openImagesUrls.push({src: "/img/pc/loading.png", alt: null, fileMd5: item.fileMd5,mediaType:item.mediaType,name:item.name});//先添加进去预占位
+        }
+        //再循环列表,真正的加载照片
+        for (let i = 0; i < ds.length; i++) {
+          if (!this.showVideos) {//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
+            return
+          }
+          let item = ds[i];
+          let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
+          if(!fso.state){
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = "/img/pc/loadfail.png";
+            self.openImagesUrls[index].alt = fso.msg;
+            return;
+          }
+          //试探成功,开始下载
+          //开始下载视频的第一帧,当做视频的封面
+          //只取1mb,清晰度很高的视频想获取到第一帧,1mb肯定是不够的,不过为了不浪费流量,提高加载速度,能预览出大部分的即可
+          let fd = await FileDoownloadAppoint(fso,0,1024*1024*1);
+          if(fd.state){
+            let blob = new Blob([fd.bytes]);
+            let url = window.URL.createObjectURL(blob);
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            let base64Promise = GetVideoCoverBase64(url);
+            base64Promise.then(async function(base64){
+              let b = await Base64toBlob(base64);
+              self.openImagesUrls[index].src = window.URL.createObjectURL(b);//封面地址
+            });
+          }else{
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = "/img/pc/loadfail.png";
+            self.openImagesUrls[index].alt = fd.msg;
+          }
+        }
+      }
+    },
+    //打开苹果设备拍摄的实况图片
+    openLivp:async function(){
+      this.openImagesUrls = [];
+      this.openImagesUrlsIndex = {};
+      let ds = [];
+      //将列表中所有是苹果设备拍摄的实况图片的文件分析出来,开始下载图片,提供预览
       for (let j = 0; j < this.folderData.length; j++) {
         let data = this.folderData[j];
         if (data.type == 'FILE') {
@@ -461,6 +608,7 @@ export default {
             jszip.loadAsync(blob).then((zip) => { // 读取zip
               for (let key in zip.files) { // 循环判定是否有层级
                 let file = zip.files[key];;
+                //它里面会有2个文件,一个是图片,一个是视频,这里预览只取图片
                 if (/.(JPG|JPEG|GIF|BMP|PNG)$/i.test(file.name.toUpperCase())) {
                   console.log(typeof file.data);
                   // uint8array,blob,arraybuffer,nodebuffer,string
@@ -480,7 +628,7 @@ export default {
         }
       }
     },
-    //打开图片
+    //打开图片预览
     openImage:async function () {
       this.openImagesUrls = [];
       this.openImagesUrlsIndex = {};
@@ -754,9 +902,9 @@ export default {
           this.openImage();
           break
         case "VIDEO"://视频
+          this.openVideo();
+          break
         case "AUDIO"://音频
-          //this.openVideo(item,mediaTypes[1]);
-          //break
         default:
           //兼容特殊文件的打开
           let index = item.name.lastIndexOf(".");
