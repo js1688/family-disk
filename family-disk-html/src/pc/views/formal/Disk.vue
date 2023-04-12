@@ -570,7 +570,6 @@ export default {
         self.showToast("error",fso.msg);
         return;
       }
-      self.showToast(null,`文件[${item.name}]已添加到下载列表中`);
       //试探成功,开始下载
       let fd = await FileDownload(fso);
       if(fd){
