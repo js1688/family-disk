@@ -14,6 +14,7 @@ axios.defaults.baseURL = key().baseURL;
 //例如:mac 安装证书后要在钥匙串app中找到这个证书,然后双击设置完全信任
 //例如:荣耀手机,进入设置,安全,更多安全设置,加密和凭据,从存储设备安装,安装ca证书
 console.log("尝试切换到内网环境:"+key().lanURL);
+const {notification} = createDiscreteApi(['notification']);
 axios.options(key().lanURL).then(function (res2){
     if(res2.request.status == 200 || res2.request.status == 404){
         keyPut("baseURL",key().lanURL);
@@ -23,12 +24,20 @@ axios.options(key().lanURL).then(function (res2){
                 gws.methods.wsReConnection();
             }
         },3000);//三秒后使用新地址重连一下websocket
+        notification['success']({
+            title: "提示:",
+            content: '已成功切换到内部网络环境',
+            duration: 2500,
+            keepAliveOnHover: true
+        });
         console.log("内网环境切换成功");
     }
 }).catch(function (err) {
 });
 import VueClipboard from 'vue-clipboard2';
-import router from "./router";//主路由
+import router from "./router";
+import {createDiscreteApi} from "naive-ui";
+//主路由
 const app = createApp(App);
 app.use(router);
 app.use(VueClipboard);//必须这样子引用 否则会报错的

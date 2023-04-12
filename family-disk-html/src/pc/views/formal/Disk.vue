@@ -206,7 +206,7 @@ import {
   MailOutline,CloudOutline,FolderOutline,FolderOpenOutline,CloudDownloadOutline,
   BuildOutline, OptionsOutline,PersonOutline,ReturnDownForward,SearchOutline,ListOutline
 } from "@vicons/ionicons5";
-
+import JSZip from "jszip";
 import {key} from "@/global/KeyGlobal";
 import gws from "@/global/WebSocket";
 import axios from "axios";
@@ -411,6 +411,75 @@ export default {
     }
   },
   methods:{
+    //打开图片预览抽屉
+    //打开苹果实况图片
+    openLivp:async function(){
+      this.openImagesUrls = [];
+      this.openImagesUrlsIndex = {};
+      let ds = [];
+      //将列表中所有是图片的文件分析出来,开始下载图片,提供预览
+      for (let j = 0; j < this.folderData.length; j++) {
+        let data = this.folderData[j];
+        if (data.type == 'FILE') {
+          let index = data.name.lastIndexOf(".");
+          if(index != -1) {
+            let suffix = data.name.substring(index).toUpperCase();
+            if(suffix == ".LIVP"){
+              ds.push(data);
+            }
+          }
+        }
+      }
+      if(ds.length != 0){
+        this.showImages = true;
+        let self = this;
+        //先循环一下列表,添加占位
+        for (let i = 0; i < ds.length; i++) {
+          let item = ds[i];
+          self.openImagesUrlsIndex[item.fileMd5] = self.openImagesUrls.length;
+          self.openImagesUrls.push({src: "/img/pc/loading.png", alt: null, fileMd5: item.fileMd5});//先添加进去预占位
+        }
+        //再循环列表,真正的加载照片
+        for (let i = 0; i < ds.length; i++) {
+          if(!this.showImages){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
+            return
+          }
+          let item = ds[i];
+          let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
+          if(!fso.state){
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = "/img/pc/loadfail.png";
+            self.openImagesUrls[index].alt = fso.msg;
+            return;
+          }
+          //试探成功,开始下载
+          let fd = await FileDoownloadSmall(fso);
+          if(fd.state){
+            let blob = new Blob([fd.bytes]);
+            //LIVP是苹果设备的实况图片,核心是压缩包,使用压缩包将它解压
+            let jszip = new JSZip();
+            jszip.loadAsync(blob).then((zip) => { // 读取zip
+              for (let key in zip.files) { // 循环判定是否有层级
+                let file = zip.files[key];;
+                if (/.(JPG|JPEG|GIF|BMP|PNG)$/i.test(file.name.toUpperCase())) {
+                  console.log(typeof file.data);
+                  // uint8array,blob,arraybuffer,nodebuffer,string
+                  file.async('blob').then(function (b){
+                    let src = window.URL.createObjectURL(b);
+                    let index = self.openImagesUrlsIndex[item.fileMd5];
+                    self.openImagesUrls[index].src = src;
+                  });
+                }
+              }
+            });
+          }else{
+            let index = self.openImagesUrlsIndex[item.fileMd5];
+            self.openImagesUrls[index].src = "/img/pc/loadfail.png";
+            self.openImagesUrls[index].alt = fd.msg;
+          }
+        }
+      }
+    },
     //打开图片
     openImage:async function () {
       this.openImagesUrls = [];
@@ -690,8 +759,17 @@ export default {
           //this.openVideo(item,mediaTypes[1]);
           //break
         default:
-          this.showToast("warning","不识别的类型,不能在线预览,请下载文件到本地打开.");
-          break
+          //兼容特殊文件的打开
+          let index = item.name.lastIndexOf(".");
+          if(index != -1){
+            let suffix = item.name.substring(index).toUpperCase();
+            switch (suffix) {
+              case ".LIVP"://livp,苹果设备拍摄的实况图片
+                this.openLivp();
+                return;
+            }
+          }
+          this.showToast("warning",`不识别的类型[${mediaType}],不能在线预览,请下载文件到本地打开.`);
       }
     },
     //面包屑跳转
