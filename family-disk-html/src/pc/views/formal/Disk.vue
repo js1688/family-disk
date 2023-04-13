@@ -151,12 +151,20 @@
                 :mask-closable="false"
                 preset="card"
                 :title="showPlayVideoName"
-                :style="{'max-width': '1000px'}"
+                :style="{'max-width': '1000px','max-height':'650px'}"
                 :close-on-esc="false"
                 @after-leave="closePlayVideo"
                 @after-enter="playVideo"
             >
-              <div id="videoBody"/>
+              <!-- videojs播放器 -->
+              <div v-if="playerSelectd == 0" id="videoPlayerDiv" />
+              <!-- 原生视频播放器 -->
+              <div class="div-center">
+                <video v-if="playerSelectd == 1" :src="videoOptions.sources[0].src"
+                       ref="originalVideoPlayer"
+                       :style="{'height':'535px'}"
+                       controls autoplay />
+              </div>
             </n-modal>
 
             <n-modal
@@ -192,7 +200,7 @@
               </n-card>
             </n-space>
           </n-spin>
-          <div v-if="!downloadList || Object.keys(downloadList).length === 0" style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+          <div v-if="!downloadList || Object.keys(downloadList).length === 0" class="div-center">
             <n-empty size="large" description="没有正在下载的文件" />
           </div>
         </div>
@@ -250,7 +258,7 @@ import {
   FileDoownloadSmall,
   FileDoownloadAppoint
 } from "@/global/FileDownload";
-import {Base64toBlob, GetVideoCoverBase64} from "@/global/StandaloneTools";
+import {Base64toBlob, GetVideoCoverBase64, HeicToCommon, LivpToCommon} from "@/global/StandaloneTools";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -473,7 +481,8 @@ export default {
         },
         sources:[]
       },
-      showPlayVideoName:''
+      showPlayVideoName:'',
+      playerSelectd:0,//播放器选择,0使用的插件播放器,1原生播放器
     }
   },
   methods:{
@@ -481,24 +490,40 @@ export default {
     closePlayVideo:function (){
       //停止播放
       try {
+        if(this.$refs.originalVideoPlayer){
+          this.$refs.originalVideoPlayer.pause();
+          this.$refs.originalVideoPlayer.src = "";
+        }
+        if(this.myPlayer){
+          this.myPlayer.dispose();
+          this.myPlayer.pause();
+        }
         this.videoOptions.sources = [];
-        this.myPlayer.dispose();
-        this.myPlayer.pause();
       }catch (e){}
     },
     //播放视频
     playVideo:function (){
-      let myVideoDiv = document.getElementById("videoBody")
+      let self = this;
+      let hook = function(player, err) {//当videojs无法播放视频时,则切换成原生播放器
+        try{
+          player.dispose();
+          player.pause();
+        }catch (e){}
+        self.playerSelectd = 1;//切换到原生播放器
+      }
+      videojs.removeHook("error",hook);
+      videojs.hook('error',hook);
+      let myVideoDiv = document.getElementById("videoPlayerDiv")
       myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
       this.myPlayer = videojs("videoPlayer",this.videoOptions);
     },
     //组织在线播放视频的地址
     createPlayUrl:function (item){
       let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
-      //todo 这里需要判断使用哪种视频播放器,或者直接解决videojs 无法播放苹果拍摄的mov视频的问题
       this.videoOptions.sources = [{src:url,type:item.mediaType}];
       this.showPlayVideo = true;
       this.showPlayVideoName = item.name;
+      this.playerSelectd = 0;//设置打开后默认播放器
     },
     //打开视频预览列表,并不是播放视频
     openVideo:async function(){
@@ -527,13 +552,13 @@ export default {
         }
         //再循环列表,真正的加载照片
         for (let i = 0; i < ds.length; i++) {
-          if (!this.showVideos) {//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
+          let item = ds[i];
+          let index = self.openImagesUrlsIndex[item.fileMd5];
+          if(!this.showVideos || !(index >= 0)){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
             return
           }
-          let item = ds[i];
           let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
           if(!fso.state){
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fso.msg;
             return;
@@ -545,14 +570,15 @@ export default {
           if(fd.state){
             let blob = new Blob([fd.bytes]);
             let url = window.URL.createObjectURL(blob);
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             let base64Promise = GetVideoCoverBase64(url);
             base64Promise.then(async function(base64){
               let b = await Base64toBlob(base64);
               self.openImagesUrls[index].src = window.URL.createObjectURL(b);//封面地址
+            }).catch(function (e){
+              self.openImagesUrls[index].src = "/img/pc/play.png";
+              self.openImagesUrls[index].alt = "点击播放";
             });
           }else{
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fd.msg;
           }
@@ -560,9 +586,11 @@ export default {
       }
     },
     //打开苹果设备拍摄的实况图片
-    openLivp:async function(){
-      this.openImagesUrls = [];
-      this.openImagesUrlsIndex = {};
+    openLivp:async function (append) {
+      if(!append){//不是追加打开,就清除
+        this.openImagesUrls = [];
+        this.openImagesUrlsIndex = {};
+      }
       let ds = [];
       //将列表中所有是苹果设备拍摄的实况图片的文件分析出来,开始下载图片,提供预览
       for (let j = 0; j < this.folderData.length; j++) {
@@ -588,13 +616,13 @@ export default {
         }
         //再循环列表,真正的加载照片
         for (let i = 0; i < ds.length; i++) {
-          if(!this.showImages){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
+          let item = ds[i];
+          let index = self.openImagesUrlsIndex[item.fileMd5];
+          if(!this.showImages || !(index >= 0)){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
             return
           }
-          let item = ds[i];
           let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
           if(!fso.state){
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fso.msg;
             return;
@@ -603,35 +631,27 @@ export default {
           let fd = await FileDoownloadSmall(fso);
           if(fd.state){
             let blob = new Blob([fd.bytes]);
-            //LIVP是苹果设备的实况图片,核心是压缩包,使用压缩包将它解压
-            let jszip = new JSZip();
-            jszip.loadAsync(blob).then((zip) => { // 读取zip
-              for (let key in zip.files) { // 循环判定是否有层级
-                let file = zip.files[key];;
-                //它里面会有2个文件,一个是图片,一个是视频,这里预览只取图片
-                if (/.(JPG|JPEG|GIF|BMP|PNG)$/i.test(file.name.toUpperCase())) {
-                  console.log(typeof file.data);
-                  // uint8array,blob,arraybuffer,nodebuffer,string
-                  file.async('blob').then(function (b){
-                    let src = window.URL.createObjectURL(b);
-                    let index = self.openImagesUrlsIndex[item.fileMd5];
-                    self.openImagesUrls[index].src = src;
-                  });
-                }
-              }
-            });
+            try{
+              blob = await LivpToCommon(blob);
+            }catch (e) {}
+            let src = window.URL.createObjectURL(blob);
+            self.openImagesUrls[index].src = src;
           }else{
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fd.msg;
           }
         }
       }
+      if(!append){
+        await this.openImage(true)//同时打开普通图片
+      }
     },
     //打开图片预览
-    openImage:async function () {
-      this.openImagesUrls = [];
-      this.openImagesUrlsIndex = {};
+    openImage:async function (append) {
+      if(!append){//不是追加打开,就清除
+        this.openImagesUrls = [];
+        this.openImagesUrlsIndex = {};
+      }
       let ds = [];
       //将列表中所有是图片的文件分析出来,开始下载图片,提供预览
       for (let j = 0; j < this.folderData.length; j++) {
@@ -655,13 +675,13 @@ export default {
         }
         //再循环列表,真正的加载照片
         for (let i = 0; i < ds.length; i++) {
-          if(!this.showImages){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
+          let item = ds[i];
+          let index = self.openImagesUrlsIndex[item.fileMd5];
+          if(!this.showImages || !(index >= 0)){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
             return
           }
-          let item = ds[i];
           let fso = await FileSoundOut(item.fileMd5,item.name,'CLOUDDISK');
           if(!fso.state){
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fso.msg;
             return;
@@ -669,16 +689,27 @@ export default {
           //试探成功,开始下载
           let fd = await FileDoownloadSmall(fso);
           if(fd.state){
-            let blob = new Blob([fd.bytes]);
+            let mediaType = item.mediaType.toUpperCase();
+            let mediaTypes = mediaType.split("/");
+            let blob = new Blob([fd.bytes],{type:item.mediaType});
+            switch (mediaTypes[1]){
+              case "HEIC": //苹果设备拍摄的 新图片格式
+                  try {
+                    //有时候这个类型也不一定是准确的,如果本身就可以被读取,就会拒绝转换,这里如果报错后使用原始blob
+                    blob = await HeicToCommon(blob);
+                  }catch (e) {}
+                break;
+            }
             let src = window.URL.createObjectURL(blob);
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = src;
           }else{
-            let index = self.openImagesUrlsIndex[item.fileMd5];
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fd.msg;
           }
         }
+      }
+      if(!append){
+        await this.openLivp(true)//同时打开livp图片
       }
     },
     //取消下载
@@ -1016,4 +1047,7 @@ export default {
 </script>
 
 <style scoped>
+.div-center{
+  width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;
+}
 </style>

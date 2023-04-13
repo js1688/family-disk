@@ -2,6 +2,47 @@
  * 独立的工具方法
  */
 
+
+import JSZip from "jszip";
+
+import heic2any from 'alexcorvi-heic2any';
+
+/**
+ * heic格式图片转普通图片格式
+ * @param blob
+ * @returns {Promise<Blob | Blob[]>}
+ */
+export function HeicToCommon(blob){
+    return heic2any({ blob: blob});
+}
+
+/**
+ * livp格式的图片转成普通图片格式
+ * @param blob 原始文件
+ * @param blob
+ * @returns {Promise<unknown>}
+ * @constructor
+ */
+export function LivpToCommon(blob){
+    //LIVP是苹果设备的实况图片,核心是压缩包,使用压缩包将它解压
+    let jszip = new JSZip();
+    let p = new Promise ((resolve,reject)=>{
+        jszip.loadAsync(blob).then((zip) => { // 读取zip
+            for (let key in zip.files) { // 循环判定是否有层级
+                let file = zip.files[key];;
+                //它里面会有2个文件,一个是图片,一个是视频,这里预览只取图片
+                if (/.(JPG|JPEG|GIF|BMP|PNG)$/i.test(file.name.toUpperCase())) {
+                    // uint8array,blob,arraybuffer,nodebuffer,string
+                    file.async('blob').then(function (b){
+                        resolve(b);
+                    });
+                }
+            }
+        });
+    });
+    return p;
+}
+
 /**
  * 从一个视频中获取第一帧图片的base64值
  * @param url
@@ -25,6 +66,10 @@ export function GetVideoCoverBase64(url){
             resolve(base64);
             video.remove();//及时销毁对象
         });
+        video.addEventListener('error', function(e) {
+            reject(e);
+            video.remove();//及时销毁对象
+        })
     });
     return p;
 }

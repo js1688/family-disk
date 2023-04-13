@@ -3,14 +3,14 @@
       <n-layout has-sider sider-placement="right" position="absolute" style="top: 0; bottom: 0">
         <n-layout-content>
           <!-- 退出登录 -->
-          <div v-if="exitOutlineIf" style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+          <div v-if="exitOutlineIf" class="div-center">
             <n-space vertical>
               <n-image
                   width="300"
                   src="/img/pc/exit.png"
                   preview-disabled
               />
-              <div style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+              <div class="div-center">
                 <n-button round type="info" @click="exitLogon">
                   <template #icon>
                     <n-icon>
@@ -23,7 +23,7 @@
             </n-space>
           </div>
           <!-- 登录 -->
-          <div v-if="enterOutlineIf" style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+          <div v-if="enterOutlineIf" class="div-center">
             <n-spin :show="isOverlay">
               <n-space vertical>
                 <n-image
@@ -66,7 +66,7 @@
                              placeholder="请输入密码"
                     />
                   </n-form-item>
-                  <div style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+                  <div class="div-center">
                     <n-button round type="info" @click="logon">
                       <template #icon>
                         <n-icon><enter-outline /></n-icon>
@@ -79,7 +79,7 @@
             </n-spin>
           </div>
           <!-- 注册 -->
-          <div v-if="registerIf" style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+          <div v-if="registerIf" class="div-center">
             <n-spin :show="isOverlay">
               <n-space vertical>
                 <n-image
@@ -178,7 +178,7 @@
                       <n-button type="info" ghost :disabled="sendyzm" @click="sendCaptcha">{{sendyzmjs == 0 ? sendyzmName : sendyzmName+'(' + sendyzmjs +')'}}</n-button>
                     </n-input-group>
                   </n-form-item>
-                  <div style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+                  <div class="div-center">
                     <n-button round type="info" @click="registerF">
                       <template #icon>
                         <n-icon><enter-outline /></n-icon>
@@ -194,14 +194,14 @@
           <div v-if="getSpaceIf">
             <n-spin :show="isOverlay">
               <div style="width: 100%;height: 100%;padding: 24px">
-                <div style="width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+                <div class="div-center">
                   <n-avatar
                       round
                       :size="200"
                       src="/img/pc/user.png"
                   />
                 </div>
-                <div style="padding-top:10px;width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;">
+                <div style="padding-top:10px;" class="div-center">
                   <n-tag size = "large" :bordered="false">
                     {{userInfo.userName}}-{{userInfo.email}}
                   </n-tag>
@@ -1065,5 +1065,8 @@ export default {
 .n-layout-header,
 .n-layout-footer {
   padding: 24px;
+}
+.div-center{
+  width: 100%;height: 100%;display: flex;justify-content: center;align-items: Center;
 }
 </style>
