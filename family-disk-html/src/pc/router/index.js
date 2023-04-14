@@ -8,7 +8,7 @@ import {key} from "@/global/KeyGlobal";
 import User from "@/pc/views/formal/User.vue";
 import Disk from "@/pc/views/formal/Disk.vue";
 import Notepad from "@/pc/views/formal/Notepad.vue";
-import {Journal} from "@vicons/ionicons5";
+import Journal from "@/pc/views/formal/Journal.vue";
 const routes = [
     {
         path: '/',

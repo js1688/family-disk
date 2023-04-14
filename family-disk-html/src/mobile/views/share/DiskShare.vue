@@ -117,7 +117,8 @@ import {
 } from 'vant';
 import { saveAs } from 'file-saver';
 import axios from "axios";
-import {getUrlParam, isToken, key} from "@/global/KeyGlobal";
+import {isToken, key} from "@/global/KeyGlobal";
+import {GetUrlParam} from "@/global/StandaloneTools";
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 export default {
@@ -157,7 +158,7 @@ export default {
      */
     //从页面地址中获取到参数
     for (const key in this.param) {
-      let v = getUrlParam(key);
+      let v = GetUrlParam(key);
       this.param[key] = v;
     }
     //是否需要输入密码

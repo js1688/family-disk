@@ -72,7 +72,7 @@ VMdEditor.use(githubTheme, {
   Hljs: hljs,
 });
 import axios from "axios";
-import {getUrlParam} from "@/global/KeyGlobal";
+import {GetUrlParam} from "@/global/StandaloneTools";
 export default {
   name: "NotepadShare",
   components: {
@@ -108,7 +108,7 @@ export default {
      */
     //从页面地址中获取到参数
     for (const key in this.param) {
-      let v = getUrlParam(key);
+      let v = GetUrlParam(key);
       this.param[key] = v;
     }
     //是否需要输入密码

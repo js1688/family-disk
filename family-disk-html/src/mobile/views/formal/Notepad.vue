@@ -147,7 +147,7 @@ import {
   Calendar,
   ActionSheet, showConfirmDialog
 } from 'vant';
-import {formatDate, key} from "@/global/KeyGlobal";
+import {FormatDate, key} from "@/global/KeyGlobal";
 //vant适配桌面端
 import '@vant/touch-emulator';
 import VMdEditor from '@kangc/v-md-editor';
@@ -289,7 +289,7 @@ export default {
     //日期选择回调
     onConfirmShare:function (value){
       this.showShareDate = false;
-      this.shareParam.invalidTime = formatDate(value);
+      this.shareParam.invalidTime = FormatDate(value);
     },
     //创建分享
     createShare:function () {
@@ -311,7 +311,7 @@ export default {
     },
     //打开分享面板
     share:function (item) {
-      this.shareParam = {password:null,bodyId:item.id,invalidTime:formatDate(new Date()),url:null}
+      this.shareParam = {password:null,bodyId:item.id,invalidTime:FormatDate(new Date()),url:null}
       this.showShare = true;
     },
     //修改

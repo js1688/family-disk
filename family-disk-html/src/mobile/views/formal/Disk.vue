@@ -238,7 +238,8 @@ import axios from "axios";
 import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
-import {isToken, key, fileMd5, formatDate} from "@/global/KeyGlobal";
+import {isToken, key} from "@/global/KeyGlobal";
+import {FileMd5, FormatDate} from '@/global/StandaloneTools';
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 import { saveAs } from 'file-saver';
@@ -372,7 +373,7 @@ export default {
     //日期选择回调
     onConfirmShare:function (value){
       this.showShareDate = false;
-      this.shareParam.invalidTime = formatDate(value);
+      this.shareParam.invalidTime = FormatDate(value);
     },
     //创建分享
     createShare:function () {
@@ -394,7 +395,7 @@ export default {
     },
     //打开分享面板
     share:function (item) {
-      this.shareParam = {password:null,bodyId:item.id,invalidTime:formatDate(new Date()),url:null}
+      this.shareParam = {password:null,bodyId:item.id,invalidTime:FormatDate(new Date()),url:null}
       this.showShare = true;
     },
     //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
@@ -506,7 +507,7 @@ export default {
         let start = 0;
         let self = this;
         //前端获取md5值
-        fileMd5(file,sliceSize,sliceNum).then(e=>{
+        FileMd5(file,sliceSize,sliceNum).then(e=>{
           //将文件添加到上传展示列表中
           self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});
           for (let i = 0; i < sliceNum; i++) {

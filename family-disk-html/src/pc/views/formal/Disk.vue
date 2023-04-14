@@ -9,11 +9,16 @@
               <div style="width: 50%;display:inline-block;">
                 <n-space :size="40">
                   <n-badge value="上传" type="info" :offset="[8, -8]">
-                    <n-button text style="font-size: 24px">
-                      <n-icon>
-                        <cloud-upload-outline />
-                      </n-icon>
-                    </n-button>
+                    <n-upload :default-upload="false"
+                              :multiple="true"
+                              :show-file-list="false"
+                              @update:file-list="addUploadFile" >
+                      <n-button text style="font-size: 24px">
+                        <n-icon>
+                          <cloud-upload-outline />
+                        </n-icon>
+                      </n-button>
+                    </n-upload>
                   </n-badge>
                   <n-badge value="下载" type="info" :offset="[8, -8]">
                     <n-button text style="font-size: 24px" :disabled="!rowKeys || rowKeys.length == 0" @click="downloads">
@@ -204,6 +209,33 @@
             <n-empty size="large" description="没有正在下载的文件" />
           </div>
         </div>
+        <!-- 上传列表 -->
+        <div v-if="uploadListIf" style="width: 100%;height: 100%;">
+          <n-spin :show="isOverlay">
+            <n-space vertical v-if="uploadList && Object.keys(uploadList).length !== 0">
+              <n-card :title="value.file.name" v-for="value in uploadList" :bordered="false">
+                <n-space vertical>
+                  <n-progress type="line" status="success" :percentage="value.scale">
+                    文件大小 {{Math.floor(value.sliceInfo.totalSize/1024/1024)}}(MB) 进度 {{value.scale}}%
+                  </n-progress>
+                  <n-space justify="end">
+                    <n-button @click="stopFileUpload(value.md5)">取消</n-button>
+                  </n-space>
+                </n-space>
+                <n-divider />
+              </n-card>
+            </n-space>
+          </n-spin>
+          <div v-if="!uploadList || Object.keys(uploadList).length === 0" class="div-center">
+            <n-empty size="large" description="没有正在上传的文件" />
+          </div>
+        </div>
+        <!-- 回收站 -->
+        <div v-if="dustbinIf" style="width: 100%;height: 100%;">
+          <n-spin :show="isOverlay">
+            <h1>未实现</h1>
+          </n-spin>
+        </div>
       </n-layout-content>
       <n-layout-sider
           bordered
@@ -232,7 +264,7 @@
 import { h, ref } from "vue";
 import { NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider ,NDescriptions,NDescriptionsItem,
   NAnchorLink,NAnchor,NPopconfirm,NButton,NLayoutContent,NImage,NSpin,NProgress,NDataTable,
-  NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,
+  NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,NUpload,
   NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NEmpty,NImageGroup,
   createDiscreteApi
 } from "naive-ui";
@@ -258,7 +290,16 @@ import {
   FileDoownloadSmall,
   FileDoownloadAppoint
 } from "@/global/FileDownload";
-import {Base64toBlob, GetVideoCoverBase64, HeicToCommon, LivpToCommon} from "@/global/StandaloneTools";
+import {
+  Base64toBlob,
+  CountFileSliceInfo,
+  FileMd5,
+  GetVideoCoverBase64,
+  HeicToCommon,
+  LivpToCommon
+} from "@/global/StandaloneTools";
+import {FileUpload, getUploadList, StopFileUpload} from "@/global/FileUpload";
+import {showToast} from "vant";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -335,7 +376,7 @@ export default {
     }
   },
   components: {
-    NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,
+    NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,NUpload,
     NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,
     NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NEmpty,
     NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,
@@ -350,6 +391,7 @@ export default {
       //添加定时任务,刷新下载列表
       let self = this;
       setInterval(function (){
+        //更新下载列表进度
         let list = getDownloadList();
         self.downloadList = [];
         for (const listKey in list) {
@@ -357,7 +399,14 @@ export default {
           v.data['scale'] = v.data.progress == 0 ? 0 : Math.floor(v.data.progress/v.data.sliceNum*100);
           self.downloadList.push(v);
         }
-
+        //更新上传列表进度
+        let uplist = getUploadList();
+        self.uploadList = [];
+        for (const uplistKey in uplist) {
+          let v = uplist[uplistKey];
+          v['scale'] = v.progress == 0 ? 0 : Math.floor(v.progress/v.sliceInfo.sliceNum*100);
+          self.uploadList.push(v);
+        }
       }, 500);
     }
   },
@@ -366,7 +415,10 @@ export default {
       showImages:false,
       showVideos:false,
       showPlayVideo:false,
+      dustbinIf:false,
+      uploadListIf:false,
       downloadList:[],
+      uploadList:[],
       roleWrite:localStorage.getItem(key().useSpaceRole) == 'WRITE',
       showMoveDirectory:false,
       showAddDirectory:false,
@@ -486,6 +538,41 @@ export default {
     }
   },
   methods:{
+    //添加新的下载文件
+    addUploadFile:async function (e) {
+      let last = e[e.length - 1];//最后添加的文件,如果选择多个文件,这个方法会被触发多次
+      //判断文件是否重复添加
+      for (let i = 0; i < e.length - 1; i++) {
+        if(last.name == e[i].name){
+          e.splice(i,1);//删除掉添加的内容
+          this.showToast("error",`文件名:[${last.name}]正在上传,请勿重复上传`);
+          return;
+        }
+      }
+      //计算分片大小
+      let sliceInfo = CountFileSliceInfo(last.file);
+      //计算md5值
+      let md5 = await FileMd5(last.file,sliceInfo.sliceSize,sliceInfo.sliceNum);
+      let self = this;
+      let ret = await FileUpload(sliceInfo,last.file,md5,'CLOUDDISK',function (q) {
+        //将文件与网盘目录建立关系
+        axios.post('/netdisk/addDirectory', {
+          name: q.file.name,
+          pid: self.pid,
+          fileMd5: q.md5,
+          type:"FILE",
+          mediaType:q.file.type
+        }).then(function (response) {
+          if(response.data.result && response.data.data){
+            self.onLoad();
+          }
+          self.showToast(response.data.result ? "success" : "error", response.data.message);
+        }).catch(function (error) {
+          console.log(error);
+        });
+      });
+      this.showToast(ret.state ? null : "error",ret.msg);
+    },
     //关闭播放视频
     closePlayVideo:function (){
       //停止播放
@@ -711,6 +798,13 @@ export default {
       if(!append){
         await this.openLivp(true)//同时打开livp图片
       }
+    },
+    //取消上传
+    stopFileUpload:function (md5) {
+      let self = this;
+      StopFileUpload(md5).then(function (sf){
+        self.showToast(sf.state ? "success" : "error",sf.msg);
+      });
     },
     //取消下载
     stopFileDownload:function (md5) {

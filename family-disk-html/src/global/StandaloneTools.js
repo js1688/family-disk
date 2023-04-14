@@ -6,6 +6,7 @@
 import JSZip from "jszip";
 
 import heic2any from 'alexcorvi-heic2any';
+import SparkMD5 from "spark-md5";
 
 /**
  * heic格式图片转普通图片格式
@@ -89,4 +90,60 @@ export async function Base64toBlob(base64){
         u8arr[n] = str.charCodeAt(n);
     }
     return new Blob([u8arr], {type:mime});
+}
+
+/**
+ * 格式化日期
+ * @param date
+ * @returns {string}
+ */
+export function FormatDate(date){
+    return `${date.getFullYear()}-${(date.getMonth() + 1) < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1)}-${date.getDate() < 10 ? '0' + date.getDate() : date.getDate()} 23:59:59`;
+}
+
+/**
+ * 计算文件md5值
+ * 分片数量为1,直接计算完整md5值,
+ * 如果分片大于1,则将第一个分片和最后一个分片放入计算md5值,这不是真实的,不计算完整的是防止浏览器内存溢出
+ * @param file 文件对象
+ * @param sliceSize 文件分片,每片大小
+ * @param sliceNum 文件分片数量
+ * @returns {Promise<unknown>}
+ */
+export async function FileMd5(file,sliceSize,sliceNum){
+    let spark = new SparkMD5.ArrayBuffer();
+    if(sliceNum > 1){
+        let sslice = await file.slice(0,sliceSize).arrayBuffer();
+        spark.append(sslice);
+        let eslice = await file.slice(file.size - sliceSize,file.size).arrayBuffer();
+        spark.append(eslice);
+        return spark.end();
+    }else{
+        let allslice = await file.slice(0,file.size).arrayBuffer();
+        spark.append(allslice);
+        return spark.end();
+    }
+}
+
+/**
+ * 从浏览器地址栏中取到指定参数的值
+ * @param key
+ * @returns {string|null}
+ */
+export function GetUrlParam(key){
+    return decodeURIComponent((new RegExp('[?|&]'+key+'=' + '([^&;]+?)(&|#|;|$)').exec(location.href) || [, ""])[1].replace(/\+/g, '%20')) || null;
+}
+
+/**
+ * 计算文件对象分片信息,可分多少片
+ * @param file
+ * @constructor
+ */
+export function CountFileSliceInfo(file){
+    let sliceSize = 1024 * 1024 * 16;//每片的大小
+    if(file.size < sliceSize){
+        sliceSize = file.size;
+    }
+    let sliceNum = Math.ceil(file.size/sliceSize);//分片数量
+    return {sliceNum:sliceNum,sliceSize:sliceSize,totalSize:file.size};
 }

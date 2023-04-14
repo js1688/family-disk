@@ -180,17 +180,13 @@ async function queueSyncDownload(){
 
     await sliceDownload(0);//开始下载
 
-    if(!downloadList[soi.data.fileMd5]){//下载可能已经取消了,不要下载了
-        isDownload = false;
-        return;
-    }
-
-    await soi.fileStream.getWriter().close();//文件下载完成了,主动关闭写入文件流
-
-    //清除下载记录
-    delete downloadList[soi.data.fileMd5];
-
     isDownload = false;
+
+    if(downloadList[soi.data.fileMd5]){
+        await soi.fileStream.getWriter().close();//文件下载完成了,主动关闭写入文件流
+        //清除下载记录
+        delete downloadList[soi.data.fileMd5];
+    }
 
     //判断队列中是否还有任务,有则重新激活
     if(Object.keys(downloadList).length != 0){
