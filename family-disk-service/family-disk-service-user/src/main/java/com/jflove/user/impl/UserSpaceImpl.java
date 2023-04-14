@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author tanjun
@@ -48,7 +50,11 @@ public class UserSpaceImpl implements IUserSpace {
     @Value("${user.space.init-size}")
     private DataSize maxFileSize;//创建空间的大小
 
-    private ConcurrentHashMap<Long/**spaceId**/,Long/**使用量缓存*/> spaceUseMb = new ConcurrentHashMap<>();
+    /**
+     * 在改变空间大小的时候,需要使用到的锁
+     * key 空间id
+     */
+    private ConcurrentHashMap<String, Lock> spaceSizeLock = new ConcurrentHashMap<>();
 
 
     @Override
@@ -58,28 +64,30 @@ public class UserSpaceImpl implements IUserSpace {
         if (!info.isResult()) {
             return new ResponseHeadDTO(info.isResult(), info.getMessage());
         }
-        //使用大小+1mb,因为计算会忽略小数
-        //这里的使用空间可能会与电脑文件上看到的不一样,因为本程序计算的字节大小是1024b为1k,电脑系统大多数都是以1000b为1k,包括大部分硬盘的存量计算也是1000
-        useMb += 1;
-        UserSpaceDTO usd = info.getData();
-        //如果缓存计数大于数据库则代表数据库的写入还未生效,有效使用内存缓存中的计数
-        long useSize = 0;
-        if(spaceUseMb.containsKey(spaceId)) {
-            useSize = spaceUseMb.get(spaceId) > usd.getUseSize() ? spaceUseMb.get(spaceId) : usd.getUseSize();
-        }else{
-            useSize = usd.getUseSize();
+        String lockKey = spaceId.toString();
+        if(!spaceSizeLock.containsKey(lockKey)){
+            Lock lock = new ReentrantLock(true);
+            spaceSizeLock.put(lockKey,lock);
         }
-        if (!((usd.getMaxSize() - useSize) >= useMb)) {
-            return new ResponseHeadDTO(false, "用户空间不足");
-        }
-        if (isUse) {
-            UserSpacePO po = new UserSpacePO();
-            BeanUtils.copyProperties(usd, po);
-            po.setUseSize(increase ? useSize + useMb : useSize - useMb);
-            spaceUseMb.put(spaceId,po.getUseSize());
-            po.setUpdateTime(null);
-            userSpaceMapper.updateById(po);
-            return new ResponseHeadDTO(true, "用户空间使用成功");
+        try{
+            spaceSizeLock.get(lockKey).lock();
+            //使用大小+1mb,因为计算会忽略小数
+            //这里的使用空间可能会与电脑文件上看到的不一样,因为本程序计算的字节大小是1024b为1k,电脑系统大多数都是以1000b为1k,包括大部分硬盘的存量计算也是1000
+            UserSpaceDTO usd = info.getData();
+            useMb += 1;
+            if(increase && usd.getMaxSize() - usd.getUseSize() >= useMb){//如果是增加已使用量
+                return new ResponseHeadDTO(false, "用户空间不足");
+            }
+            if(isUse){
+                UserSpacePO po = new UserSpacePO();
+                BeanUtils.copyProperties(usd, po);
+                po.setUseSize(increase ? usd.getUseSize() + useMb : usd.getUseSize() - useMb);
+                po.setUpdateTime(null);
+                userSpaceMapper.updateById(po);
+                return new ResponseHeadDTO(true, "用户空间使用量修改成功");
+            }
+        }finally {
+            spaceSizeLock.get(lockKey).unlock();
         }
         return new ResponseHeadDTO(true, "用户空间可以存储");
     }

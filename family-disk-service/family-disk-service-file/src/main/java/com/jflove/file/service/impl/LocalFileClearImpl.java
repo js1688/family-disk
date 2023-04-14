@@ -1,16 +1,21 @@
 package com.jflove.file.service.impl;
 
-import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.unit.DataSize;
+import cn.hutool.core.io.unit.DataUnit;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jflove.ResponseHeadDTO;
 import com.jflove.file.FileDiskConfigPO;
 import com.jflove.file.FileInfoPO;
 import com.jflove.file.impl.FileServiceImpl;
 import com.jflove.file.mapper.FileDiskConfigMapper;
 import com.jflove.file.mapper.FileInfoMapper;
 import com.jflove.file.service.IFileClear;
+import com.jflove.user.api.IUserSpace;
+import com.jflove.user.dto.UserSpaceDTO;
 import lombok.extern.log4j.Log4j2;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -23,8 +28,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author: tanjun
@@ -43,6 +48,9 @@ public class LocalFileClearImpl implements IFileClear {
 
     @Autowired
     private FileDiskConfigMapper fileDiskConfigMapper;
+
+    @DubboReference
+    private IUserSpace userSpace;
 
     /**
      * 清除临时目录中非今天的文件
@@ -100,6 +108,20 @@ public class LocalFileClearImpl implements IFileClear {
                 fileInfoMapper.deleteById(v.getId());
             }catch (IOException e){
                 log.error("清理垃圾箱中的文件时发生异常",e);
+            }
+        });
+        //将每个空间纠正使用量
+        List<FileInfoPO> allSize = fileInfoMapper.selectList(new LambdaQueryWrapper<FileInfoPO>().select(FileInfoPO::getSpaceId,FileInfoPO::getSize));
+        Map<Long, LongSummaryStatistics> count = allSize.stream().collect(Collectors.groupingBy(FileInfoPO::getSpaceId, Collectors.summarizingLong(FileInfoPO::getSize)));
+        count.forEach((k,v)->{
+            ResponseHeadDTO<UserSpaceDTO> us =  userSpace.getSpaceInfo(k);
+            if(us.isResult()){
+                long approval = DataSize.of(v.getSum(), DataUnit.BYTES).toMegabytes();//本次核算的使用量
+                long recorded = us.getData().getUseSize();//数据库记录的已使用量
+                long differ = approval - recorded;//正负差
+                if(differ != 0) {
+                    userSpace.useSpaceByte(k,differ, true, true);//纠正空间
+                }
             }
         });
     }

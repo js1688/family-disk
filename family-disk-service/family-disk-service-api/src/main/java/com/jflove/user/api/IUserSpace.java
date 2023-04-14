@@ -32,11 +32,10 @@ public interface IUserSpace {
      * @param spaceId
      * @param useMb
      * @param increase true=使用空间,false=减少空间
-     * @param isUse 是否同时消耗存储空间
+     * @param isUse 是否同时修改存储空间
      * @return
      */
     ResponseHeadDTO useSpaceByte(Long spaceId,long useMb,boolean increase,boolean isUse);
-
 
     /**
      * 加入空间
