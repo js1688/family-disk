@@ -75,7 +75,7 @@ public class UserSpaceImpl implements IUserSpace {
             //这里的使用空间可能会与电脑文件上看到的不一样,因为本程序计算的字节大小是1024b为1k,电脑系统大多数都是以1000b为1k,包括大部分硬盘的存量计算也是1000
             UserSpaceDTO usd = info.getData();
             useMb += 1;
-            if(increase && usd.getMaxSize() - usd.getUseSize() >= useMb){//如果是增加已使用量
+            if(increase && usd.getMaxSize() - usd.getUseSize() <= useMb){//如果是增加已使用量
                 return new ResponseHeadDTO(false, "用户空间不足");
             }
             if(isUse){
