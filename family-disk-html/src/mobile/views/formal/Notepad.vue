@@ -147,7 +147,8 @@ import {
   Calendar,
   ActionSheet, showConfirmDialog
 } from 'vant';
-import {FormatDate, key} from "@/global/KeyGlobal";
+import {key} from "@/global/KeyGlobal";
+import {FormatDate} from '@/global/StandaloneTools';
 //vant适配桌面端
 import '@vant/touch-emulator';
 import VMdEditor from '@kangc/v-md-editor';
