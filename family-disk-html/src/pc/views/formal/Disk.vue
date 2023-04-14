@@ -554,11 +554,11 @@ export default {
       //计算md5值
       let md5 = await FileMd5(last.file,sliceInfo.sliceSize,sliceInfo.sliceNum);
       let self = this;
-      let ret = await FileUpload(sliceInfo,last.file,md5,'CLOUDDISK',function (q) {
+      let ret = await FileUpload(sliceInfo,last.file,md5,'CLOUDDISK',this.pid,function (q) {
         //将文件与网盘目录建立关系
         axios.post('/netdisk/addDirectory', {
           name: q.file.name,
-          pid: self.pid,
+          pid: q.pid,
           fileMd5: q.md5,
           type:"FILE",
           mediaType:q.file.type

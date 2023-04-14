@@ -89,15 +89,16 @@ async function queueSyncUpload(){
  * @param file
  * @param md5
  * @param source
+ * @param pid
  * @param callback 文件上传成功后的回调
  * @returns {Promise<{msg: string, state: boolean}>}
  * @constructor
  */
-export async function FileUpload(sliceInfo,file,md5,source,callback){
+export async function FileUpload(sliceInfo,file,md5,source,pid,callback){
     if(uploadList[md5]){
         return {state:false,msg:`文件[${file.name}]正在上传,请不要重复上传`};
     }
-    uploadList[md5] = {sliceInfo:sliceInfo,file:file,md5:md5,progress:0,source:source,callback:callback};
+    uploadList[md5] = {sliceInfo:sliceInfo,file:file,md5:md5,progress:0,source:source,pid:pid,callback:callback};
     queueSyncUpload().then(function (e){});//激活上传
     return {state:true,msg:`文件[${file.name}]加入上传列表成功.`};
 }
