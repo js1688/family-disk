@@ -242,8 +242,9 @@ public class FileController {
         }
 
         //尝试是否可以直接引用其它人上传的文件
+        //todo 这里尝试改一下,如果触发了秒传,做个响应,让前端不要继续上传后续的分片,避免浪费流量
         if(fileAdministration.checkDuplicate(dto.getName(),dto.getType(),dto.getMediaType(),dto.getFileMd5(),dto.getSpaceId(),dto.getSource(),dto.getTotalSize(),useUserId).isResult()){
-            return new ResponseHeadVO<>(true,dto.getFileMd5(),"触发秒传成功");
+            return new ResponseHeadVO<>(true,dto.getFileMd5(),"second");//second 触发了秒传的标记
         }
 
         AtomicBoolean ab = new AtomicBoolean(false);
