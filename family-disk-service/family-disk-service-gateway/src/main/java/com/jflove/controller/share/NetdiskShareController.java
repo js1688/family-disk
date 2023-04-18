@@ -11,7 +11,7 @@ import com.jflove.share.api.INetdiskShare;
 import com.jflove.share.dto.NetdiskShareDTO;
 import com.jflove.tool.JJwtTool;
 import com.jflove.vo.ResponseHeadVO;
-import com.jflove.vo.share.DirectoryInfoVO;
+import com.jflove.vo.netdisk.DirectoryInfoVO;
 import com.jflove.vo.share.NetdiskShareDirectoryVO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
