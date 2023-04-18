@@ -38,12 +38,13 @@ export function getDownloadList(){
  * 下载一个文件指定位置的二进制流,只会下载一次,适合读取一个视频文件前几帧当做封面
  * 它不会加入到文件下载列表中
  * 如果长度大于了10mb,就会拒绝下载
+ * @param url 地址
  * @param soi 探测信息结果
  * @param s 起位置
  * @param e 止位置
  * @constructor
  */
-export async function FileDoownloadAppoint(soi,s,e){
+export async function FileDoownloadAppoint(url,soi,s,e){
     if(!(s > -1 && e > s)){ //起位置要是正数,结束位置要大于起位置
         return {state:false,msg:'传入了错误的起止位置'};
     }
@@ -51,7 +52,7 @@ export async function FileDoownloadAppoint(soi,s,e){
     if(size > 10){
         return {state:false,msg:`文件[${soi.data.name}]太大,请使用大文件下载方式`};
     }
-    let response = await axios.post('/file/slice/getFile', {
+    let response = await axios.post(url, {
         fileMd5: soi.data.fileMd5,
         name: soi.data.name,
         source:soi.data.source
@@ -84,7 +85,7 @@ export async function FileDoownloadSmall(soi){
         }
         let bytes = new Uint8Array(soi.data.total);
         let sliceDownload = async function (s){
-            let response = await axios.post('/file/slice/getFile', {
+            let response = await axios.post(soi.data.url, {
                 fileMd5: soi.data.fileMd5,
                 name: soi.data.name,
                 source:soi.data.source
@@ -145,7 +146,7 @@ async function queueSyncDownload(){
             return;
         }
 
-        let response = await axios.post('/file/slice/getFile', {
+        let response = await axios.post(soi.data.url, {
             fileMd5: soi.data.fileMd5,
             name: soi.data.name,
             source:soi.data.source
@@ -236,12 +237,13 @@ export async function StopFileDownload(fileMd5){
 
 /**
  * 下载前的试探,试探文件有多大
+ * @param url 地址
  * @param fileMd5 文件md5值
  * @param name 文件名称
  * @param source 文件来源
  */
-export async function FileSoundOut(fileMd5,name,source){
-    let response = await axios.post('/file/slice/getFile', {
+export async function FileSoundOut(url,fileMd5,name,source){
+    let response = await axios.post(url, {
         fileMd5: fileMd5,
         name: name,
         source:source
@@ -254,7 +256,7 @@ export async function FileSoundOut(fileMd5,name,source){
     const { data, headers } = response;
     try {
         //有错误
-        let msg = JSON.parse(data);
+        let msg = JSON.parse(new TextDecoder('utf-8').decode(data));
         return {state:false,msg:msg.message};
     }catch (e){}
     //试探正常
@@ -262,6 +264,7 @@ export async function FileSoundOut(fileMd5,name,source){
     let total = contentRange.substring(contentRange.indexOf("/") + 1) * 1;
     return {state:true,
         data:{
+            url:url,//下载地址
             total:total, //文件总大小
             sliceNum:0, //文件将会被分成多少片下载
             fileMd5:fileMd5, //文件md5值

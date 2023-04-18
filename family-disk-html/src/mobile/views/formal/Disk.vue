@@ -499,7 +499,7 @@ export default {
       }
       for (let i = 0; i < fs.length; i++) {
         let file = fs[i].file;
-        let sliceSize = 1024 * 1024 * 16;
+        let sliceSize = 1024 * 1024 * 16;//每片最大16mb
         if(file.size < sliceSize){
           sliceSize = file.size;
         }

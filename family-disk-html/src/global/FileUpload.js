@@ -58,6 +58,16 @@ async function queueSyncUpload(){
         });
         const { data, headers } = response;
 
+        no1.result = data.result;
+        no1.resultMsg = data.message;
+
+        if(!no1.result){//业务提示上传失败了,不要继续上传了
+            return;
+        }else if(no1.result && data.message == 'second'){//触发了秒传,不需要继续上传了
+            no1.progress = no1.sliceInfo.sliceNum;
+            return;
+        }
+
         //更新进度
         no1.progress++;
 
@@ -98,7 +108,7 @@ export async function FileUpload(sliceInfo,file,md5,source,pid,callback){
     if(uploadList[md5]){
         return {state:false,msg:`文件[${file.name}]正在上传,请不要重复上传`};
     }
-    uploadList[md5] = {sliceInfo:sliceInfo,file:file,md5:md5,progress:0,source:source,pid:pid,callback:callback};
+    uploadList[md5] = {sliceInfo:sliceInfo,file:file,md5:md5,progress:0,source:source,pid:pid,callback:callback,result:true,resultMsg:''};
     queueSyncUpload().then(function (e){});//激活上传
     return {state:true,msg:`文件[${file.name}]加入上传列表成功.`};
 }

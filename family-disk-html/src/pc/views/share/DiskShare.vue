@@ -6,51 +6,7 @@
         <div v-if="manageIf">
           <n-spin :show="isOverlay">
             <n-card :bordered="false">
-              <div style="width: 50%;display:inline-block;">
-                <n-space :size="40" v-if="roleWrite">
-                  <n-badge value="上传" type="info" :offset="[8, -8]">
-                    <n-upload :default-upload="false"
-                              :multiple="true"
-                              :show-file-list="false"
-                              @update:file-list="addUploadFile" >
-                      <n-button text style="font-size: 24px">
-                        <n-icon>
-                          <cloud-upload-outline />
-                        </n-icon>
-                      </n-button>
-                    </n-upload>
-                  </n-badge>
-                  <n-badge value="下载" type="info" :offset="[8, -8]">
-                    <n-button text style="font-size: 24px" :disabled="!rowKeys || rowKeys.length == 0" @click="downloads">
-                      <n-icon>
-                        <cloud-download-outline />
-                      </n-icon>
-                    </n-button>
-                  </n-badge>
-                  <n-badge value="移动" type="info" :offset="[8, -8]">
-                    <n-button @click="showMoveDirectory = true;onMoveLoad();rowKey = null;" :disabled="!rowKeys || rowKeys.length == 0"  text style="font-size: 24px">
-                      <n-icon>
-                        <return-down-forward />
-                      </n-icon>
-                    </n-button>
-                  </n-badge>
-                  <n-badge value="目录" type="info" :offset="[8, -8]">
-                    <n-button @click="showAddDirectory = true" text style="font-size: 24px">
-                      <n-icon>
-                        <add-circle-outline />
-                      </n-icon>
-                    </n-button>
-                  </n-badge>
-                  <n-badge value="删除" type="info" :offset="[8, -8]">
-                    <n-button :disabled="!rowKeys || rowKeys.length == 0" @click="delsDirectory" text style="font-size: 24px">
-                      <n-icon>
-                        <trash-outline />
-                      </n-icon>
-                    </n-button>
-                  </n-badge>
-                </n-space>
-              </div>
-              <div style="width: 50%;display:inline-block;">
+              <div style="width: 100%;display:inline-block;">
                 <n-space justify="end" >
                   <n-input-group>
                     <n-input v-model:value="keyword" placeholder="搜索"/>
@@ -86,49 +42,13 @@
               />
             </n-card>
 
-            <n-modal
-                v-model:show="showAddDirectory"
-                :mask-closable="false"
-                preset="dialog"
-                title="新建目录"
-                positive-text="确认"
-                negative-text="取消"
-                @positive-click="addDirectory"
-                @negative-click="showAddDirectory = false"
-            >
-              <n-divider />
-              <n-input v-model:value="simpleField" placeholder="请输入目录名称"/>
-            </n-modal>
-
-            <n-drawer :mask-closable="false" v-model:show="showMoveDirectory" :width="502">
-              <n-drawer-content title="选择移动的目的地" closable>
-                <n-data-table
-                    :columns="moveColumns"
-                    :data="moveData"
-                    :row-key="setRowKey"
-                    :pagination="false"
-                    :bordered="false"
-                    virtual-scroll
-                    :max-height="maxHeight"
-                    @update:checked-row-keys="handleCheckSingle"
-                />
-                <n-card :bordered="false" style="position: absolute;bottom: 0">
-                  <n-space>
-                    <n-button type="info" @click="okMoveDirectory(null)">确定</n-button>
-                    <n-button type="info" @click="okMoveDirectory(0)">移动到根目录</n-button>
-                    <n-button @click="showMoveDirectory = false;rowKeys=[];">取消</n-button>
-                  </n-space>
-                </n-card>
-              </n-drawer-content>
-            </n-drawer>
-
             <n-drawer :mask-closable="false" v-model:show="showImages" :width="500">
               <n-drawer-content title="图片预览列表" closable>
                 <n-image-group>
                   <n-space>
                     <n-image v-for="m in openImagesUrls"
-                        width="100"
-                        :src="m.src" :alt="m.alt"
+                             width="100"
+                             :src="m.src" :alt="m.alt"
                     />
                   </n-space>
                 </n-image-group>
@@ -198,67 +118,6 @@
               </div>
             </n-modal>
 
-            <n-modal
-                v-model:show="showUpdateName"
-                :mask-closable="false"
-                preset="dialog"
-                title="重命名目录"
-                positive-text="确认"
-                negative-text="取消"
-                @positive-click="updateName"
-                @negative-click="showUpdateName = false;rowKeys=[];"
-            >
-              <n-divider />
-              <n-input v-model:value="simpleField" placeholder="请输入新的目录名称"/>
-            </n-modal>
-
-            <n-modal
-                v-model:show="showShare"
-                :mask-closable="false"
-                preset="dialog"
-                title="创建分享链接"
-                positive-text="确认"
-                negative-text="取消"
-                @positive-click="createShare"
-                @negative-click="showShare = false;"
-            >
-              <n-divider />
-              <n-form
-                  ref="shareformRef"
-                  label-placement="left"
-                  label-width="auto"
-                  require-mark-placement="right-hanging"
-                  :model="shareParam"
-                  size="large"
-                  :rules='{
-                        invalidTime: {
-                            required: true,
-                            message: "请输入失效日期",
-                            trigger: "blur"
-                          }
-                      }'
-              >
-                <n-form-item label="解锁密码:" path="password">
-                  <n-input v-model:value="shareParam.password"
-                           type="password"
-                           show-password-on="mousedown"
-                           placeholder="请输入解锁密码"
-                  />
-                </n-form-item>
-
-                <n-form-item label="失效日期:" path="invalidTime">
-                  <n-config-provider style="width: 100%;" :locale="locale" :date-locale="dateLocale">
-                    <n-date-picker  type="datetime"
-                                    input-readonly
-                                    :is-date-disabled="invalidTimeRange"
-                                    v-model:formatted-value="shareParam.invalidTime"
-                                    value-format="yyyy-MM-dd HH:mm:ss"
-                                     />
-                  </n-config-provider>
-                </n-form-item>
-              </n-form>
-            </n-modal>
-
           </n-spin>
         </div>
         <!-- 下载列表 -->
@@ -282,33 +141,6 @@
             <n-empty size="large" description="没有正在下载的文件" />
           </div>
         </div>
-        <!-- 上传列表 -->
-        <div v-if="uploadListIf" style="width: 100%;height: 100%;">
-          <n-spin :show="isOverlay">
-            <n-space vertical v-if="uploadList && Object.keys(uploadList).length !== 0">
-              <n-card :title="value.file.name" v-for="value in uploadList" :bordered="false">
-                <n-space vertical>
-                  <n-progress type="line" processing status="success" :percentage="value.scale">
-                    文件大小 {{Math.floor(value.sliceInfo.totalSize/1024/1024)}}(MB) 进度 {{value.scale}}%
-                  </n-progress>
-                  <n-space justify="end">
-                    <n-button @click="stopFileUpload(value.md5)">取消</n-button>
-                  </n-space>
-                </n-space>
-                <n-divider />
-              </n-card>
-            </n-space>
-          </n-spin>
-          <div v-if="!uploadList || Object.keys(uploadList).length === 0" class="div-center">
-            <n-empty size="large" description="没有正在上传的文件" />
-          </div>
-        </div>
-        <!-- 回收站 -->
-        <div v-if="dustbinIf" style="width: 100%;height: 100%;">
-          <n-spin :show="isOverlay">
-            <h1>未实现</h1>
-          </n-spin>
-        </div>
       </n-layout-content>
       <n-layout-sider
           bordered
@@ -331,14 +163,32 @@
       </n-layout-sider>
     </n-layout>
   </n-space>
+
+
+  <n-modal
+      v-model:show="passwordShow"
+      :mask-closable="false"
+      :close-on-esc="false"
+      preset="dialog"
+      title="请输入密码后解锁内容"
+      positive-text="确认"
+      @positive-click="getBody"
+  >
+    <n-divider />
+    <n-input v-model:value="param.password"
+             type="password"
+             show-password-on="mousedown"
+             placeholder="请输入解锁密码"
+    />
+  </n-modal>
 </template>
 
 <script>
 import { h, ref } from "vue";
-import { zhCN, dateZhCN,NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider ,NDescriptions,NDescriptionsItem,
+import { NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider ,NDescriptions,NDescriptionsItem,
   NAnchorLink,NAnchor,NPopconfirm,NButton,NLayoutContent,NImage,NSpin,NProgress,NDataTable,NList,NListItem,
-  NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,NUpload,NDatePicker,NTimePicker,
-  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NEmpty,NImageGroup,NConfigProvider,
+  NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,NUpload,
+  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NEmpty,NImageGroup,
   createDiscreteApi
 } from "naive-ui";
 import {
@@ -366,12 +216,11 @@ import {
 import {
   Base64toBlob,
   CountFileSliceInfo,
-  FileMd5, FormatDate,
+  FileMd5, GetUrlParam,
   GetVideoCoverBase64,
   HeicToCommon,
   LivpToCommon
 } from "@/global/StandaloneTools";
-import {FileUpload, getUploadList, StopFileUpload} from "@/global/FileUpload";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -412,7 +261,6 @@ const createColumns = ({
 export default {
   name: "Disk",
   setup() {
-    let roleWrite = localStorage.getItem(key().useSpaceRole) == 'WRITE';
     function renderIcon(icon) {
       return () => h(NIcon, null, { default: () => h(icon) });
     }
@@ -423,31 +271,13 @@ export default {
         icon:renderIcon(FolderOpenOutline)
       },
       {
-        label: "上传列表",
-        key: "uploadList",
-        icon:renderIcon(CloudUploadOutline)
-      },
-      {
         label: "下载列表",
         key: "downloadList",
         icon:renderIcon(CloudDownloadOutline)
-      },
-      {
-        label: "回收站",
-        key: "dustbin",
-        icon:renderIcon(TrashOutline)
       }
     ];
 
-    if(!roleWrite){//如果没有修改权限,去掉上传和回收站
-      menuOptions.splice(3,1);
-      menuOptions.splice(1,1);
-    }
-
     return {
-      locale: zhCN,
-      dateLocale: dateZhCN,
-      roleWrite,
       collapsed: ref(false),
       activeKey: ref('manage'),
       menuOptions,
@@ -455,105 +285,70 @@ export default {
       CloudDownloadOutline,
       ReturnDownForward,
       SearchOutline,
-      shareformRef:ref(null),
-      fileDownloadUrl:'/file/slice/getFile',
+      fileDownloadUrl:'/netdisk/share/slice/getFile'
     }
   },
   components: {
     NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,NUpload,
     NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,NList,NListItem,
     NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NEmpty,PlayCircleOutline,
-    NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,StopCircleOutline,NConfigProvider,
-    ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NImageGroup,NDatePicker,NTimePicker,
+    NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,StopCircleOutline,
+    ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NImageGroup
   },
   props: {
 
   },
   created() {
-    if(localStorage.getItem(key().authorization) != null){
-      this.onLoad();
-      //添加定时任务,刷新下载列表
-      let self = this;
-      setInterval(function (){
-        //更新下载列表进度
-        let list = getDownloadList();
-        self.downloadList = [];
-        for (const listKey in list) {
-          let v = list[listKey];
-          v.data['scale'] = v.data.progress == 0 ? 0 : Math.floor(v.data.progress/v.data.sliceNum*100);
-          self.downloadList.push(v);
-        }
-        //更新上传列表进度
-        let uplist = getUploadList();
-        self.uploadList = [];
-        for (const uplistKey in uplist) {
-          let v = uplist[uplistKey];
-          v['scale'] = v.progress == 0 ? 0 : Math.floor(v.progress/v.sliceInfo.sliceNum*100);
-          if(!v.result){
-            self.showToast("error",v.resultMsg);
-            self.stopFileUpload(v.md5);
-          }else{
-            self.uploadList.push(v);
-          }
-        }
-      }, 500);
+    /**
+     * 分享网盘路径: 是否需要输入密码/链接uuid
+     * http://localhost:5173/#/share/netdisk?lock=true&uuid=asddhsdhiweq-sdas-666
+     * @type {{lock: null, uuid: null}}
+     */
+    //从页面地址中获取到参数
+    for (const key in this.param) {
+      let v = GetUrlParam(key);
+      this.param[key] = v;
     }
+    //是否需要输入密码
+    if(this.param.lock == 'true'){
+      this.passwordShow = true;
+    }else{
+      this.getBody();//不需要密码,直接获得内容
+    }
+
+    //添加定时任务,刷新下载列表
+    let self = this;
+    setInterval(function (){
+      //更新下载列表进度
+      let list = getDownloadList();
+      self.downloadList = [];
+      for (const listKey in list) {
+        let v = list[listKey];
+        v.data['scale'] = v.data.progress == 0 ? 0 : Math.floor(v.data.progress/v.data.sliceNum*100);
+        self.downloadList.push(v);
+      }
+    }, 500);
   },
   data(){
     let listButton = [
       {
-        name:"删除",
         title:"操作",
-        titleColSpan:5,
-        width:60,
-        key:"s",
-        play:this.delDirectory,
-      },
-      {
         name:"下载",
-        width:60,
+        width:80,
         key:"x",
         disabled:(row)=> {
           return row.type == 'FOLDER';
         },
         play:this.download
-      },
-      {
-        name:"移动",
-        width:60,
-        key:"y",
-        play:this.moveSingle
-      },
-      {
-        name:"重命名",
-        width:75,
-        key:"c",
-        play:this.renameSingle
-      },
-      {
-        name:"分享",
-        width:70,
-        key:"f",
-        play:this.share
       }
     ];
-    //如果没有读写的权限,就只显示下载的按钮
-    if(!this.roleWrite){
-      listButton = [
-        {
-          title:"操作",
-          name:"下载",
-          width:80,
-          key:"x",
-          disabled:(row)=> {
-            return row.type == 'FOLDER';
-          },
-          play:this.download
-        }
-      ]
-    }
 
     return {
+      nameMap: {},
+      idMap: {},
+      tempToken:'',
+      passwordShow:false,
+      param : {lock:null,uuid:null,password:null},
       showImages:false,
       showVideos:false,
       showAudios:false,
@@ -642,60 +437,37 @@ export default {
       showPlayVideoName:'',
       playerSelectd:0,//播放器选择,0使用的插件播放器,1原生播放器
       audioUrl:{},
-      audioUrls:[],
-      showShare:false,
-      shareParam:ref({password:null,bodyId:null,invalidTime:null,url:null,bodyType:null}),
+      audioUrls:[]
     }
   },
   methods:{
-    //失效时间只能选未来
-    invalidTimeRange:function (ts){
-      return ts <= Date.now();
-    },
-    //复制文本
-    doCopy:function (text){
-      if(!text){
-        this.showToast("error","没有内容可复制");
-        return
-      }
-      let self = this;
-      this.$copyText(text).then(function (e) {
-        self.showToast(null,'分享地址已复制,请粘贴给有需要的人');
-        self.showShare = false;
-      }, function (e) {
-        self.showToast("error",'复制失败,请手动复制地址');
-      });
-    },
-    //创建分享链接
-    createShare:function () {
-      let self = this;
-      this.$refs.shareformRef.validate((errors) => {
-        if (!errors) {
-          self.isOverlay = true;
-          self.shareParam.bodyType = 'NETDISK';
-          axios.post('/share/admin/create', self.shareParam).then(function (response) {
-            if(response.data.result){
-              self.shareParam.url = window.location.protocol + '//' + window.location.host + window.location.pathname +'#/share/netdisk/?' + response.data.data.url;
-              self.doCopy(self.shareParam.url);
-            }else{
-              self.showToast("error",response.data.message);
+    //打开文件
+    openFile:function (item) {
+      let mediaType = item.mediaType.toUpperCase();
+      let mediaTypes = mediaType.split("/");
+      switch (mediaTypes[0]) {
+        case "IMAGE"://图片
+          this.openImage();
+          break
+        case "VIDEO"://视频
+          this.openVideo();
+          break
+        case "AUDIO"://音频
+          this.openAudio();
+          break;
+        default:
+          //兼容特殊文件的打开
+          let index = item.name.lastIndexOf(".");
+          if(index != -1){
+            let suffix = item.name.substring(index).toUpperCase();
+            switch (suffix) {
+              case ".LIVP"://livp,苹果设备拍摄的实况图片
+                this.openLivp();
+                return;
             }
-            self.isOverlay = false;
-          }).catch(function (error) {
-            self.isOverlay = false;
-            console.log(error);
-          });
-        }
-      });
-    },
-    //打开分享面板
-    share:function (item) {
-      //new Date(new Date().toLocaleDateString()).getTime() + 24 * 60 * 60 * 1000 - 1
-      this.shareParam.password = null;
-      this.shareParam.bodyId = item.id;
-      this.shareParam.invalidTime = ref(FormatDate(new Date()));
-      this.shareParam.url = null;
-      this.showShare = true;
+          }
+          this.showToast("warning",`不识别的类型[${mediaType}],不能在线预览,请下载文件到本地打开.`);
+      }
     },
     //播放下一首音频
     ended:function (e,nextIndex){
@@ -730,53 +502,17 @@ export default {
         this.audioUrls = [];
         for (let i = 0; i < ds.length; i++) {
           let item = ds[i];
-          let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+          let url = key().baseURL+"netdisk/share/media/play/"+ this.tempToken + "/" + item.id;
           this.audioUrls.push({
-              play:i == 0,
-              index:i,
-              src: url,
-              title: item.name,
-              type: item.mediaType
+            play:i == 0,
+            index:i,
+            src: url,
+            title: item.name,
+            type: item.mediaType
           });
         }
         this.audioUrl = this.audioUrls[0];
       }
-    },
-    //添加新的上传文件
-    addUploadFile:async function (e) {
-      let last = e[e.length - 1];//最后添加的文件,如果选择多个文件,这个方法会被触发多次
-      //判断文件是否重复添加
-      for (let i = 0; i < e.length - 1; i++) {
-        if(last.name == e[i].name){
-          e.splice(i,1);//删除掉添加的内容
-          this.showToast("error",`文件名:[${last.name}]正在上传,请勿重复上传`);
-          return;
-        }
-      }
-      //计算分片大小
-      let sliceInfo = CountFileSliceInfo(last.file);
-      //计算md5值
-      let md5 = await FileMd5(last.file,sliceInfo.sliceSize,sliceInfo.sliceNum);
-      let self = this;
-      let ret = await FileUpload(sliceInfo,last.file,md5,'CLOUDDISK',this.pid,async function (q) {
-        if(q.result){
-          //将文件与网盘目录建立关系
-          let response = await axios.post('/netdisk/addDirectory', {
-            name: q.file.name,
-            pid: q.pid,
-            fileMd5: q.md5,
-            type:"FILE",
-            mediaType:q.file.type
-          });
-          if(response.data.result && response.data.data){
-            self.onLoad();
-          }
-          self.showToast(response.data.result ? "success" : "error", response.data.message);
-        }else{
-          self.showToast("error", q.resultMsg);
-        }
-      });
-      this.showToast(ret.state ? null : "error",ret.msg);
     },
     //关闭播放视频
     closePlayVideo:function (){
@@ -817,7 +553,7 @@ export default {
     },
     //组织在线播放视频的地址
     createPlayUrl:function (item){
-      let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+      let url = key().baseURL+"netdisk/share/media/play/"+ this.tempToken + "/" + item.id;
       this.videoOptions.sources = [{src:url,type:item.mediaType}];
       this.showPlayVideo = true;
       this.showPlayVideoName = item.name;
@@ -846,7 +582,7 @@ export default {
         for (let i = 0; i < ds.length; i++) {
           let item = ds[i];
           self.openImagesUrlsIndex[item.fileMd5] = self.openImagesUrls.length;
-          self.openImagesUrls.push({src: "/img/pc/loading.png", alt: null, fileMd5: item.fileMd5,mediaType:item.mediaType,name:item.name});//先添加进去预占位
+          self.openImagesUrls.push({id:item.id,src: "/img/pc/loading.png", alt: null, fileMd5: item.fileMd5,mediaType:item.mediaType,name:item.name});//先添加进去预占位
         }
         //再循环列表,真正的加载照片
         for (let i = 0; i < ds.length; i++) {
@@ -855,7 +591,7 @@ export default {
           if(!this.showVideos || !(index >= 0)){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
             return
           }
-          let fso = await FileSoundOut(self.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+          let fso = await FileSoundOut(`${self.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
           if(!fso.state){
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fso.msg;
@@ -864,7 +600,7 @@ export default {
           //试探成功,开始下载
           //开始下载视频的第一帧,当做视频的封面
           //只取1mb,清晰度很高的视频想获取到第一帧,1mb肯定是不够的,不过为了不浪费流量,提高加载速度,能预览出大部分的即可
-          let fd = await FileDoownloadAppoint(self.fileDownloadUrl,fso,0,1024*1024*1);
+          let fd = await FileDoownloadAppoint(`${self.fileDownloadUrl}/${item.id}`,fso,0,1024*1024*1);
           if(fd.state){
             let blob = new Blob([fd.bytes]);
             let url = window.URL.createObjectURL(blob);
@@ -919,7 +655,7 @@ export default {
           if(!this.showImages || !(index >= 0)){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
             return
           }
-          let fso = await FileSoundOut(self.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+          let fso = await FileSoundOut(`${self.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
           if(!fso.state){
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fso.msg;
@@ -978,7 +714,7 @@ export default {
           if(!this.showImages || !(index >= 0)){//每次下载时判断是否已经关闭预览了,避免浪费不必要的流量
             return
           }
-          let fso = await FileSoundOut(self.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+          let fso = await FileSoundOut(`${self.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
           if(!fso.state){
             self.openImagesUrls[index].src = "/img/pc/loadfail.png";
             self.openImagesUrls[index].alt = fso.msg;
@@ -992,10 +728,10 @@ export default {
             let blob = new Blob([fd.bytes],{type:item.mediaType});
             switch (mediaTypes[1]){
               case "HEIC": //苹果设备拍摄的 新图片格式
-                  try {
-                    //有时候这个类型也不一定是准确的,如果本身就可以被读取,就会拒绝转换,这里如果报错后使用原始blob
-                    blob = await HeicToCommon(blob);
-                  }catch (e) {}
+                try {
+                  //有时候这个类型也不一定是准确的,如果本身就可以被读取,就会拒绝转换,这里如果报错后使用原始blob
+                  blob = await HeicToCommon(blob);
+                }catch (e) {}
                 break;
             }
             let src = window.URL.createObjectURL(blob);
@@ -1010,13 +746,6 @@ export default {
         await this.openLivp(true)//同时打开livp图片
       }
     },
-    //取消上传
-    stopFileUpload:function (md5) {
-      let self = this;
-      StopFileUpload(md5).then(function (sf){
-        self.showToast(sf.state ? "success" : "error",sf.msg);
-      });
-    },
     //取消下载
     stopFileDownload:function (md5) {
       let self = this;
@@ -1024,32 +753,10 @@ export default {
         self.showToast(sf.state ? "success" : "error",sf.msg);
       });
     },
-    //下载多个
-    downloads:async function (){
-      let ds = [];
-      for (let i = 0; i < this.rowKeys.length; i++) {
-        for (let j = 0; j < this.folderData.length; j++) {
-          let data = this.folderData[j];
-          if(this.rowKeys[i] == data.id){
-            if(data.type == 'FILE'){
-              ds.push(data);
-            }
-            break;
-          }
-        }
-      }
-      if(ds.length == 0){
-        this.showToast("error","请选择要下载的文件,而不是目录.");
-        return;
-      }
-      for (let i = 0; i < ds.length; i++) {
-        await this.download(ds[i]);
-      }
-    },
     //下载单个文件,支持超大文件,分片方式下载,边下边存
     download:async function (item){
       let self = this;
-      let fso = await FileSoundOut(self.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+      let fso = await FileSoundOut(`${self.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
       if(!fso.state){
         self.showToast("error",fso.msg);
         return;
@@ -1060,149 +767,50 @@ export default {
         self.showToast(fd.state ? "success" : "error",fd.msg);
       }
     },
-    //选择单个重命名
-    renameSingle:function (item) {
-      this.showUpdateName = true;
-      this.simpleField = item.name;
-      this.rowKeys = [item.id];
-    },
-    //确定重命名
-    updateName:function(){
-      this.isOverlay = true;
-      let self = this;
-      axios.post('/netdisk/updateName', {
-        name: this.simpleField,
-        id:this.rowKeys[0]
-      }).then(function (response) {
-        if(response.data.result){
-          self.showUpdateName = false;
-          self.simpleField = "";
-          self.rowKeys = [];
-          self.onLoad();
+    //加载列表
+    onLoad: function () {
+      if(this.keyword){
+        let l = [];
+        for (const key in this.nameMap) {
+          if(key.indexOf(this.keyword) != -1){
+            l.push(this.nameMap[key]);
+          }
         }
-        self.showToast(response.data.result ? "success" : "error", response.data.message);
-        self.isOverlay = false;
-      }).catch(function (error) {
-        self.isOverlay = false;
-        console.log(error);
-      });
-    },
-    //选择单个移动
-    moveSingle:function (item) {
-      this.showMoveDirectory = true;
-      this.onMoveLoad();
-      this.rowKey = null;
-      this.rowKeys = [item.id];
-    },
-    //确定移动
-    okMoveDirectory: async function (def){
-      if(def == 0){
-        this.rowKey = def;
-      }
-      if(this.rowKey == null && this.rowKey != 0){
-        this.showToast("error","请选择要移动的目标目录");
-        return;
-      }
-      this.isOverlay = true;
-      for (let i = 0; i < this.rowKeys.length; i++) {
-        let ret = await axios.post('/netdisk/moveDirectory', {
-          targetDirId: this.rowKey,
-          id:this.rowKeys[i]
-        });
-        if(!ret.data.result){
-          this.showToast("error", ret.data.message);
-        }
-      };
-      this.isOverlay = false;
-      this.showMoveDirectory = false;
-      this.onLoad();
-    },
-    //表格选中时触发事件,适用单选
-    handleCheckSingle:function (rowKeys) {
-      this.rowKey = rowKeys[0];
-    },
-    //加载移动目录
-    onMoveLoad: function () {
-      this.isOverlay = true;
-      let self = this;
-      axios.post('/netdisk/findDirectoryTree', {
-        type: 'FOLDER'
-      }).then(function (response) {
-        if(response.data.result){
-          self.moveData = response.data.datas;
+        this.folderData = l;
+      }else{
+        let v = this.idMap[this.pid];
+        if(v){
+          this.folderData = v.children;
         }else{
-          self.showToast("error",response.data.message);
+          this.folderData = [];
         }
-        self.isOverlay = false;
-      }).catch(function (error) {
-        self.isOverlay = false;
-        console.log(error);
-      });
-    },
-    //批量删除
-     delsDirectory:function () {
-      if(!this.rowKeys || this.rowKeys.length == 0){
-        return;
       }
-      let self = this;
-      this.showDialog("warning",`是否批量删除${self.rowKeys.length}个目录!`,async function (){
-        self.isOverlay = true;
-        for (let i = 0; i < self.rowKeys.length; i++) {
-          let ret = await axios.post('/netdisk/delDirectory', {
-            id: self.rowKeys[i]
-          });
-          if(!ret.data.result){
-            self.showToast("error", ret.data.message);
-          }
-        }
-        self.isOverlay = false;
-        self.onLoad();
-      });
     },
-    //添加目录
-    addDirectory:function (){
-      if(!this.simpleField){
-        this.showToast("error", "请输入目录名称");
-        return false;
+    //将返回的目录数组,解析成map类型方便做搜索与跳转
+    rebuild:function (l){
+      for (let i = 0; i < l.length; i++) {
+        let v = l[i];
+        this.nameMap[v.name] = v;
+        this.idMap[v.id] = v;
+        if(v.type == "FOLDER" && v.children){
+          this.rebuild(v.children);
+        }
       }
-      this.isOverlay = true;
-      let self = this;
-      axios.post('/netdisk/addDirectory', {
-        name: this.simpleField,
-        pid: this.pid,
-        type:"FOLDER"
-      }).then(function (response) {
-        if(response.data.result){
-          self.onLoad();
-          self.simpleField = "";
-          self.showAddDirectory = false;
-        }
-        self.showToast(response.data.result ? "success" : "error", response.data.message);
-        self.isOverlay = false;
-      }).catch(function (error) {
-        self.isOverlay = false;
-        console.log(error);
-      });
-      return false;
     },
-    //删除目录
-    delDirectory:function(item){
-      let self = this;
-      this.showDialog("warning",'是否删除目录:' + item.name + '!',function (){
-        self.isOverlay = true;
-        axios.post('/netdisk/delDirectory', {
-          id: item.id
-        }).then(function (response) {
-          if(response.data.result){
-            self.onLoad();
-          }
-          self.showToast(response.data.result ? "success" : "error", response.data.message);
-          self.isOverlay = false;
-        }).catch(function (error) {
-              self.isOverlay = false;
-              console.log(error);
-        });
-      });
+    //面包屑跳转
+    jump: function (item){
+      this.pid = item.id;
+      this.keyword = "";
+      this.onLoad();
+      //只保留选择节点之前的路径
+      let lj = [];
+      for (let i = 0; i < this.openPath.length; i++) {
+        lj.push(this.openPath[i]);
+        if(this.openPath[i].id == item.id){
+          break;
+        }
+      }
+      this.openPath = lj;
     },
     //数据表格,每一行的key设置方法
     setRowKey: function (row) {
@@ -1229,74 +837,42 @@ export default {
         }
       };
     },
-    //打开文件
-    openFile:function (item) {
-      let mediaType = item.mediaType.toUpperCase();
-      let mediaTypes = mediaType.split("/");
-      switch (mediaTypes[0]) {
-        case "IMAGE"://图片
-          this.openImage();
-          break
-        case "VIDEO"://视频
-          this.openVideo();
-          break
-        case "AUDIO"://音频
-          this.openAudio();
-          break;
-        default:
-          //兼容特殊文件的打开
-          let index = item.name.lastIndexOf(".");
-          if(index != -1){
-            let suffix = item.name.substring(index).toUpperCase();
-            switch (suffix) {
-              case ".LIVP"://livp,苹果设备拍摄的实况图片
-                this.openLivp();
-                return;
-            }
-          }
-          this.showToast("warning",`不识别的类型[${mediaType}],不能在线预览,请下载文件到本地打开.`);
+    //获得分享内容
+    getBody:function (){
+      if(this.param.lock && !this.param.password){
+        this.showToast("error",'请输入解锁密码');
+        return false;
       }
-    },
-    //面包屑跳转
-    jump: function (item){
-      this.pid = item.id;
-      this.keyword = "";
-      this.onLoad();
-      //只保留选择节点之前的路径
-      let lj = [];
-      for (let i = 0; i < this.openPath.length; i++) {
-        lj.push(this.openPath[i]);
-        if(this.openPath[i].id == item.id){
-          break;
-        }
-      }
-      this.openPath = lj;
-    },
-    //加载列表
-    onLoad: function () {
       this.isOverlay = true;
       let self = this;
-      axios.post('/netdisk/findDirectory', {
-        keyword: this.keyword,
-        pid: this.pid
-      }).then(function (response) {
-        if(response.data.result){
-          self.folderData = response.data.datas;
-          self.rowKeys = [];
+      axios.get(`/netdisk/share/getBody/${this.param.uuid}?password=${this.param.password == null ? '' : this.param.password}`).then(function (res){
+        if(res.data.result){
+          //设置默认的根目录pid
+          let l = res.data.data.list;
+          self.idMap[0] = {children:l};
+          self.rebuild(l);
+          self.tempToken = res.data.data.tempToken;
+          self.onLoad();
+
+          //请求拦截设置头部,将得到的临时token设置进去
+          axios.interceptors.request.use(config => {//声明请求拦截器
+            config.headers[key().shareToken] = self.tempToken;
+            return config;//一定要返回
+          });
+          self.passwordShow = false;
         }else{
-          self.showToast(response.data.result ? "success" : "error", response.data.message);
+          self.showToast("error",res.data.message);
         }
         self.isOverlay = false;
-      }).catch(function (error) {
+      }).catch(function (err){
         self.isOverlay = false;
-        console.log(error);
+        console.log(err);
       });
+      return false;
     },
     //菜单切换
     menu:function (open){
       this.manageIf = false;
-      this.dustbinIf = false;
-      this.uploadListIf = false;
       this.downloadListIf = false;
 
       this[open] = true;
@@ -1306,12 +882,6 @@ export default {
       switch (key){
         case "manage":
           this.menu("manageIf");
-          break
-        case "dustbin":
-          this.menu("dustbinIf");
-          break
-        case "uploadList":
-          this.menu("uploadListIf");
           break
         case "downloadList":
           this.menu("downloadListIf");

@@ -9,6 +9,9 @@ import User from "@/pc/views/formal/User.vue";
 import Disk from "@/pc/views/formal/Disk.vue";
 import Notepad from "@/pc/views/formal/Notepad.vue";
 import Journal from "@/pc/views/formal/Journal.vue";
+import DiskShare from '@/pc/views/share/DiskShare.vue';
+import NotepadShare from '@/pc/views/share/NotepadShare.vue';
+import Share from '@/pc/views/share/Share.vue';
 const routes = [
     {
         path: '/',
@@ -38,21 +41,21 @@ const routes = [
             }
         ]
     },
-    // {
-    //     //分享展示面板路由
-    //     path: '/share',
-    //     component: Share,
-    //     children: [
-    //         {
-    //             path: 'notepad',
-    //             component: NotepadShare,
-    //         },
-    //         {
-    //             path: 'netdisk',
-    //             component: DiskShare,
-    //         },
-    //     ]
-    // },
+    {
+        //分享展示面板路由
+        path: '/share',
+        component: Share,
+        children: [
+            {
+                path: 'notepad',
+                component: NotepadShare,
+            },
+            {
+                path: 'netdisk',
+                component: DiskShare,
+            },
+        ]
+    },
     {
         //404
         path: '/404',

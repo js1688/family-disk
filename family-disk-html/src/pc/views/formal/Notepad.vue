@@ -55,7 +55,7 @@
                         <n-divider />
                         <n-space justify="end" v-if="roleWrite">
                           <n-button size="tiny" secondary strong @click="del(item)">删除</n-button>
-                          <n-button size="tiny" secondary strong @click="">分享</n-button>
+                          <n-button size="tiny" secondary strong @click="share(item)">分享</n-button>
                           <n-button size="tiny" secondary strong @click="openText(item);mode='editable';">修改</n-button>
                         </n-space>
                       </n-list-item>
@@ -98,6 +98,53 @@
 
               </n-layout-content>
             </n-layout-content>
+
+            <n-modal
+                v-model:show="showShare"
+                :mask-closable="false"
+                preset="dialog"
+                title="创建分享链接"
+                positive-text="确认"
+                negative-text="取消"
+                @positive-click="createShare"
+                @negative-click="showShare = false;"
+            >
+              <n-divider />
+              <n-form
+                  ref="shareformRef"
+                  label-placement="left"
+                  label-width="auto"
+                  require-mark-placement="right-hanging"
+                  :model="shareParam"
+                  size="large"
+                  :rules='{
+                        invalidTime: {
+                            required: true,
+                            message: "请输入失效日期",
+                            trigger: "blur"
+                          }
+                      }'
+              >
+                <n-form-item label="解锁密码:" path="password">
+                  <n-input v-model:value="shareParam.password"
+                           type="password"
+                           show-password-on="mousedown"
+                           placeholder="请输入解锁密码"
+                  />
+                </n-form-item>
+
+                <n-form-item label="失效日期:" path="invalidTime">
+                  <n-config-provider style="width: 100%;" :locale="locale" :date-locale="dateLocale">
+                    <n-date-picker  type="datetime"
+                                    input-readonly
+                                    :is-date-disabled="invalidTimeRange"
+                                    v-model:formatted-value="shareParam.invalidTime"
+                                    value-format="yyyy-MM-dd HH:mm:ss"
+                    />
+                  </n-config-provider>
+                </n-form-item>
+              </n-form>
+            </n-modal>
           </n-layout>
         </n-spin>
       </n-tab-pane>
@@ -110,11 +157,12 @@
 
 <script>
 import { h, ref } from "vue";
-import { NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider ,NDescriptions,NDescriptionsItem,
-  NAnchorLink,NAnchor,NPopconfirm,NButton,NLayoutContent,NImage,NSpin,NProgress,NDataTable,
-  NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,NList,
-  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NTabs,NTabPane,
-  createDiscreteApi,NListItem,NThing,NRadioGroup,NRadioButton
+import {
+  NIcon, NLayout, NSwitch, NMenu, NSpace, NLayoutSider, NDescriptions, NDescriptionsItem,
+  NAnchorLink, NAnchor, NPopconfirm, NButton, NLayoutContent, NImage, NSpin, NProgress, NDataTable,
+  NForm, NFormItem, NInput, NInputGroup, NLayoutFooter, NLayoutHeader, NCard, NModal, NBadge, NList,
+  NAvatar, NDivider, NTag, NBreadcrumb, NBreadcrumbItem, NDrawer, NDrawerContent, NTabs, NTabPane,
+  createDiscreteApi, NListItem, NThing, NRadioGroup, NRadioButton, NDatePicker, NTimePicker, zhCN, dateZhCN,NConfigProvider
 } from "naive-ui";
 import {
   ExitOutline, EnterOutline, PersonAddOutline, BackspaceOutline, AddCircleOutline,
@@ -182,6 +230,7 @@ VMdEditor.use(createEmojiPlugin());
 VMdEditor.use(createHighlightLinesPlugin());
 import VueClipboard from "vue-clipboard2";
 import {showConfirmDialog, showToast} from "vant";
+import {FormatDate} from "@/global/StandaloneTools";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -212,9 +261,12 @@ export default {
     }
 
     return {
+      locale: zhCN,
+      dateLocale: dateZhCN,
       collapsed: ref(true),
       bookmarkOptions,
       tags,
+      shareformRef:ref(null),
       rightToolbar:'preview sync-scroll fullscreen',
       leftToolbar:"undo redo clear h bold italic strikethrough quote ul ol table hr link image code checkboxToolbar emoji tip | tagSelected save",
     }
@@ -225,7 +277,7 @@ export default {
     NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NTabPane,
     NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,
     ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NTabs,
-    NListItem,VMdEditor,NRadioGroup,NRadioButton
+    NListItem,VMdEditor,NRadioGroup,NRadioButton,NDatePicker,NTimePicker,NConfigProvider
   },
   props: {
 
@@ -274,10 +326,61 @@ export default {
       docId:null,
       docTag:null,
       originalDocTag:null,
-      maxHeight:document.documentElement.clientHeight - 250
+      maxHeight:document.documentElement.clientHeight - 250,
+      shareParam:ref({password:null,bodyId:null,invalidTime:null,url:null,bodyType:null}),
+      showShare:false,
     }
   },
   methods:{
+    //失效时间只能选未来
+    invalidTimeRange:function (ts){
+      return ts <= Date.now();
+    },
+    //复制文本
+    doCopy:function (text){
+      if(!text){
+        this.showToast("error","没有内容可复制");
+        return
+      }
+      let self = this;
+      this.$copyText(text).then(function (e) {
+        self.showToast(null,'分享地址已复制,请粘贴给有需要的人');
+        self.showShare = false;
+      }, function (e) {
+        self.showToast("error",'复制失败,请手动复制地址');
+      });
+    },
+    //创建分享链接
+    createShare:function () {
+      let self = this;
+      this.$refs.shareformRef.validate((errors) => {
+        if (!errors) {
+          self.isOverlay = true;
+          self.shareParam.bodyType = 'NOTE';
+          axios.post('/share/admin/create', self.shareParam).then(function (response) {
+            if(response.data.result){
+              self.shareParam.url = window.location.protocol + '//' + window.location.host + window.location.pathname +'#/share/notepad/?' + response.data.data.url;
+              self.doCopy(self.shareParam.url);
+            }else{
+              self.showToast("error",response.data.message);
+            }
+            self.isOverlay = false;
+          }).catch(function (error) {
+            self.isOverlay = false;
+            console.log(error);
+          });
+        }
+      });
+    },
+    //打开分享面板
+    share:function (item) {
+      //new Date(new Date().toLocaleDateString()).getTime() + 24 * 60 * 60 * 1000 - 1
+      this.shareParam.password = null;
+      this.shareParam.bodyId = item.id;
+      this.shareParam.invalidTime = ref(FormatDate(new Date()));
+      this.shareParam.url = null;
+      this.showShare = true;
+    },
     //删除
     del:function (item) {
       let self = this;
