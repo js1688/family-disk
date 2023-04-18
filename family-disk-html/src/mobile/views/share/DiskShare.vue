@@ -398,7 +398,7 @@ export default {
       }else{
         let v = this.idMap[this.pid];
         if(v){
-          this.list = v.child;
+          this.list = v.children;
         }else{
           this.list = [];
         }
@@ -412,8 +412,8 @@ export default {
         let v = l[i];
         this.nameMap[v.name] = v;
         this.idMap[v.id] = v;
-        if(v.type == "FOLDER" && v.child){
-          this.rebuild(v.child);
+        if(v.type == "FOLDER" && v.children){
+          this.rebuild(v.children);
         }
       }
     },
@@ -426,7 +426,7 @@ export default {
         if(res.data.result){
           //设置默认的根目录pid
           let l = res.data.data.list;
-          self.idMap[0] = {child:l};
+          self.idMap[0] = {children:l};
           self.rebuild(l);
           self.tempToken = res.data.data.tempToken;
           self.onLoad();
