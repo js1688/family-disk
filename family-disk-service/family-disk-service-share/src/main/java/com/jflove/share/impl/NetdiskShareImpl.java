@@ -2,20 +2,24 @@ package com.jflove.share.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
+import com.jflove.file.api.IFileAdministration;
+import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.NetdiskDirectoryPO;
+import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.share.ShareLinkPO;
 import com.jflove.share.api.INetdiskShare;
-import com.jflove.share.dto.DirectoryInfoDTO;
 import com.jflove.share.dto.NetdiskShareDTO;
 import com.jflove.share.em.ShareBodyTypeENUM;
 import com.jflove.share.mapper.NetdiskDirectoryMapper;
 import com.jflove.share.mapper.ShareLinkMapper;
 import lombok.extern.log4j.Log4j2;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
+import org.springframework.util.unit.DataSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +40,9 @@ public class NetdiskShareImpl implements INetdiskShare {
     @Autowired
     private NetdiskDirectoryMapper netdiskDirectoryMapper;
 
+    @DubboReference
+    private IFileAdministration fileAdministration;
+
 
     @Override
     public ResponseHeadDTO<NetdiskShareDTO> getDirectory(String uuid, String password) {
@@ -55,12 +62,19 @@ public class NetdiskShareImpl implements INetdiskShare {
         if(ndp == null){
             return new ResponseHeadDTO<>(false,"分享的内容已经被删除了");
         }
-        DirectoryInfoDTO d = new DirectoryInfoDTO();
+        NetdiskDirectoryDTO d = new NetdiskDirectoryDTO();
         BeanUtils.copyProperties(ndp,d);
         d.setType(NetdiskDirectoryENUM.valueOf(ndp.getType()));
+        if(d.getType() == NetdiskDirectoryENUM.FILE){
+            ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(d.getFileMd5(),d.getSpaceId(), FileSourceENUM.CLOUDDISK);
+            long mb = DataSize.ofBytes(sizeRet.getData()).toMegabytes();
+            d.setSize(String.valueOf(mb == 0l ? 1 : mb));
+        }else{
+            d.setSize("-");
+        }
         addChildDirectory(d);
         NetdiskShareDTO ret = new NetdiskShareDTO();
-        List<DirectoryInfoDTO> array = new ArrayList(1);
+        List<NetdiskDirectoryDTO> array = new ArrayList(1);
         array.add(d);
         ret.setList(array);
         ret.setInvalidTime(po.getInvalidTime());
@@ -71,20 +85,27 @@ public class NetdiskShareImpl implements INetdiskShare {
      * 添加子目录
      * @param dto
      */
-    private void addChildDirectory(DirectoryInfoDTO dto){
+    private void addChildDirectory(NetdiskDirectoryDTO dto){
         List<NetdiskDirectoryPO> clist = netdiskDirectoryMapper.selectList(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                 .eq(NetdiskDirectoryPO::getPid,dto.getId())
         );
-        List<DirectoryInfoDTO> cdto = new ArrayList<>(clist.size());
+        List<NetdiskDirectoryDTO> cdto = new ArrayList<>(clist.size());
         clist.forEach(v->{
-            DirectoryInfoDTO d = new DirectoryInfoDTO();
+            NetdiskDirectoryDTO d = new NetdiskDirectoryDTO();
             BeanUtils.copyProperties(v,d);
             d.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
+            if(d.getType() == NetdiskDirectoryENUM.FILE){
+                ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(d.getFileMd5(),d.getSpaceId(), FileSourceENUM.CLOUDDISK);
+                long mb = DataSize.ofBytes(sizeRet.getData()).toMegabytes();
+                d.setSize(String.valueOf(mb == 0l ? 1 : mb));
+            }else{
+                d.setSize("-");
+            }
             if(NetdiskDirectoryENUM.FOLDER.getCode().equals(v.getType())) {
                 addChildDirectory(d);
             }
             cdto.add(d);
         });
-        dto.setChild(cdto);
+        dto.setChildren(cdto);
     }
 }

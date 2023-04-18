@@ -1,5 +1,6 @@
 package com.jflove.share.dto;
 
+import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -28,5 +29,5 @@ public class NetdiskShareDTO implements Serializable {
     /**
      * 目录
      */
-    List<DirectoryInfoDTO> list;
+    List<NetdiskDirectoryDTO> list;
 }

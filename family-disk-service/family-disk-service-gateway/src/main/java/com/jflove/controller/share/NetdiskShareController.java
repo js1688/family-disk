@@ -8,7 +8,6 @@ import com.jflove.netdisk.api.INetdiskDirectory;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.share.api.INetdiskShare;
-import com.jflove.share.dto.DirectoryInfoDTO;
 import com.jflove.share.dto.NetdiskShareDTO;
 import com.jflove.tool.JJwtTool;
 import com.jflove.vo.ResponseHeadVO;
@@ -74,7 +73,7 @@ public class NetdiskShareController {
 
 
     @ApiOperation(value = "下载文件(分片下载方式)")
-    @GetMapping("/slice/getFile/{id}")
+    @RequestMapping(value = "/slice/getFile/{id}", method = {RequestMethod.GET,RequestMethod.POST})
     public void sliceGetFile(
             HttpServletRequest request, HttpServletResponse response,
             @ApiParam("目录id") @PathVariable("id") Long id) throws Exception{
@@ -103,7 +102,7 @@ public class NetdiskShareController {
     }
 
 
-    @ApiOperation(value = "获取笔记分享内容")
+    @ApiOperation(value = "获取网盘分享目录")
     @GetMapping("/getBody/{uuid}")
     public ResponseHeadVO<NetdiskShareDirectoryVO> getBody(
             @ApiParam("链接id") @PathVariable("uuid") String uuid,
@@ -128,13 +127,13 @@ public class NetdiskShareController {
         return new ResponseHeadVO<>(dto.isResult(),dto.getMessage());
     }
 
-    private void getFileId(List<Long> s,List<DirectoryInfoDTO> dtos){
+    private void getFileId(List<Long> s,List<NetdiskDirectoryDTO> dtos){
         if(dtos != null){
             dtos.forEach(v->{
                 if(v.getType() == NetdiskDirectoryENUM.FILE){
                     s.add(v.getId());
                 }
-                getFileId(s,v.getChild());
+                getFileId(s,v.getChildren());
             });
         }
     }
