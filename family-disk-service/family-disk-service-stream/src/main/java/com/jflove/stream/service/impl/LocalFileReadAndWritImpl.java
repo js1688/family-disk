@@ -9,6 +9,7 @@ import com.jflove.stream.dto.StreamWriteParamDTO;
 import com.jflove.stream.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
 
@@ -30,6 +31,9 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
     @Autowired
     private FileDiskConfigMapper fileDiskConfigMapper;
 
+    @Value("${dubbo.protocol.payload}")
+    private long payload;//dubbo传输大小
+
     @Override
     public ResponseHeadDTO<StreamReadResultDTO> readByte(StreamReadParamDTO dto, FileDiskConfigPO selectd) {
         String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
@@ -45,6 +49,8 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
             }else if(dto.getRangeStart() + dto.getReadLength() > raf.length()){
                 dto.setReadLength((int)(raf.length()-dto.getRangeStart()));
                 dto.setRangeEnd((int)dto.getReadLength());
+            }else if(dto.getReadLength() > payload){//如果读取长度大于了dubbo传输大小,则跳转为dubbo最大
+                dto.setReadLength((int)(payload));
             }
             ret.setTotalSize(raf.length());
             raf.seek(dto.getRangeStart());

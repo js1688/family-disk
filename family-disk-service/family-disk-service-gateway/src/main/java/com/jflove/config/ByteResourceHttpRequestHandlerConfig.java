@@ -36,7 +36,6 @@ import java.io.IOException;
 public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHandler {
 
     public static final String RANGE_START = "BYTE_RANGE_START";
-    public static final String RANGE_END = "BYTE_RANGE_END";
     public static final String MAX_SIZE = "BYTE_MAX_SIZE";
     public static final String RANGE_LEN = "BYTE_RANGE_LEN";
     public static final String SOURCE = "BYTE_SOURCE";
@@ -61,10 +60,10 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
     protected Resource getResource(HttpServletRequest request) throws IOException {
         String path = (String)request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         long rangeStart = (long)request.getAttribute(RANGE_START);
-        Long rangeEnd = (Long)request.getAttribute(RANGE_END);
+        Long rangeLen = (Long)request.getAttribute(RANGE_LEN);
         DataSize ds = maxFileSize;
-        if(rangeEnd != null) {//如果设置了结束长度,则以设置为准
-            ds = DataSize.of(rangeEnd,DataUnit.BYTES);
+        if(rangeLen != null) {//如果设置了读取长度,则以设置为准
+            ds = DataSize.of(rangeLen,DataUnit.BYTES);
         }
         try{
             StreamReadParamDTO param = new StreamReadParamDTO();
@@ -101,12 +100,12 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         //safari的必须先返回总长度,和200响应码
         long rangeStart = Long.valueOf(rangeString.substring(rangeString.indexOf("=") + 1, rangeString.indexOf("-")));
         String [] sp = rangeString.split("-");
-        Long rangeEnd = null;
+        Long rangeLen = null;
         if(sp.length == 2) {//有发送结束位置
-            rangeEnd = Long.parseLong(sp[1]);
+            rangeLen = Long.parseLong(sp[1]);
         }
         request.setAttribute(RANGE_START,rangeStart);
-        request.setAttribute(RANGE_END,rangeEnd);
+        request.setAttribute(RANGE_LEN,rangeLen);
         ByteArrayResource resource = (ByteArrayResource)this.getResource(request);
         if (resource == null) {
             response.sendError(404);
@@ -119,7 +118,9 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             long maxSize = (long)request.getAttribute(MAX_SIZE);
             response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
                     (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),maxSize));
-            if(rangeEnd != null && rangeEnd.longValue() >= maxSize){//已经读取到文件的尾部了,返回 200
+            if(rangeLen != null && rangeLen.longValue() == 1l){//探测请求,返回200
+                response.setStatus(HttpStatus.OK.value());
+            }else if(rangeLen != null && rangeLen.longValue() >= maxSize){//已经读取到文件的尾部了,返回 200
                 response.setStatus(HttpStatus.OK.value());
             }else {
                 response.setStatus(HttpStatus.PARTIAL_CONTENT.value());
