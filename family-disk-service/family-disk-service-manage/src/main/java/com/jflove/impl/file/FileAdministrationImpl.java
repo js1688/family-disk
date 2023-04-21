@@ -32,7 +32,7 @@ public class FileAdministrationImpl implements IFileAdministration {
     @Transactional
     public ResponseHeadDTO addFile(FileInfoDTO dto) {
         FileInfoPO po = new FileInfoPO();
-        BeanUtils.copyProperties(dto,dto);
+        BeanUtils.copyProperties(dto,po);
         po.setSource(dto.getSource().getCode());
         fileInfoMapper.insert(po);
         return new ResponseHeadDTO(true,"添加成功");
