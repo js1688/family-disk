@@ -140,7 +140,7 @@ export function GetUrlParam(key){
  * @constructor
  */
 export function CountFileSliceInfo(file){
-    let sliceSize = 1024 * 1024 * 16;//每片的大小
+    let sliceSize = 1024 * 1024 * 3;//每片的大小
     if(file.size < sliceSize){
         sliceSize = file.size;
     }
