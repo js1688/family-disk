@@ -1,12 +1,12 @@
 package com.jflove.config;
 
-import com.jflove.stream.api.IFileService;
-import com.jflove.stream.dto.FileTransmissionDTO;
-import com.jflove.stream.em.FileSourceENUM;
+import com.jflove.ResponseHeadDTO;
+import com.jflove.file.em.FileSourceENUM;
+import com.jflove.stream.api.IFileStreamService;
+import com.jflove.stream.dto.StreamReadParamDTO;
+import com.jflove.stream.dto.StreamReadResultDTO;
 import lombok.extern.log4j.Log4j2;
-import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -25,8 +25,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author: tanjun
@@ -50,7 +48,7 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
     private DataSize maxFileSize;
 
     @DubboReference
-    private IFileService fileService;
+    private IFileStreamService fileService;
 
     /**
      * 重写获取静态资源方法,不从默认的项目resource获取
@@ -64,51 +62,27 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
         String path = (String)request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         long rangeStart = (long)request.getAttribute(RANGE_START);
         Long rangeEnd = (Long)request.getAttribute(RANGE_END);
-        DataSize ds = null;
-        if(rangeEnd == null) {//如果请求没有指定结束长度,则自己设置
-            //如果被分片,每一片大小最多是最大允许上传的10%
-            ds = DataSize.of((long) (maxFileSize.toMegabytes() * 0.1), DataUnit.MEGABYTES);
-        }else{//如果设置了结束长度,则以设置为准
+        DataSize ds = maxFileSize;
+        if(rangeEnd != null) {//如果设置了结束长度,则以设置为准
             ds = DataSize.of(rangeEnd,DataUnit.BYTES);
         }
         try{
-            AtomicBoolean ab = new AtomicBoolean(false);
-            FileTransmissionDTO dto = new FileTransmissionDTO();
-            StreamObserver<FileTransmissionDTO> repStream = fileService.readByte(new StreamObserver<FileTransmissionDTO>() {
-                @Override
-                public void onNext(FileTransmissionDTO data) {
-                    BeanUtils.copyProperties(data,dto);
-                    ab.set(true);
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                    log.error("文件读写服务异常",throwable);
-                    ab.set(true);
-                }
-
-                @Override
-                public void onCompleted() {
-                }
-            });
-            dto.setFileMd5(path);
-            dto.setReadLength(ds.toBytes());
-            dto.setRangeStart(rangeStart);
-            dto.setRangeEnd(rangeStart + dto.getReadLength());
-            dto.setSource(FileSourceENUM.valueOf((String)request.getAttribute(SOURCE)));
-            dto.setSpaceId((Long)request.getAttribute(SPACE_ID));
-            repStream.onNext(dto);
-            while (true){
-                TimeUnit.MILLISECONDS.sleep(200);
-                if(ab.get()){
-                    break;
-                }
+            StreamReadParamDTO param = new StreamReadParamDTO();
+            param.setFileMd5(path);
+            param.setReadLength(ds.toBytes());
+            param.setRangeStart(rangeStart);
+            param.setRangeEnd(rangeStart + param.getReadLength());
+            param.setSource(FileSourceENUM.valueOf((String)request.getAttribute(SOURCE)));
+            param.setSpaceId((Long)request.getAttribute(SPACE_ID));
+            ResponseHeadDTO<StreamReadResultDTO> result = fileService.readByte(param);
+            if(!result.isResult()){
+                throw new ServletException(result.getMessage());
             }
-            repStream.onCompleted();//重要,当不需要再请求了,必须要调这个函数通知对方,对方也调用这个函数通知请求方,如果不这么做,会导致不会释放,最终内存崩溃
-            request.setAttribute(CONTENT_TYPE,dto.getMediaType());
-            request.setAttribute(MAX_SIZE,dto.getTotalSize());
-            request.setAttribute(RANGE_LEN,(int)dto.getReadLength());
-            ByteArrayResource file = new ByteArrayResource(dto.getShardingStream());
+            StreamReadResultDTO data = result.getData();
+            request.setAttribute(CONTENT_TYPE,data.getParam().getMediaType());
+            request.setAttribute(MAX_SIZE,data.getTotalSize());
+            request.setAttribute(RANGE_LEN,(int)data.getReadLength());
+            ByteArrayResource file = new ByteArrayResource(data.getStream());
             return file;
         }catch (Exception e){
             log.error("错误",e);

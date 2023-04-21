@@ -17,8 +17,12 @@ dubbo:
     name: ${spring.application.name}
     qos-port: 3399
   protocol:
-    name: tri
+    name: dubbo
     port: 4499
+    #dubbo文件传输时最大允许5mb
+    #因为已经实现了分片传输,所以不适合使用dubbo提供的 triple 协议 StreamObserver 技术
+    #triple 协议适合连续不间断的纯后端传输大文件,边传输边写盘,前后端交互这种场景必须做分片,不然浏览器承受不住,所以不适合它
+    payload: 5242880
 # 文件临时存放地,主要是一些大文件分片传输时,最后合并前临时存放
 file:
   storage:

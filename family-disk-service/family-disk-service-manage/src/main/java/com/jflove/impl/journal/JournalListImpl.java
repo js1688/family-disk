@@ -5,7 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.api.IFileAdministration;
-import com.jflove.stream.em.FileSourceENUM;
+import com.jflove.file.em.FileSourceENUM;
 import com.jflove.journal.api.IJournalList;
 import com.jflove.journal.dto.JournalListDTO;
 import com.jflove.journal.dto.JournalListFilesDTO;

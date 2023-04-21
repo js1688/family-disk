@@ -51,7 +51,7 @@ async function queueSyncUpload(){
         form.append('totalLength', no1.sliceInfo.totalSize);
 
         //todo 如果单个分片上传时发生失败,这里考虑重试,后面再说
-        let response = await axios.post("/file/slice/addFile", form, {
+        let response = await axios.post("/stream/slice/addFile", form, {
             header:{
                 'Content-Type': 'multipart/form-data'
             }
@@ -63,7 +63,7 @@ async function queueSyncUpload(){
 
         if(!no1.result){//业务提示上传失败了,不要继续上传了
             return;
-        }else if(no1.result && data.message == 'second'){//触发了秒传,不需要继续上传了
+        }else if(no1.result && data.data){//后端返回了md5值,代表文件已经写盘, 不需要在上传了
             no1.progress = no1.sliceInfo.sliceNum;
             return;
         }

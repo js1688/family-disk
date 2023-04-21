@@ -309,7 +309,7 @@ export default {
           data.append('f', f.file);
           data.append('s', 'JOURNAL');
           data.append('m', f.file.type);
-          axios.post("/file/addFile", data, {
+          axios.post("/stream/addFile", data, {
             header:{
               'Content-Type': 'multipart/form-data'
             }
@@ -523,7 +523,7 @@ export default {
               config.url = url;//真实媒体播放地址
               break;
             default:
-              axios.post('/file/getFile', {
+              axios.post('/stream/getFile', {
                 fileMd5: item.files[i].fileMd5,
                 name: item.files[i].fileName,
                 source:"JOURNAL"

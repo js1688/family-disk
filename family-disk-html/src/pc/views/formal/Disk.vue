@@ -456,7 +456,7 @@ export default {
       ReturnDownForward,
       SearchOutline,
       shareformRef:ref(null),
-      fileDownloadUrl:'/file/slice/getFile',
+      fileDownloadUrl:'/stream/slice/getFile',
     }
   },
   components: {

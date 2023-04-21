@@ -446,7 +446,7 @@ export default {
       data.append('fileMd5', fileMd5);
       data.append('totalLength', totalLength);
       let self = this;
-      axios.post("/file/slice/addFile", data, {
+      axios.post("/stream/slice/addFile", data, {
         header:{
           'Content-Type': 'multipart/form-data'
         }
@@ -604,7 +604,7 @@ export default {
     //大文件下载,分片方式
     sliceDownload:function (item,s,callback) {
       let self = this;
-      axios.post('/file/slice/getFile', {
+      axios.post('/stream/slice/getFile', {
         fileMd5: item.fileMd5,
         name: item.name,
         source:"CLOUDDISK"
@@ -716,7 +716,7 @@ export default {
         data.append('f', f.file);
         data.append('s', 'CLOUDDISK');
         data.append('m', f.file.type);
-        axios.post("/file/addFile", data, {
+        axios.post("/stream/addFile", data, {
           header:{
             'Content-Type': 'multipart/form-data'
           }

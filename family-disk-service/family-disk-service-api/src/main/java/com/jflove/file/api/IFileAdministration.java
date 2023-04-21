@@ -1,7 +1,8 @@
 package com.jflove.file.api;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.stream.em.FileSourceENUM;
+import com.jflove.file.dto.FileInfoDTO;
+import com.jflove.file.em.FileSourceENUM;
 
 /**
  * @author: tanjun
@@ -9,6 +10,14 @@ import com.jflove.stream.em.FileSourceENUM;
  * @desc: 文件管理
  */
 public interface IFileAdministration {
+
+    /**
+     * 添加一个文件信息
+     * @param dto
+     * @return
+     */
+    ResponseHeadDTO addFile(FileInfoDTO dto);
+
     /**
      * 标记删除文件
      * @param md5

@@ -6,7 +6,7 @@ import cn.hutool.core.io.unit.DataSize;
 import cn.hutool.core.io.unit.DataUnit;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.stream.impl.FileServiceImpl;
+import com.jflove.stream.impl.FileStreamServiceImpl;
 import com.jflove.stream.service.IFileClear;
 import com.jflove.mapper.admin.FileDiskConfigMapper;
 import com.jflove.mapper.file.FileInfoMapper;
@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
  * @date: 2023/1/13 9:30 AM
  * @desc: 本地磁盘文件清理
  */
+
+//todo 这个类要重新思考一下,重写一下
 @Log4j2
 @Component
 @EnableScheduling
@@ -61,7 +63,7 @@ public class LocalFileClearImpl implements IFileClear {
     @Override
     @Scheduled(cron = "0 0 3 * * ?")
     public void clearTemp() {
-        File[] fs = new File(tempPath).listFiles(e->e.getName().endsWith(FileServiceImpl.tempFileSuffix));
+        File[] fs = new File(tempPath).listFiles(e->e.getName().endsWith(FileStreamServiceImpl.tempFileSuffix));
         for (File f:fs) {
             try {
                 BasicFileAttributes attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class);
