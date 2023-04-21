@@ -42,11 +42,6 @@ public class StreamReadParamDTO implements Serializable {
     private long rangeStart;
 
     /**
-     * 范围结束位置
-     */
-    private long rangeEnd;
-
-    /**
      * 读取长度
      */
     private long readLength;

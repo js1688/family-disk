@@ -43,14 +43,12 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
             //自动修正读取位置
             if(dto.getRangeStart() > raf.length()) {
                 return new ResponseHeadDTO<>(false,"读取位置超出了文件大小");
+            }else if(dto.getReadLength() > payload){//如果读取长度大于了dubbo传输大小,则设置成3mb
+                dto.setReadLength((int)DataSize.ofMegabytes(3).toBytes());
             }else if(dto.getRangeStart() == 0 && dto.getRangeStart() + dto.getReadLength() > raf.length()){
                 dto.setReadLength((int)raf.length());
-                dto.setRangeEnd(dto.getReadLength());
             }else if(dto.getRangeStart() + dto.getReadLength() > raf.length()){
                 dto.setReadLength((int)(raf.length()-dto.getRangeStart()));
-                dto.setRangeEnd((int)dto.getReadLength());
-            }else if(dto.getReadLength() > payload){//如果读取长度大于了dubbo传输大小,则跳转为dubbo最大
-                dto.setReadLength((int)(payload));
             }
             ret.setTotalSize(raf.length());
             raf.seek(dto.getRangeStart());

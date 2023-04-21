@@ -70,7 +70,6 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             param.setFileMd5(path);
             param.setReadLength(ds.toBytes());
             param.setRangeStart(rangeStart);
-            param.setRangeEnd(rangeStart + param.getReadLength());
             param.setSource(FileSourceENUM.valueOf((String)request.getAttribute(SOURCE)));
             param.setSpaceId((Long)request.getAttribute(SPACE_ID));
             ResponseHeadDTO<StreamReadResultDTO> result = fileService.readByte(param);
