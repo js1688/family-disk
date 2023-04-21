@@ -839,7 +839,7 @@ export default {
     },
     //获得分享内容
     getBody:function (){
-      if(this.param.lock && !this.param.password){
+      if(this.param.lock == 'true' && !this.param.password){
         this.showToast("error",'请输入解锁密码');
         return false;
       }

@@ -1,7 +1,7 @@
 package com.jflove.file.api;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.file.em.FileSourceENUM;
+import com.jflove.stream.em.FileSourceENUM;
 
 /**
  * @author: tanjun

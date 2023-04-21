@@ -3,7 +3,7 @@ package com.jflove.controller.share;
 import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
-import com.jflove.file.em.FileSourceENUM;
+import com.jflove.stream.em.FileSourceENUM;
 import com.jflove.netdisk.api.INetdiskDirectory;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;

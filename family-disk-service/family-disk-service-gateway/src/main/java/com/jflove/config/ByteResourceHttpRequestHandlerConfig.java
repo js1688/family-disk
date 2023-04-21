@@ -1,8 +1,8 @@
 package com.jflove.config;
 
-import com.jflove.file.api.IFileService;
-import com.jflove.file.dto.FileTransmissionDTO;
-import com.jflove.file.em.FileSourceENUM;
+import com.jflove.stream.api.IFileService;
+import com.jflove.stream.dto.FileTransmissionDTO;
+import com.jflove.stream.em.FileSourceENUM;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.config.annotation.DubboReference;

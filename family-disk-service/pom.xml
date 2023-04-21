@@ -24,15 +24,9 @@
         <module>family-disk-service-gateway</module>
         <module>family-disk-service-model</module>
         <module>family-disk-service-api</module>
-        <module>family-disk-service-user</module>
-        <module>family-disk-service-email</module>
-        <module>family-disk-service-admin</module>
-        <module>family-disk-service-file</module>
-        <module>family-disk-service-notebook</module>
-        <module>family-disk-service-netdisk</module>
+        <module>family-disk-service-stream</module>
         <module>family-disk-service-plugins</module>
-        <module>family-disk-service-journal</module>
-        <module>family-disk-service-share</module>
+        <module>family-disk-service-manage</module>
     </modules>
     <dependencyManagement>
         <dependencies>

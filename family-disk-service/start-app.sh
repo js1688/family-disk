@@ -18,14 +18,8 @@ if [ ! $cmd ]; then
 fi
 
 array=(
-family-disk-service-email/target/family-disk-service-email.jar
-family-disk-service-user/target/family-disk-service-user.jar
-family-disk-service-admin/target/family-disk-service-admin.jar
-family-disk-service-file/target/family-disk-service-file.jar
-family-disk-service-netdisk/target/family-disk-service-netdisk.jar
-family-disk-service-journal/target/family-disk-service-journal.jar
-family-disk-service-notebook/target/family-disk-service-notebook.jar
-family-disk-service-share/target/family-disk-service-share.jar
+family-disk-service-manage/target/family-disk-service-manage.jar
+family-disk-service-stream/target/family-disk-service-stream.jar
 family-disk-service-gateway/target/family-disk-service-gateway.jar
 )
 # shellcheck disable=SC2068

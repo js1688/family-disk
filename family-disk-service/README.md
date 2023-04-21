@@ -7,18 +7,13 @@
 ## 模块目录
 ```
 - family-disk-service
-    - family-disk-service-gateway 应用网关
-    - family-disk-service-user 用户管理
-    - family-disk-service-admin 后台管理
-    - family-disk-service-file 文件管理
-    - family-disk-service-notebook 记事本
-    - family-disk-service-netdisk 网盘
-    - family-disk-service-email 邮件发送服务
-    - family-disk-service-model 数据库模型
-    - family-disk-service-api rpc接口标准
-    - family-disk-service-plugins 插件模块
-    - family-disk-service-journal 日记
-    - family-disk-service-share 分享
+    - family-disk-service-gateway 应用网关,http,websocket,
+    - family-disk-service-manage 页面管理服务,页面增删改查,
+    - family-disk-service-file 文件服务,负责文件二进制流读写,
+    - family-disk-service-model 数据库模型,mysql po类,mapper类
+    - family-disk-service-api rpc接口标准,dubbo接口定义,以及dto类定义
+    - family-disk-service-plugins 插件模块,不属于服务内,暂时没用
+    - family-disk-service-bak 数据备份服务,暂时没有
 ```
 ## 关键配置文件说明
 ### application.yml

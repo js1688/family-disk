@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: family-disk-stream
+  datasource:
+    url: jdbc:mysql://ip:port/schame?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#mybatis-plus:
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+dubbo:
+  consumer:
+    timeout: 10000 # 超时时间
+    retries: 0 # 不重试
+  application:
+    name: ${spring.application.name}
+    qos-port: 3399
+  protocol:
+    name: tri
+    port: 4499
+# 文件临时存放地,主要是一些大文件分片传输时,最后合并前临时存放
+file:
+  storage:
+    path:
+      temp: /Users/tanjun/Downloads/temp
+    space: 10GB
+
+logging:
+  config: logback.xml
+  level:
+    com.jflove.mapper.*: debug

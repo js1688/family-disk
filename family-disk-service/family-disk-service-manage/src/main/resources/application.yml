@@ -1,0 +1,44 @@
+dubbo:
+  consumer:
+    timeout: 10000 # 超时时间
+    retries: 0 # 不重试
+  application:
+    name: ${spring.application.name}
+    qos-port: 1177
+  protocol:
+    name: dubbo
+    port: 2277
+spring:
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username:
+    password:
+    frequency: 1 #每种类型的邮件发送频率控制,单位分钟
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  application:
+    name: family-disk-manage
+  datasource:
+    url: jdbc:mysql://ip:port/schame?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false&serverTimezone=GMT%2B8
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#mybatis-plus:
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+user:
+  space:
+    init-size: 10240MB
+  #是否允许用户注册
+  open:
+    register: true
+
+logging:
+  config: logback.xml
+  level:
+    com.jflove.mapper.*: debug
