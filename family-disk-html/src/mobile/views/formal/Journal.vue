@@ -502,7 +502,7 @@ export default {
           let mediaType = item.files[i].mediaType.toUpperCase();
           let mediaTypes = mediaType.split("/");
           //如果是视频或音频,改成变下边播的url
-          let url = key().baseURL+"file/media/play/JOURNAL/"+ localStorage.getItem(key().authorization) + "/" +item.files[i].fileMd5;
+          let url = key().baseURL+"stream/media/play/JOURNAL/"+ localStorage.getItem(key().authorization) + "/" +item.files[i].fileMd5;
           switch (mediaTypes[0]) {
             case "VIDEO"://视频
               config.url2 = url;//真实媒体播放地址

@@ -116,10 +116,10 @@ public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHan
             if(request.getAttribute(CONTENT_TYPE) != null) {
                 response.setContentType((String) request.getAttribute(CONTENT_TYPE));
             }
+            long maxSize = (long)request.getAttribute(MAX_SIZE);
             response.setHeader(HttpHeaders.CONTENT_RANGE, String.format("bytes %s-%s/%s",rangeStart,
-                    (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),
-                    (long)request.getAttribute(MAX_SIZE)));
-            if(rangeEnd != null && rangeEnd.longValue() == 1l){//探测请求,返回200
+                    (rangeStart + (int)request.getAttribute(RANGE_LEN)-1),maxSize));
+            if(rangeEnd != null && rangeEnd.longValue() >= maxSize){//已经读取到文件的尾部了,返回 200
                 response.setStatus(HttpStatus.OK.value());
             }else {
                 response.setStatus(HttpStatus.PARTIAL_CONTENT.value());

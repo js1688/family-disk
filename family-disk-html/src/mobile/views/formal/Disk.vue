@@ -499,7 +499,7 @@ export default {
       }
       for (let i = 0; i < fs.length; i++) {
         let file = fs[i].file;
-        let sliceSize = 1024 * 1024 * 16;//每片最大16mb
+        let sliceSize = 1024 * 1024 * 3;//每片最大16mb
         if(file.size < sliceSize){
           sliceSize = file.size;
         }
@@ -573,7 +573,7 @@ export default {
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
     openVideo:function (item,gs){
       //判断使用哪种播放器,如果是苹果公司的媒体资源则使用原生播放器播放
-      let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+      let url = key().baseURL+"stream/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
       switch (gs) {
         case "MP4":
           this.videoOptions.sources.push({src:url,type:item.mediaType});

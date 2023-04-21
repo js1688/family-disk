@@ -730,7 +730,7 @@ export default {
         this.audioUrls = [];
         for (let i = 0; i < ds.length; i++) {
           let item = ds[i];
-          let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+          let url = key().baseURL+"stream/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
           this.audioUrls.push({
               play:i == 0,
               index:i,
@@ -817,7 +817,7 @@ export default {
     },
     //组织在线播放视频的地址
     createPlayUrl:function (item){
-      let url = key().baseURL+"file/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+      let url = key().baseURL+"stream/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
       this.videoOptions.sources = [{src:url,type:item.mediaType}];
       this.showPlayVideo = true;
       this.showPlayVideoName = item.name;
