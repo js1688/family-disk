@@ -71,7 +71,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
         }catch (IOException e){}
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){
             //文件传输完毕,开始执行临时分片合并
-            for (int i = 0; i <= dto.getShardingNum(); i++) {
+            for (int i = 0; i < dto.getShardingNum(); i++) {
                 byte [] f = Files.readAllBytes(Path.of(String.format("%s/%s-%s%s", tempPath, dto.getFileMd5(), i, tempFileSuffix)));
                 raf.write(f);//支持追加写入
             }

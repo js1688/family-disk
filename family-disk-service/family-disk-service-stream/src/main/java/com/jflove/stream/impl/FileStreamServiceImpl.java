@@ -108,7 +108,7 @@ public class FileStreamServiceImpl implements IFileStreamService {
                 ResponseHeadDTO<String> result = fileReadAndWrit.writByte(dto, selectd,tempFileSuffix, tempPath);//写盘
                 if (result.isResult()) {//写盘成功,清除临时文件
                     //清除临时文件
-                    for (int i = 0; i <= dto.getShardingNum(); i++) {
+                    for (int i = 0; i < dto.getShardingNum(); i++) {
                         try {
                             Files.deleteIfExists(Path.of(String.format("%s/%s-%s%s", tempPath, dto.getFileMd5(), i, tempFileSuffix)));
                         } catch (IOException e) {
