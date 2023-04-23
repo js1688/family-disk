@@ -121,8 +121,8 @@ public class FileStreamController {
                                                @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @RequestParam("s") String s,
                                                @ApiParam("文件多媒体类型") @RequestParam("m") String m,
                                                @ApiParam("文件分片数量") @RequestParam("n") Integer n,
-                                               @ApiParam("开始位置") @RequestParam("start") Integer start,
-                                               @ApiParam("结束位置") @RequestParam("end") Integer end,
+                                               @ApiParam("开始位置") @RequestParam("start") Long start,
+                                               @ApiParam("结束位置") @RequestParam("end") Long end,
                                                @ApiParam("总大小") @RequestParam("totalLength") Long totalLength,
                                                @ApiParam("文件真实名称") @RequestParam("originalFileName") String originalFileName,
                                                @ApiParam("前端计算的文件md5") @RequestParam("fileMd5") String fileMd5
