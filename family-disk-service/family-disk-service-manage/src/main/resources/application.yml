@@ -9,6 +9,7 @@ dubbo:
     name: dubbo
     port: 2277
 spring:
+  #配置邮箱发件服务
   mail:
     host: smtp.qq.com
     port: 587
@@ -33,6 +34,7 @@ spring:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 user:
   space:
+    # 用户创建存储空间的时候,默认的大小
     init-size: 10240MB
   #是否允许用户注册
   open:

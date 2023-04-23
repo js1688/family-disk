@@ -27,6 +27,7 @@
         <module>family-disk-service-stream</module>
         <module>family-disk-service-plugins</module>
         <module>family-disk-service-manage</module>
+        <module>family-disk-service-scheduling</module>
     </modules>
     <dependencyManagement>
         <dependencies>

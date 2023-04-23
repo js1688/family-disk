@@ -118,6 +118,12 @@ public class UserInfoImpl implements IUserInfo {
         uip.setEmail(email);
         uip.setPassword(password);
         uip.setRole(UserRoleENUM.COMMON.getCode());
+        //如果没有管理员账号,则默认设置成管理员账号,管理员账号只允许一个
+        if(userInfoMapper.selectCount(new LambdaQueryWrapper<UserInfoPO>()
+                .eq(UserInfoPO::getRole,UserRoleENUM.ADMIN.getCode())
+        ) == 0){
+            uip.setRole(UserRoleENUM.ADMIN.getCode());
+        }
         userInfoMapper.insert(uip);
         UserInfoDTO dto = new UserInfoDTO();
         BeanUtils.copyProperties(uip,dto);
