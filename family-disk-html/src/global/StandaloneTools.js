@@ -98,7 +98,20 @@ export async function Base64toBlob(base64){
  * @returns {string}
  */
 export function FormatDate(date){
-    return `${date.getFullYear()}-${(date.getMonth() + 1) < 10 ? '0' + (date.getMonth() + 1) : (date.getMonth() + 1)}-${date.getDate() < 10 ? '0' + date.getDate() : date.getDate()} 23:59:59`;
+    return `${FormatDateDay(date)} 23:59:59`;
+}
+
+/**
+ * 格式化日期,精确到天
+ * @param dt
+ * @returns {string}
+ * @constructor
+ */
+export function FormatDateDay(dt){
+    let year = dt.getFullYear();
+    let month = (dt.getMonth() + 1).toString().padStart(2,'0');
+    let date = dt.getDate().toString().padStart(2,'0');
+    return year+'-'+month+'-'+date;
 }
 
 /**

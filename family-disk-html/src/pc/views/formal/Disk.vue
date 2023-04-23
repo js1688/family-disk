@@ -12,7 +12,9 @@
                     <n-upload :default-upload="false"
                               :multiple="true"
                               :show-file-list="false"
-                              @update:file-list="addUploadFile" >
+                              @update:file-list="addUploadFile"
+                              style="width: 24px;height: 24px;"
+                    >
                       <n-button text style="font-size: 24px">
                         <n-icon>
                           <cloud-upload-outline />

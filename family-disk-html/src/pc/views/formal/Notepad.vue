@@ -38,8 +38,8 @@
                     </n-button>
                   </n-input-group>
                   <n-layout :style="`height:${maxHeight}px;overflow:auto;`" :native-scrollbar="false">
-                    <n-list hoverable clickable v-for="item in list"  >
-                      <n-list-item >
+                    <n-list hoverable clickable >
+                      <n-list-item v-for="item in list">
                         <n-thing @click="openText(item);mode='preview';" :title="item.keyword" :style="{ width: '230px' }">
                           <template #description>
                             <n-space size="small">
