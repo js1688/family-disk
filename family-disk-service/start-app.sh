@@ -20,6 +20,7 @@ fi
 array=(
 family-disk-service-manage/target/family-disk-service-manage.jar
 family-disk-service-stream/target/family-disk-service-stream.jar
+family-disk-service-scheduling/target/family-disk-service-scheduling.jar
 family-disk-service-gateway/target/family-disk-service-gateway.jar
 )
 # shellcheck disable=SC2068
