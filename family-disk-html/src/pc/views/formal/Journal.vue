@@ -6,7 +6,7 @@
           <n-layout has-sider>
             <n-layout-sider width="290" :bordered="true">
               <n-space style="margin: 5px;">
-                <n-button v-if="roleWrite" @click="" text style="font-size: 24px;margin-left: 15px;">
+                <n-button v-if="roleWrite" @click="addText" text style="font-size: 24px;margin-left: 15px;">
                   <n-icon>
                     <add-circle-outline />
                   </n-icon>
@@ -38,15 +38,31 @@
                 </n-layout>
               </n-space>
             </n-layout-sider>
-            <!-- todo 使用 v-if="saveIf" 判断是保存,还是查看,确定不同按钮的显示 -->
             <n-layout-content :style="`height:${maxHeight + 80}px;overflow:auto;`" :native-scrollbar="false">
               <n-card :title="openDb.happenTime" :bordered="false">
                 <div style="width: 50%;display:inline-block;">
-                  <n-h3 style="margin-bottom: 0px;">{{openDb.title}}</n-h3>
+                  <n-h3 v-if="!saveIf" style="margin-bottom: 0px;">{{openDb.title}}</n-h3>
+                  <n-input v-if="saveIf" type="text" v-model:value="openDb.title" size="large" placeholder="请输入日记标题" />
                 </div>
                 <div style="width: 50%;display:inline-block;">
                   <n-space :size="20" v-if="roleWrite" justify="end">
-                    <n-button v-if="saveIf" text style="font-size: 24px" @click="">
+                    <n-upload v-if="saveIf"
+                              :default-upload="false"
+                              :multiple="true"
+                              :show-file-list="false"
+                              :max="10"
+                              @update:file-list="addUploadFile"
+                              accept="image/*,video/*"
+                              style="width: 24px;height: 24px;"
+                    >
+                      <n-button  text style="font-size: 24px">
+                        <n-icon>
+                          <images-outline />
+                        </n-icon>
+                      </n-button>
+                    </n-upload>
+
+                    <n-button v-if="saveIf" text style="font-size: 24px" @click="add">
                       <n-icon>
                         <save-outline />
                       </n-icon>
@@ -56,14 +72,27 @@
                         <trash-outline />
                       </n-icon>
                     </n-button>
+
+
                   </n-space>
                 </div>
                 <n-divider />
                 <n-card :bordered="false" size="huge" :style="`max-height:${maxHeight - 100}px;overflow:auto;`">
-                  <n-text type="default" :code="false">
+                  <n-text type="default" :code="false" v-if="!saveIf">
                     {{openDb.body}}
                   </n-text>
+                  <n-input
+                      v-if="saveIf"
+                      type="textarea"
+                      placeholder="请输入日记内容"
+                      maxlength="3000"
+                      show-count
+                      v-model:value="openDb.body"
+                      :autosize="{
+                        minRows: 3
+                      }" />
                   <n-divider />
+
                   <n-image-group>
                     <n-space>
                       <n-image v-for="m in openImagesUrls"
@@ -115,7 +144,7 @@ import {
   dateZhCN,
   NAnchor,
   NAnchorLink, NAvatar, NBadge, NBreadcrumb, NBreadcrumbItem, NButton, NCard, NConfigProvider, NDataTable, NDatePicker,
-  NDescriptions,NTimeline,NImageGroup,
+  NDescriptions,NTimeline,NImageGroup,NUpload,
   NDescriptionsItem, NDivider, NDrawer, NDrawerContent, NForm, NFormItem,
   NIcon, NImage, NInput, NInputGroup,
   NLayout, NLayoutContent, NLayoutFooter, NLayoutHeader,
@@ -128,15 +157,22 @@ import {
   AddCircleOutline,
   BookmarkOutline, CloudDownloadOutline,
   CloudOutline, CloudUploadOutline,
-  EnterOutline,
+  EnterOutline,ImagesOutline,
   ExitOutline, FolderOutline, ListOutline,
   MailOutline,SaveOutline,
   PersonOutline, ReturnDownForward, SearchOutline, TrashOutline
 } from "@vicons/ionicons5";
 import axios from "axios";
-import {Base64toBlob, FormatDateDay, GetVideoCoverBase64, HeicToCommon} from '@/global/StandaloneTools';
+import {
+  Base64toBlob,
+  CountFileSliceInfo, FileMd5,
+  FormatDateDay,
+  GetVideoCoverBase64,
+  HeicToCommon
+} from '@/global/StandaloneTools';
 import {FileDoownloadAppoint, FileDoownloadSmall, FileSoundOut} from "@/global/FileDownload";
 import videojs from "video.js";
+import {FileUpload} from "@/global/FileUpload";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -201,10 +237,56 @@ export default {
     NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,NList,NThing,
     NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NTabPane,NH3,NH6,
     NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,NImageGroup,
-    ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NTabs,NText,
-    NListItem,NRadioGroup,NRadioButton,NDatePicker,NTimePicker,NConfigProvider,NTimelineItem,NTimeline,SaveOutline
+    ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NTabs,NText,ImagesOutline,
+    NListItem,NRadioGroup,NRadioButton,NDatePicker,NTimePicker,NConfigProvider,NTimelineItem,NTimeline,SaveOutline,NUpload
   },
   methods:{
+    //添加日记
+    add:function (){
+      //先上传文件,再保存
+      console.log(this.openImagesUrls);
+      console.log(this.openDb);
+    },
+    //上传日记附件
+    addUploadFile:async function (e) {
+      let last = e[e.length - 1];//最后添加的文件,如果选择多个文件,这个方法会被触发多次
+      let file = last.file;
+      let size = Math.floor(file.size/1024/1024);
+      //判断文件是否重复添加
+      for (let i = 0; i < e.length - 1; i++) {
+        if(last.name == e[i].name){
+          e.splice(i,1);//删除掉添加的内容
+          this.showToast("error",`文件名:[${last.name}]正在上传,请勿重复上传`);
+          return;
+        }else if(size > 10){
+          e.splice(i,1);//删除掉添加的内容
+          this.showToast("error",`文件名:[${last.name}]大于10MB,请压缩后上传`);
+          return;
+        }
+      }
+      //将文件添加到预览图片中
+      //计算分片大小
+      let sliceInfo = CountFileSliceInfo(last.file);
+      //计算md5值
+      let md5 = await FileMd5(last.file,sliceInfo.sliceSize,sliceInfo.sliceNum);
+      let mediaType = file.type.toUpperCase();
+      let mediaTypes = mediaType.split("/");
+      this.openImagesUrlsIndex[md5] = this.openImagesUrls.length;
+      let src = window.URL.createObjectURL(file);
+      let imgSrc = src;
+      switch (mediaTypes[0]) {
+        case "IMAGE"://图片
+          break
+        case "VIDEO"://视频
+          let base64 = await GetVideoCoverBase64(src);
+          let b = await Base64toBlob(base64);
+          imgSrc = window.URL.createObjectURL(b);//封面地址
+          break
+      }
+      this.openImagesUrls.push({src: imgSrc, alt: null, fileMd5: md5,mediaType:file.type,name:file.name,
+        f:{mediaType:file.type,name:file.name,src:src,sliceInfo:sliceInfo,file:file}
+      });
+    },
     //关闭播放视频
     closePlayVideo:function (){
       //停止播放
@@ -258,13 +340,18 @@ export default {
       let mediaTypes = mediaType.split("/");
       switch (mediaTypes[0]){
         case "VIDEO"://视频
-          let url = key().baseURL+"stream/media/play/JOURNAL/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
-          this.videoOptions.sources = [{src:url,type:item.mediaType}];
+            //判断是是否已经有src了
+            let src = item.src;
+            if(!src){
+              src = key().baseURL+"stream/media/play/JOURNAL/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+            }
+          this.videoOptions.sources = [{src:src,type:item.mediaType}];
           this.showPlayVideo = true;
           this.showPlayVideoName = item.name;
           this.playerSelectd = 0;//设置打开后默认播放器
           break
         case "AUDIO"://音频
+            //理论上来讲日记,没必要上传音频,这里先不做处理
           break;
       }
     },
@@ -310,11 +397,19 @@ export default {
         console.log(error);
       });
     },
+    //添加日记
+    addText:async function(){
+      this.saveIf=true;
+      this.openImagesUrls = [];
+      this.openImagesUrlsIndex = {};
+      this.openDb = {happenTime:FormatDateDay(new Date()),title:'',body:'',files:[]};
+    },
     //打开日记详情
     openText:async function (item){
       this.openDb = item;
       this.openImagesUrls = [];
       this.openImagesUrlsIndex = {};
+      this.saveIf=false;
       //提取出日记中的媒体封面
       if(item.files){
         //先循环一下列表,添加占位
