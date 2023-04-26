@@ -269,7 +269,7 @@
             <n-space vertical v-if="downloadList && Object.keys(downloadList).length !== 0">
               <n-card :title="value.data.name" v-for="value in downloadList" :bordered="false">
                 <n-space vertical>
-                  <n-progress type="line" processing status="success" :percentage="value.data.scale">
+                  <n-progress type="line" processing :status="`${value.data.scale >= 100 ? 'success':''}`" :percentage="value.data.scale">
                     文件大小 {{Math.floor(value.data.total/1024/1024)}}(MB) 进度 {{value.data.scale}}%
                   </n-progress>
                   <n-space justify="end">

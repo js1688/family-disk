@@ -82,7 +82,9 @@ async function queueSyncUpload(){
     isUpload = false;
 
     if(uploadList[no1.md5]){
-        no1.callback(no1);
+        if(no1.callback){
+            no1.callback(no1);
+        }
         //清除上传记录
         delete uploadList[no1.md5];
     }

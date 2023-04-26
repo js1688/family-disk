@@ -95,15 +95,31 @@
 
                   <n-image-group>
                     <n-space>
-                      <n-image v-for="m in openImagesUrls"
+                      <n-image v-if="!saveIf" v-for="m in openImagesUrls"
                                width="200"
                                :src="m.src" :alt="m.alt"
                                :preview-disabled="previewDisabled(m.f)"
                                @click="openMedia(m.f)"
                                style="cursor:pointer"
                       />
+
+                      <n-card v-if="saveIf"
+                              :bordered="false"
+                              v-for="m in openImagesUrls"
+                              closable @close="removeUploadFile(m.md5)">
+                        <n-image
+                                 width="200"
+                                 :src="m.src" :alt="m.alt"
+                                 :preview-disabled="previewDisabled(m.f)"
+                                 @click="openMedia(m.f)"
+                                 style="cursor:pointer"
+                        />
+                        <n-progress type="line" processing :status="`${m.f.scale >= 100 ? 'success':''}`" :percentage="m.f.scale" />
+                        <n-p>文件大小 {{Math.floor(m.f.sliceInfo.totalSize/1024/1024)}}(MB) 进度 {{m.f.scale}}%</n-p>
+                      </n-card>
                     </n-space>
                   </n-image-group>
+
                 </n-card>
               </n-card>
 
@@ -142,7 +158,7 @@ import {key} from "@/global/KeyGlobal";
 import {
   createDiscreteApi,
   dateZhCN,
-  NAnchor,
+  NAnchor,NP,
   NAnchorLink, NAvatar, NBadge, NBreadcrumb, NBreadcrumbItem, NButton, NCard, NConfigProvider, NDataTable, NDatePicker,
   NDescriptions,NTimeline,NImageGroup,NUpload,
   NDescriptionsItem, NDivider, NDrawer, NDrawerContent, NForm, NFormItem,
@@ -170,9 +186,10 @@ import {
   GetVideoCoverBase64,
   HeicToCommon
 } from '@/global/StandaloneTools';
-import {FileDoownloadAppoint, FileDoownloadSmall, FileSoundOut} from "@/global/FileDownload";
+import {FileDoownloadAppoint, FileDoownloadSmall, FileSoundOut, getDownloadList} from "@/global/FileDownload";
 import videojs from "video.js";
-import {FileUpload} from "@/global/FileUpload";
+import {FileUpload, getUploadList} from "@/global/FileUpload";
+import {showToast} from "vant";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
@@ -235,17 +252,81 @@ export default {
   components: {
     NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,BookmarkOutline,
     NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,NList,NThing,
-    NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NTabPane,NH3,NH6,
+    NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NTabPane,NH3,NH6,NP,
     NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,NImageGroup,
     ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NTabs,NText,ImagesOutline,
     NListItem,NRadioGroup,NRadioButton,NDatePicker,NTimePicker,NConfigProvider,NTimelineItem,NTimeline,SaveOutline,NUpload
   },
   methods:{
+    //移除要上传的文件
+    removeUploadFile:function (md5) {
+      let index = this.openImagesUrlsIndex[md5];
+      this.openImagesUrls.splice(index,1);
+    },
     //添加日记
-    add:function (){
+    add:async function (){
       //先上传文件,再保存
-      console.log(this.openImagesUrls);
-      console.log(this.openDb);
+      let self = this;
+      self.isOverlay = true;
+      if(this.openImagesUrls){
+        for (let i = 0; i < this.openImagesUrls.length; i++) {
+          let u = this.openImagesUrls[i];
+          let f = u.f;
+          let ret = await FileUpload(f.sliceInfo,f.file,u.fileMd5,'JOURNAL',null,async function (q) {
+            if(q.result){
+              f.scale = 100;
+            }else{
+              self.showToast("error", q.resultMsg);
+            }
+          });
+          this.showToast(ret.state ? null : "error",ret.msg);
+        }
+      }
+      let interval = setInterval(function (){
+        //更新上传列表进度
+        let uplist = getUploadList();
+        for (const uplistKey in uplist) {
+          let v = uplist[uplistKey];
+          let index = self.openImagesUrlsIndex[uplistKey];
+          let f = self.openImagesUrls[index].f;
+          f.scale = v.progress == 0 ? 0 : Math.floor(v.progress/v.sliceInfo.sliceNum*100);
+          if(!v.result){
+            self.showToast("error",v.resultMsg);
+            self.stopFileUpload(v.md5);
+          }
+        }
+        //检查所有文件是否都已经上传完毕
+        let successFiles = [];
+        if(self.openImagesUrls){
+          for (let i = 0; i < self.openImagesUrls.length; i++) {
+            let u = self.openImagesUrls[i];
+            let f = u.f;
+            if(f.scale < 100){
+              return;
+            }
+            successFiles.push({fileMd5:u.fileMd5,fileName:f.name,mediaType:f.mediaType});
+          }
+        }
+        //文件都已经上传成功
+        let data = {
+          title: self.openDb.title,
+          body: self.openDb.body,
+          happenTime: self.openDb.happenTime,
+          files:successFiles,
+        };
+        axios.post('/journal/addJournalList', data).then(function (response) {
+          if(response.data.result){
+            self.onLoad(true);
+          }
+          self.showToast(response.data.result ? "success" : "error", response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+
+        clearInterval(interval);
+      }, 500);
     },
     //上传日记附件
     addUploadFile:async function (e) {
@@ -284,7 +365,7 @@ export default {
           break
       }
       this.openImagesUrls.push({src: imgSrc, alt: null, fileMd5: md5,mediaType:file.type,name:file.name,
-        f:{mediaType:file.type,name:file.name,src:src,sliceInfo:sliceInfo,file:file}
+        f:{mediaType:file.type,name:file.name,src:src,sliceInfo:sliceInfo,file:file,scale:0}
       });
     },
     //关闭播放视频
@@ -361,10 +442,10 @@ export default {
       this.showDialog("warning",`是否删除日记:${this.openDb.title}!`,function (){
         self.isOverlay = true;
         axios.post('/journal/delJournalList', {
-          id: this.openDb.id
+          id: self.openDb.id
         }).then(function (response) {
           if(response.data.result){
-            self.onLoad();
+            self.onLoad(true);
           }
           self.showToast(response.data.result ? "success" : "error", response.data.message);
           self.isOverlay = false;
