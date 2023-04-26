@@ -229,7 +229,6 @@ VMdEditor.use(createTipPlugin());
 VMdEditor.use(createEmojiPlugin());
 VMdEditor.use(createHighlightLinesPlugin());
 import VueClipboard from "vue-clipboard2";
-import {showConfirmDialog, showToast} from "vant";
 import {FormatDate} from "@/global/StandaloneTools";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])

@@ -189,7 +189,6 @@ import {
 import {FileDoownloadAppoint, FileDoownloadSmall, FileSoundOut, getDownloadList} from "@/global/FileDownload";
 import videojs from "video.js";
 import {FileUpload, getUploadList} from "@/global/FileUpload";
-import {showToast} from "vant";
 
 const { notification,dialog} = createDiscreteApi(['notification','dialog'])
 
