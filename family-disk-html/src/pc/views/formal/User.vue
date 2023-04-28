@@ -454,6 +454,15 @@ export default {
       this.getSpaceInfo();
       this.getMySpaceRel();
     }
+    //判断自己有没有空间
+    let spaces = JSON.parse(localStorage.getItem(key().userAllSpaceRole));
+    this.mySpace = false;
+    for (let i = 0; i < spaces.length; i++) {
+      if(spaces[i].createUserId + '' == localStorage.getItem(key().userId)){
+        this.mySpace = true;
+        break;
+      }
+    }
   },
   data: function() {
     return {
@@ -764,22 +773,13 @@ export default {
       let self = this;
       this.mySpaceOptions = [];
       axios.get('/user/space/getUserInfoBySpaceId').then(function (res){
+        self.isOverlay = false;
         if(res.data.result && res.data.datas.length > 0){
           for (let i = 0; i < res.data.datas.length; i++) {
             res.data.datas[i].roleName = res.data.datas[i].state == 'APPROVAL' ? '待审批' : res.data.datas[i].role == 'WRITE' ? '读写' : '只读';
             self.mySpaceOptions.push(res.data.datas[i]);
           }
-        }else{
-          //判断自己有没有空间
-          let spaces = JSON.parse(localStorage.getItem(key().userAllSpaceRole));
-          for (let i = 0; i < spaces.length; i++) {
-            if(spaces[i].createUserId + '' == localStorage.getItem(key().userId)){
-              return;
-            }
-          }
-          self.mySpace = false;
         }
-        self.isOverlay = false;
       }).catch(function (err){
         self.isOverlay = false;
         console.log(err);
@@ -787,19 +787,21 @@ export default {
     },
     //退出空间
     exitSpaceOnSelect:function (row){
-      this.isOverlay = true;
       let self = this;
-      axios.post('/user/space/exitRel', {
-        spaceId: row.code
-      }).then(function (res){
-        if(res.data.result){
-          self.getUserInfo();
-        }
-        self.showToast(res.data.result ? "success" : "error", res.data.message);
-        self.isOverlay = false;
-      }).catch(function (err){
-        self.isOverlay = false;
-        console.log(err);
+      this.showDialog("warning",`确定退出空间:${row.name}?`,function () {
+        self.isOverlay = true;
+        axios.post('/user/space/exitRel', {
+          spaceId: row.code
+        }).then(function (res){
+          if(res.data.result){
+            self.getUserInfo();
+          }
+          self.showToast(res.data.result ? "success" : "error", res.data.message);
+          self.isOverlay = false;
+        }).catch(function (err){
+          self.isOverlay = false;
+          console.log(err);
+        });
       });
     },
     //查看空间

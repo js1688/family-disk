@@ -59,6 +59,10 @@ export default {
 
   },
   created() {
+    //如果没有登陆,并且不是用户页面,则重定向到根目录
+    if(localStorage.getItem(key().authorization) == null && window.location.hash.indexOf("user") == -1){
+      window.location.href = window.location.protocol + '//' + window.location.host + window.location.pathname;
+    }
     //请求拦截设置头部
     axios.interceptors.request.use(config => {//声明请求拦截器
       if(isToken()){//如果本地保存了token,则在头部传送token

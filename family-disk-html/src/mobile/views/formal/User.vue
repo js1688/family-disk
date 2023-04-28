@@ -118,14 +118,44 @@
   <van-cell is-link title="退出登录" @click="logoutShow = true" v-if="notLoginShow == false"/>
   <van-action-sheet close-on-click-action v-model:show="logoutShow" :actions="okActions" @select="logoutOnSelect" />
 
-  <van-cell is-link title="创建空间" @click="createSpaceShow = true" v-if="notLoginShow == false" />
-  <van-action-sheet close-on-click-action v-model:show="createSpaceShow" :actions="okActions" @select="createSpace" />
 
-  <van-cell is-link title="加入空间" @click="joinSpaceShow = true" v-if="notLoginShow == false" />
+  <van-collapse  v-model="activeName" accordion v-if="notLoginShow == false">
+    <van-collapse-item title="空间信息" name="1">
+      <van-cell-group inset >
+        <van-cell is-link title="创建自己的空间" v-if="!mySpace" @click="createSpace"  />
+        <van-cell is-link title="我加入的空间" @click="switchSpaceShow = true" />
+        <van-cell is-link title="查看空间已使用量" @click="getSpaceInfo" />
+        <van-cell is-link title="我的空间人员管理" @click="adminSpaceShow = true"  />
+        <van-cell is-link title="申请加入其他人的空间" @click="joinSpaceShow = true" />
+        <van-cell is-link title="邀请其他人加入我的空间" @click="inviteOthersShow = true" />
+      </van-cell-group>
+    </van-collapse-item>
+  </van-collapse>
+
+  <van-action-sheet
+      v-model:show="inviteOthersShow"
+      @open="spaceCode=''"
+      title="邀请其他人加入我的空间">
+    <div>
+      <van-form @submit="inviteSpace">
+        <van-cell-group inset>
+          <van-field required v-model="spaceCode"
+                     :rules="[{ required: true, message: '请输入对方的邮箱号' }]"
+                     label="邮箱号" placeholder="请输入对方的邮箱号" />
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交申请
+          </van-button>
+        </div>
+      </van-form>
+    </div>
+  </van-action-sheet>
+
   <van-action-sheet
       v-model:show="joinSpaceShow"
       @open="spaceCode=''"
-      title="申请加入空间">
+      title="申请加入其他人的空间">
     <div>
       <van-form @submit="joinSpace">
         <van-cell-group inset>
@@ -142,7 +172,6 @@
     </div>
   </van-action-sheet>
 
-  <van-cell is-link title="管理空间" @click="adminSpaceShow = true" v-if="notLoginShow == false" />
   <van-action-sheet
       v-model:show="adminSpaceShow"
       :lock-scroll="false"
@@ -169,10 +198,30 @@
     </div>
   </van-action-sheet>
 
-  <van-cell is-link title="切换空间" @click="switchSpaceShow = true" v-if="notLoginShow == false"/>
-  <van-action-sheet close-on-click-action v-model:show="switchSpaceShow" :actions="spaceOptions" @select="switchSpaceOnSelect" />
+  <van-action-sheet
+      v-model:show="switchSpaceShow"
+      :lock-scroll="false"
+      @open="spaceAdminOpen"
+      title="我加入的空间">
+    <div>
+      <van-list
+          :v-model:loading="false"
+          :finished="true"
+          finished-text="没有更多了"
+      >
+        <van-swipe-cell v-for="item in spaceOptions">
+          <van-cell is-link arrow-direction="right"
+                    :title="item.name">
+          </van-cell>
+          <template #right>
+            <van-button square hairline type="danger"  @click="exitSpaceOnSelect(item)" text="退出" />
+            <van-button square hairline type="success"  @click="switchSpaceOnSelect(item)" text="切换" />
+          </template>
+        </van-swipe-cell>
+      </van-list>
+    </div>
+  </van-action-sheet>
 
-  <van-cell is-link title="查看空间" @click="getSpaceInfo" v-if="notLoginShow == false" />
   <van-action-sheet v-model:show="querySpaceShow" title="查看空间信息">
     <div class="content">
       <van-cell-group inset>
@@ -212,7 +261,7 @@
 <script>
 import { ref } from 'vue';
 import {showConfirmDialog, showToast} from 'vant';
-import { Cell,Image,Form, Field, CellGroup,Button,ActionSheet,Tag,SwipeCell,List} from 'vant';
+import { Cell,Image,Form, Field, CellGroup,Button,ActionSheet,Tag,SwipeCell,List,Collapse, CollapseItem} from 'vant';
 import { Overlay,Loading } from 'vant';
 import axios from 'axios';
 import gws from "@/global/WebSocket";
@@ -225,18 +274,20 @@ export default {
     const logonShow = ref(false);
     const registerShow = ref(false);
     const logoutShow = ref(false);
-    const createSpaceShow = ref(false);
     const querySpaceShow = ref(false);
     const joinSpaceShow = ref(false);
     const adminSpaceShow = ref(false);
     const switchSpaceShow = ref(false);
     const queryShareShow = ref(false);
+    const inviteOthersShow = ref(false);
+    const activeName = ref("0");
     const okActions = [
       { name: '确定',code:1 },
       { name: '取消',code:0 }
     ];
 
     return {
+      inviteOthersShow,
       switchSpaceShow,
       joinSpaceShow,
       adminSpaceShow,
@@ -244,9 +295,10 @@ export default {
       registerShow,
       logonShow,
       okActions,
-      createSpaceShow,
       querySpaceShow,
-      queryShareShow
+      queryShareShow,
+      maxHeight:document.documentElement.clientHeight,
+      activeName
     };
   },
   components: {
@@ -262,12 +314,15 @@ export default {
     [CellGroup.name]: CellGroup,
     [Button.name]: Button,
     [Overlay.name]: Overlay,
-    [Loading.name]: Loading
+    [Loading.name]: Loading,
+    [Collapse.name]: Collapse,
+    [CollapseItem.name]: CollapseItem,
   },
   props: {
   },
   data: function() {
     return {
+      mySpace:true,
       loading:false,
       finished:false,
       email:"",
@@ -293,8 +348,54 @@ export default {
   },
   created() {
     this.getUserInfo();
+    //判断自己有没有空间
+    let spaces = JSON.parse(localStorage.getItem(key().userAllSpaceRole));
+    this.mySpace = false;
+    for (let i = 0; i < spaces.length; i++) {
+      if(spaces[i].createUserId + '' == localStorage.getItem(key().userId)){
+        this.mySpace = true;
+        break;
+      }
+    }
   },
   methods: {
+    //退出空间
+    exitSpaceOnSelect:function (row){
+      let self = this;
+      showConfirmDialog({
+        title: '退出',
+        message:`确定退出空间:${row.name}?`
+      }).then(() => {
+        self.isOverlay = true;
+        axios.post('/user/space/exitRel', {
+          spaceId: row.code
+        }).then(function (res){
+          if(res.data.result){
+            self.getUserInfo();
+          }
+          showToast(res.data.message);
+          self.isOverlay = false;
+        }).catch(function (err){
+          self.isOverlay = false;
+          console.log(err);
+        });
+      }).catch(function (error) {
+      });
+    },
+    //邀请人加入我的空间
+    inviteSpace:function () {
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/user/space/inviteSpace', {
+        email: this.spaceCode
+      }).then(function (response) {
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
     //删除链接
     delLink:function (item){
       let self = this;
@@ -302,7 +403,7 @@ export default {
         title: '删除',
         message:'是否删除分享:' + item.keyword + ',删除后不可恢复!'
       }).then(() => {
-        this.isOverlay = true;
+        self.isOverlay = true;
         axios.post('/share/admin/delLink', {bodyId:item.id}).then(function (response) {
           if(response.data.result){
             self.linkShareOpen();
@@ -448,23 +549,21 @@ export default {
       });
     },
     //创建空间
-    createSpace: function(item){
-      if(item.code == 1){
-        this.isOverlay = true;
-        let self = this;
-        axios.post('/user/space/createSpace', {
-          title: localStorage.getItem(key().userName) + "的空间"
-        }).then(function (response) {
-          if(response.data.result){
-            localStorage.setItem(key().useSpaceRole,'WRITE');//自己创建的空间,权限是读写
-          }
-          showToast(response.data.message);
-          self.isOverlay = false;
-        }).catch(function (error) {
-          self.isOverlay = false;
-          console.log(error);
-        })
-      }
+    createSpace: function(){
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/user/space/createSpace', {
+        title: localStorage.getItem(key().userName) + "的空间"
+      }).then(function (response) {
+        if(response.data.result){
+          localStorage.setItem(key().useSpaceRole,'WRITE');//自己创建的空间,权限是读写
+        }
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      })
     },
     //注册
     register: function(){

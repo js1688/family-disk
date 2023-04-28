@@ -1,5 +1,5 @@
 <template>
-  <van-overlay :show="isOverlay">
+  <van-overlay :show="isOverlay" :z-index="9999">
     <div class="wrapper">
       <van-loading />
     </div>
@@ -21,10 +21,12 @@
 
 
   <van-list
+      id="list"
       v-model:loading="loading"
       :finished="finished"
       finished-text="没有更多了"
       @load="onLoad"
+      :style="`height:${maxHeight}px;overflow:auto;`"
   >
     <van-swipe-cell v-for="item in list">
       <van-cell is-link :title="item.keyword" :label="item.updateTime" @click="open(item)" >
@@ -38,6 +40,8 @@
                     style="height: 66px;" square hairline type="success"  @click="share(item)" text="分享" />
       </template>
     </van-swipe-cell>
+
+    <van-back-top ight="15vw" bottom="10vh" target="#list"/>
   </van-list>
 
   <div v-if="!roleWrite" style="position: fixed;right: 25px;bottom: 200px;">
@@ -101,16 +105,17 @@
   <van-action-sheet
       :lock-scroll="false"
       v-model:show="showNote" :round="false"
-      title="笔记查看">
+      :beforeClose="closeSave"
+      :title="title">
     <div>
       <v-md-editor
           v-if="showNote"
           v-model="text"
+          :height="`${maxHeight - 120}px`"
           :disabled-menus="disabledMenus"
           :right-toolbar="rightToolbar"
           :left-toolbar="leftToolbar"
-          :toolbar="toolbar"
-          :default-fullscreen="defaultFullscreen"
+          :default-fullscreen="false"
           :autofocus="true"
           :mode="mode"
           @save="save"
@@ -201,59 +206,22 @@ export default {
     ];
     return {
       maxDate: new Date(new Date().getFullYear() + 1, 12, 31),
+      maxHeight:document.documentElement.clientHeight - 160,
       addActions,
       showPopover,
       menuTypeOptions
     };
   },
   data(){
-    let self = this;
-    self.toolbar = {
-      exitToolbar:{
-        icon:"v-md-icon-undo",
-        title:'退出',
-        action(editor) {
-          if(self.text != self.originalText){
-            this.isOverlay = true;
-            let txt = editor.text;
-            showConfirmDialog({
-              title: '保存?',
-              message:'内容已发生改变,是否保存?'
-            }).then(() => {
-              self.save(txt,'');
-              self.isOverlay = false;
-              self.showNote = false;
-            }).catch(function (error) {
-              self.showNote = false;
-              self.isOverlay = false;
-            });
-          }else{
-            self.showNote = false;
-          }
-        },
-      },
-      checkboxToolbar:{
-        icon:"v-md-icon-checkbox",
-        title:'复选框',
-        action(editor) {
-          editor.insert(function (selected) {
-            return {
-              text: '- [ ] ',
-              selected: selected,
-            };
-          });
-        }
-      }
-    };
     return {
       showShareDate:false,
       roleWrite:localStorage.getItem(key().useSpaceRole) != 'WRITE',
-      defaultFullscreen:true,
       mode:"edit",
       disabledMenus:['image/upload-image','h/h4','h/h5','h/h6'],
-      rightToolbar:'exitToolbar',
-      leftToolbar:"h bold strikethrough quote ul ol checkboxToolbar hr link image code | save",
+      rightToolbar:'',
+      leftToolbar:"h bold strikethrough quote ul ol hr link image code | save",
       text:'',
+      title:'',
       originalText:'',
       isOverlay:false,
       loading:false,
@@ -278,6 +246,7 @@ export default {
     this.getMenuLabelOption();
   },
   methods:{
+    //复制
     doCopy:function (){
       let self = this;
       this.$copyText(this.shareParam.url).then(function (e) {
@@ -315,6 +284,23 @@ export default {
       this.shareParam = {password:null,bodyId:item.id,invalidTime:FormatDate(new Date()),url:null}
       this.showShare = true;
     },
+    //关闭编写时是否保存
+    closeSave:function () {
+      if(this.text != this.originalText){
+        let self = this;
+        showConfirmDialog({
+          title: '保存?',
+          message:'内容已发生改变,是否保存?'
+        }).then(() => {
+          self.save(self.text,'');
+          self.showNote = false;
+        }).catch(function (error) {
+          self.showNote = false;
+        });
+      }else{
+        this.showNote = false;
+      }
+    },
     //修改
     update:function (item) {
       this.selectdLabelValue = ref([item.tag + '']);
@@ -326,8 +312,8 @@ export default {
         if(response.data.result){
           self.originalText = response.data.data;
           self.text = self.originalText;
+          self.title = item.keyword;
           self.mode='edit';
-          self.defaultFullscreen = true;
           self.showPicker = true;
         }else{
           showToast(response.data.message);
@@ -395,8 +381,9 @@ export default {
       axios.post('/notebook/getNoteText', {id:item.id}).then(function (response) {
         if(response.data.result){
           self.mode='preview';
-          self.defaultFullscreen = false;
-          self.text = response.data.data;
+          self.originalText = response.data.data;
+          self.text = self.originalText;
+          self.title = item.keyword;
           self.showNote = true;
         }else{
           showToast(response.data.message);
@@ -451,9 +438,9 @@ export default {
         case 'note':
           this.selectdLabelValue = ref(['1']);
           this.mode='edit';
-          this.defaultFullscreen = true;
           this.originalText = '';
           this.text = this.originalText;
+          this.title = '添加笔记';
           this.showPicker = true;
           break;
         case 'matter':

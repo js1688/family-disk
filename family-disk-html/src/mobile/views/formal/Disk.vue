@@ -1,6 +1,6 @@
 <template>
 
-  <van-overlay :show="isOverlay">
+  <van-overlay :show="isOverlay" :z-index="9999">
     <div class="wrapper">
       <van-loading />
     </div>
@@ -21,10 +21,12 @@
   </van-search>
 
   <van-list
+      id="list"
       v-model:loading="loading"
       :finished="finished"
       finished-text="没有更多了"
       @load="onLoad"
+      :style="`height:${maxHeight}px;overflow:auto;`"
   >
     <van-swipe-cell v-for="item in list">
       <van-cell is-link arrow-direction="right"
@@ -40,6 +42,8 @@
         <van-button v-if="!roleWrite" square hairline type="success"  @click="share(item)" text="分享" />
       </template>
     </van-swipe-cell>
+
+    <van-back-top ight="15vw" bottom="10vh" target="#list"/>
   </van-list>
 
   <div v-if="!roleWrite" style="position: fixed;right: 25px;bottom: 200px;">
@@ -287,6 +291,7 @@ export default {
     const activeNames = ref([]);
     return {
       maxDate: new Date(new Date().getFullYear() + 1, 12, 31),
+      maxHeight:document.documentElement.clientHeight - 160,
       activeNames,
       addActions,
       showPopover,

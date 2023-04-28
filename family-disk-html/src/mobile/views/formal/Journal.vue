@@ -1,5 +1,5 @@
 <template>
-  <van-overlay :show="isOverlay">
+  <van-overlay :show="isOverlay" :z-index="9999">
     <div class="wrapper">
       <van-loading />
     </div>
@@ -15,10 +15,12 @@
   </van-search>
 
   <van-list
+      id="list"
       v-model:loading="loading"
       :finished="finished"
       finished-text="没有更多了"
       @load="onLoad"
+      :style="`height:${maxHeight}px;overflow:auto;`"
   >
     <van-swipe-cell v-for="item in journalList">
       <van-cell is-link :title="item.title" :label="item.happenTime" @click="open(item)" />
@@ -26,6 +28,8 @@
         <van-button v-if="!roleWrite" style="height: 66px;" square hairline type="danger"  @click="delJournal(item)" text="删除" />
       </template>
     </van-swipe-cell>
+
+    <van-back-top ight="15vw" bottom="10vh" target="#list"/>
   </van-list>
 
 
@@ -66,12 +70,13 @@
                       ref="uploader"
                       @click-preview="openPreview"
                       preview-size="80"
-                      :max-size="1024 * 1024 * 32"
+                      :max-size="1024 * 1024 * 10"
                       @oversize="onOversize"
                       :max-count="12"
                       :before-read="beforeRead"
+                      :after-read="afterRead"
                       :readonly="uploadDisabled"
-                      accept="image/*,video/*,audio/*"
+                      accept="image/*,video/*"
                       :preview-options="{closeable:true}"
                       v-model="uploadFiles" multiple>
         </van-uploader>
@@ -83,22 +88,16 @@
     </div>
   </van-action-sheet>
 
-  <van-image-preview
-      :onClose="closeVideo"
+  <van-dialog
       v-model:show="showVideo"
-      :images="videoUrls"
-      :showIndex="false"
-      :beforeClose="videoBeforeClose"
-      closeable>
-    <template #image="{src}">
-      <!-- 为了兼容移动端和pc端,需要绑定两种事件 -->
-      <div @click.native="chickVideo" @touchend="chickVideo" style="position: absolute;top:50px;left: 0;bottom: 50px;right: 0;">
-        <video id="videoId" :poster="videoCoverBase64" :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
-      </div>
-    </template>
-  </van-image-preview>
+      :show-confirm-button="false"
+      @close="closeVideo"
+      @opened="$refs.previewVideoRef.src=videoUrl"
+      :show-cancel-button="true">
 
-  <van-back-top ight="15vw" bottom="10vh" />
+    <video :poster="videoCoverBase64" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+  </van-dialog>
+
 </template>
 
 <script>
@@ -120,12 +119,22 @@ import {
   SwipeCell,
   ImagePreview,
   Image,
-  showConfirmDialog, showImagePreview
+  Dialog,
+  showConfirmDialog
 } from 'vant';
 //vant适配桌面端
 import '@vant/touch-emulator';
 import {ref} from "vue";
 import {key} from "@/global/KeyGlobal";
+import {FileDoownloadAppoint, FileDoownloadSmall, FileSoundOut} from "@/global/FileDownload";
+import {
+  Base64toBlob,
+  CountFileSliceInfo, FileMd5,
+  FormatDateDay,
+  GetVideoCoverBase64,
+  HeicToCommon
+} from "@/global/StandaloneTools";
+import {FileUpload, getUploadList} from "@/global/FileUpload";
 
 
 export default {
@@ -146,7 +155,8 @@ export default {
     [Popover.name]:Popover,
     [Button.name]:Button,
     [SwipeCell.name]:SwipeCell,
-    [ImagePreview.name]:ImagePreview
+    [ImagePreview.name]:ImagePreview,
+    [Dialog.name]:Dialog,
   },
   setup(){
     const addActions = [
@@ -154,12 +164,14 @@ export default {
     ];
     const showPopover = ref(false);
     const onOversize = (f) => {
-      showToast('文件太大,请上传32MB以内的文件.');
+      showToast(`大于10MB的文件请压缩后上传`);
     };
     return {
       onOversize,
       addActions,
-      showPopover
+      showPopover,
+      maxHeight:document.documentElement.clientHeight - 110,
+      fileDownloadUrl:'/stream/slice/getFile',
     }
   },
   data(){
@@ -170,46 +182,74 @@ export default {
       finished:false,
       showJournalSave:false,
       showVideo:false,
-      videoUrls:[],
       journalDate:"",
       uploadDisabled:false,
       uploadFiles:[],
+      uploadFilesIndex:{},
       journalTitle:"",
       keyword:"",
       journalBody:"",
       journalList:[],
       chickVideoValue:false,
-      videoCoverBase64:''
+      videoCoverBase64:'',
+      videoUrl:''
     }
   },
   methods:{
-    //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
-    chickVideo:function (){
-      this.chickVideoValue = true;
-    },
-    videoBeforeClose:function (e) {
-      let ret = !this.chickVideoValue;
-      this.chickVideoValue = false;
-      return ret;
+    //选择文件后处理
+    afterRead:async function (files) {
+      let fs = files;
+      if(!files.length){
+        fs = [files];
+      }
+      for (let i = 0; i < fs.length; i++) {
+        let last = fs[i];
+        let file = last.file;
+        //将文件添加到预览图片中
+        //计算分片大小
+        let sliceInfo = CountFileSliceInfo(last.file);
+        //计算md5值
+        let md5 = await FileMd5(last.file,sliceInfo.sliceSize,sliceInfo.sliceNum);
+        let mediaType = file.type.toUpperCase();
+        let mediaTypes = mediaType.split("/");
+        let index = this.uploadFiles.length - 1 - i;
+        this.uploadFilesIndex[md5] = index;
+        let src = window.URL.createObjectURL(file);
+        let imgSrc = src;
+        let type = file.type;
+        switch (mediaTypes[0]) {
+          case "IMAGE"://图片
+            break
+          case "VIDEO"://视频
+            let base64 = await GetVideoCoverBase64(src);
+            let b = await Base64toBlob(base64);
+            imgSrc = window.URL.createObjectURL(b);//封面地址
+            //如果是视频,就将类型强行设置成图片,用来展示视频第一帧的截图
+            type = 'image/jpeg';
+            break
+        }
+        let config = {
+          url2: src, url: imgSrc, status: "done", message: "", file:
+              {name: file.name, type: type, type2: file.type,fileMd5:md5,sliceInfo:sliceInfo,file:file,scale:0}
+        };
+        this.uploadFiles[index] = config;
+      }
     },
     //选择文件前校验
     beforeRead: function (files){
       if(this.uploadFiles == null || this.uploadFiles.length == 0){
         return true;
       }
+      let fs = files;
+      if(!files.length){
+        fs = [files];
+      }
       B:for (let j = 0; j < this.uploadFiles.length; j++) {
         let oldFile = this.uploadFiles[j];
-        if(files.length){
-          A:for (let i = 0; i < files.length; i++) {
-            let nowFile = files[i];
-            if(nowFile.name == oldFile.file.name){
-              showToast("重复文件名:" + nowFile.name);
-              return false;
-            }
-          }
-        }else{
-          if(files.name == oldFile.file.name){
-            showToast("重复文件名:" + files.name);
+        A:for (let i = 0; i < fs.length; i++) {
+          let nowFile = fs[i];
+          if(nowFile.name == oldFile.file.name){
+            showToast("重复文件名:" + nowFile.name);
             return false;
           }
         }
@@ -218,12 +258,11 @@ export default {
     },
     //关闭视频播放器
     closeVideo:function () {
+      //停止播放
       if(this.$refs.previewVideoRef){
         this.$refs.previewVideoRef.pause();
         this.$refs.previewVideoRef.src = "";
       }
-      this.videoUrls = [];
-      this.showVideo = false;
     },
     //点击图片预览前回调
     openPreview:function (f) {
@@ -250,36 +289,67 @@ export default {
             let blob = file.slice(0,file.size);
             url = window.URL.createObjectURL(blob);
           }
-          this.videoUrls = [url];
           this.showVideo = true;
+          this.videoUrl = url;
           return false;
       }
-    },
-    /**
-     * 检查文件是否都上传完毕
-     * @param success true=文件是否全部上传成功,false=文件是否全部上传了,不在乎成功失败
-     * @returns {boolean}
-     */
-    checkEnd:function (success){
-      for (let i = 0; i < this.uploadFiles.length; i++) {
-        let f = this.uploadFiles[i];
-        if(success && f.status != 'done'){//有不是成功的
-          return false;
-        }else if(!success && f.status == 'uploading'){//还有上传中
-          return false;
-        }
-      }
-      return true;
     },
     //添加日记
-    addJournal:function (){
+    addJournal:async function (){
       let self = this;
-      this.uploadDisabled = true;
-      this.isOverlay = true;
-      let successFiles = [];
-      //如果没有文件,则直接保存日记
-      if(this.uploadFiles == null || this.uploadFiles.length == 0){
-        //全部成功上传,开始保存日志
+      if(!self.journalTitle && !self.journalBody){
+        showToast("日记标题和内容不能都为空");
+        return;
+      }
+      self.isOverlay = true;
+      //先上传文件,再保存
+      if(this.uploadFiles){
+        for (let i = 0; i < this.uploadFiles.length; i++) {
+          let u = this.uploadFiles[i];
+          u.status = 'uploading';
+          u.message = '上传中';
+          let f = u.file;
+          let ret = await FileUpload(f.sliceInfo,f.file,f.fileMd5,'JOURNAL',null,async function (q) {
+            if(q.result){
+              u.status = "done";
+              f.scale = 100;
+            }else{
+              u.status = "failed";
+              u.message = q.resultMsg;
+            }
+          });
+          showToast(ret.msg);
+        }
+      }
+
+      let interval = setInterval(function (){
+        //更新上传列表进度
+        let uplist = getUploadList();
+        for (const uplistKey in uplist) {
+          let v = uplist[uplistKey];
+          let index = self.uploadFilesIndex[uplistKey];
+          let u = self.uploadFiles[index];
+          let f = u.file;
+          f.scale = v.progress == 0 ? 0 : Math.floor(v.progress/v.sliceInfo.sliceNum*100);
+          if(!v.result){
+            u.status = "failed";
+            u.message = v.resultMsg;
+            self.stopFileUpload(v.md5);
+          }
+        }
+        //检查所有文件是否都已经上传完毕
+        let successFiles = [];
+        if(self.uploadFiles){
+          for (let i = 0; i < self.uploadFiles.length; i++) {
+            let u = self.uploadFiles[i];
+            let f = u.file;
+            if(f.scale < 100){
+              return;
+            }
+            successFiles.push({fileMd5:f.fileMd5,fileName:f.name,mediaType:f.type2});
+          }
+        }
+        //文件都已经上传成功
         let data = {
           title: self.journalTitle,
           body: self.journalBody,
@@ -289,83 +359,17 @@ export default {
         axios.post('/journal/addJournalList', data).then(function (response) {
           if(response.data.result){
             self.onLoad();
-          }else{
-            self.uploadDisabled = false;
+            self.showJournalSave = false;
           }
-          self.isOverlay = false;
           showToast(response.data.message);
+          self.isOverlay = false;
         }).catch(function (error) {
-          self.uploadDisabled = false;
           self.isOverlay = false;
           console.log(error);
         });
-      }else{
-        //先将文件都上传
-        for (let i = 0; i < this.uploadFiles.length; i++) {
-          let f = this.uploadFiles[i];
-          f.status = "uploading";
-          f.message = "上传中";
-          let data = new FormData();
-          data.append('f', f.file);
-          data.append('s', 'JOURNAL');
-          data.append('m', f.file.type);
-          axios.post("/stream/addFile", data, {
-            header:{
-              'Content-Type': 'multipart/form-data'
-            }
-          }).then((res) => {
-            if(res.data.result){
-              f.status = "done";
-              f.message = "完成";
-              successFiles.push({fileMd5:res.data.data,fileName:f.file.name,mediaType:f.file.type})
-            }else{
-              f.status = "failed";
-              f.message = res.data.message;
-            }
-            if (self.checkEnd(true)){//文件是否全部成功上传
-              //全部成功上传,开始保存日志
-              let data = {
-                title: self.journalTitle,
-                body: self.journalBody,
-                happenTime: self.journalDate,
-                files:successFiles,
-              };
-              axios.post('/journal/addJournalList', data).then(function (response) {
-                if(response.data.result){
-                  data["id"] = response.data.data;
-                  if(!data.title){
-                    data.title = data.body.substring(0,data.body.length < 10 ? data.body.length : 10);
-                  }
-                  self.journalList.push(JSON.parse(JSON.stringify(data)));
-                }else{
-                  self.uploadDisabled = false;
-                }
-                self.isOverlay = false;
-                showToast(response.data.message);
-              }).catch(function (error) {
-                self.uploadDisabled = false;
-                self.isOverlay = false;
-                console.log(error);
-              });
-            }else if(self.checkEnd(false)){//文件是否上传完毕,不在乎是否成功失败
-              showToast("文件全部上传完毕");
-              //全部上传完毕后取消禁用
-              self.uploadDisabled = false;
-              self.isOverlay = false;
-            }
-          }).catch((error) => {
-            console.log(error);
-            f.status = "failed";
-            f.message = "失败";
-            if(self.checkEnd(false)){
-              showToast("文件全部上传完毕");
-              //全部上传完毕后取消禁用
-              self.uploadDisabled = false;
-              self.isOverlay = false;
-            }
-          });
-        }
-      }
+
+        clearInterval(interval);
+      }, 500);
     },
     //删除日记
     delJournal:function (item) {
@@ -410,11 +414,7 @@ export default {
       switch (cz) {
         case 'addJournal':
           if(!this.journalDate){
-            let dt = new Date();
-            let year = dt.getFullYear();
-            let month = (dt.getMonth() + 1).toString().padStart(2,'0');
-            let date = dt.getDate().toString().padStart(2,'0');
-            this.journalDate = year+'-'+month+'-'+date;
+            this.journalDate = FormatDateDay(new Date())
           }
           this.journalTitle = "";
           this.journalBody = "";
@@ -444,105 +444,104 @@ export default {
       this.loading = false;//加载完毕
       this.finished = true;//全部数据加载完毕
     },
-    //根据文件名在文件缓存数组中找到对象
-    uploadFilesFind:function (fileName) {
-      if(this.uploadFiles){
-        for (let i = 0; i < this.uploadFiles.length; i++) {
-          if(this.uploadFiles[i].file.name == fileName){
-            return this.uploadFiles[i];
-          }
-        }
+    //下载视频封面
+    dVideo:async function(f){
+      let index = this.uploadFilesIndex[f.fileMd5];
+      let fso = await FileSoundOut(this.fileDownloadUrl,f.fileMd5,f.fileName,'JOURNAL');
+      if(!fso.state){
+        this.uploadFiles[index].status = "failed";
+        this.uploadFiles[index].message = fso.msg;
+        return;
+      }
+      let url = key().baseURL+"stream/media/play/JOURNAL/"+ localStorage.getItem(key().authorization) + "/" +f.fileMd5;
+      this.uploadFiles[index].url2 = url;
+      //试探成功,开始下载
+      //开始下载视频的第一帧,当做视频的封面
+      //只取1mb,清晰度很高的视频想获取到第一帧,1mb肯定是不够的,不过为了不浪费流量,提高加载速度,能预览出大部分的即可
+      let fd = await FileDoownloadAppoint(this.fileDownloadUrl,fso,0,1024*1024*1);
+      if(fd.state){
+        let blob = new Blob([fd.bytes]);
+        let url = window.URL.createObjectURL(blob);
+        let base64Promise = GetVideoCoverBase64(url);
+        let self = this;
+        this.uploadFiles[index].status = "done";
+        this.uploadFiles[index].message = "";
+        base64Promise.then(async function(base64){
+          let b = await Base64toBlob(base64);
+          self.uploadFiles[index].url = window.URL.createObjectURL(b);//封面地址
+        }).catch(function (e){
+          self.uploadFiles[index].url = "/img/pc/play.png";
+        });
+      }else{
+        this.uploadFiles[index].status = "failed";
+        this.uploadFiles[index].message = fd.msg;
       }
     },
-    //从视频流中读取第一帧,获得base64
-    getVideoCoverBase64(url,setCoverUrl) {
-      let video = document.createElement("video");
-      video.setAttribute('crossOrigin', 'anonymous');//处理跨域
-      video.setAttribute('src', url);
-      video.setAttribute('width', '100%');
-      video.setAttribute('height', '100%');
-      video.currentTime = 0.1;//设置获取那一帧,跳转到视频的0.1秒即可
-      video.addEventListener('loadeddata', () => {
-        let canvas = document.createElement("canvas");
-        canvas.width = video.width;
-        canvas.height = video.height;
-        canvas.getContext("2d").drawImage(video, 0, 0, video.width, video.height); //绘制canvas
-        setCoverUrl(canvas.toDataURL('image/jpeg'));//转换为base64
-        video.remove();//及时销毁对象
-      });
-    },
-    //base64转file
-    dataURLtoBlob:function(base64Url){
-      let arr = base64Url.split(",");
-      let  mime = arr[0].match(/:(.*?);/)[1];
-      let  str = window.atob(arr[1]);
-      let  n = str.length;
-      let  u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = str.charCodeAt(n);
+    //下载图片预览
+    dImage:async function (f){
+      let index = this.uploadFilesIndex[f.fileMd5];
+      let fso = await FileSoundOut(this.fileDownloadUrl,f.fileMd5,f.fileName,'JOURNAL');
+      if(!fso.state){
+        this.uploadFiles[index].status = "failed";
+        this.uploadFiles[index].message = fso.msg;
+        return;
       }
-      return new Blob([u8arr], {type:mime});
+      //试探成功,开始下载
+      let fd = await FileDoownloadSmall(fso);
+      if(fd.state){
+        let blob = new Blob([fd.bytes],{type:f.mediaType});
+        let src = window.URL.createObjectURL(blob);
+        this.uploadFiles[index].url = src;
+        this.uploadFiles[index].status = "done";
+        this.uploadFiles[index].message = "";
+      }else{
+        this.uploadFiles[index].status = "failed";
+        this.uploadFiles[index].message = fd.msg;
+      }
     },
     //打开日记
-    open:function (item) {
+    open:async function (item) {
       this.journalDate = item.happenTime;
       this.showJournalSave = true;
       this.uploadDisabled = true;
       this.journalTitle = item.title;
       this.journalBody = item.body;
       this.uploadFiles = [];
+      this.uploadFilesIndex = {};
       //下载日记关联的文件
-      let self = this;
       if(item.files){
         for (let i = 0; i < item.files.length; i++) {
-          //添加占位,在媒体资源未下载完之前就显示有哪些资源正在加载
-          let config = {url2:'',url:'',status:"uploading",message:"加载中",file:
-                {name:item.files[i].fileName,type:'',type2:''}
-          };
-          let mediaType = item.files[i].mediaType.toUpperCase();
+          let f = item.files[i];
+          let mediaType = f.mediaType.toUpperCase();
           let mediaTypes = mediaType.split("/");
-          //如果是视频或音频,改成变下边播的url
-          let url = key().baseURL+"stream/media/play/JOURNAL/"+ localStorage.getItem(key().authorization) + "/" +item.files[i].fileMd5;
+          let type = item.files[i].mediaType;
+          if(mediaTypes[0] == "VIDEO"){
+            //如果是视频,就将类型强行设置成图片,用来展示视频第一帧的截图
+            type = 'image/jpeg';
+          }
+          //添加占位,在媒体资源未下载完之前就显示有哪些资源正在加载
+          let config = {
+            url2: '', url: '', status: "uploading", message: "加载中", file:
+                {name: item.files[i].fileName, type: type, type2: item.files[i].mediaType,fileMd5:item.files[i].fileMd5}
+          };
+          this.uploadFilesIndex[item.files[i].fileMd5] = this.uploadFiles.length;
+          this.uploadFiles.push(config);
+        }
+
+        for (let i = 0; i < item.files.length; i++) {
+          let f = item.files[i];
+          let mediaType = f.mediaType.toUpperCase();
+          let mediaTypes = mediaType.split("/");
           switch (mediaTypes[0]) {
+            case "IMAGE"://图片
+              await this.dImage(f);
+              break
             case "VIDEO"://视频
-              config.url2 = url;//真实媒体播放地址
-              this.getVideoCoverBase64(url, function (u) {
-                //预览小图
-                let blob = self.dataURLtoBlob(u);
-                let f = self.uploadFilesFind(config.file.name);
-                f.url = window.URL.createObjectURL(blob);//封面地址
-                f.file.type2 = mediaType;//真实媒体类型
-                f.file.type = blob.type;//封面类型
-                f.status = "done";
-                f.message = "";
-              });
+              await this.dVideo(f);
               break;
             case "AUDIO"://音频
-              config.status = "done";
-              config.message = "";
-              config.url = url;//真实媒体播放地址
-              break;
-            default:
-              axios.post('/stream/getFile', {
-                fileMd5: item.files[i].fileMd5,
-                name: item.files[i].fileName,
-                source:"JOURNAL"
-              },{
-                responseType:"blob"
-              }).then(function (response) {
-                const { data, headers } = response;
-                const blob = new Blob([data], {type: headers['content-type']});
-                let url = window.URL.createObjectURL(blob);
-                let f = self.uploadFilesFind(item.files[i].fileName);
-                f.url = url;
-                f.status = "done"
-                f.message = "";
-              }).catch(function (error) {
-                console.log(error);
-              });
+              //理论上来讲日记不能上传音频,这里先不处理
           }
-          config.file.type = item.files[i].mediaType;
-          self.uploadFiles.push(config);
         }
       }
     }

@@ -85,7 +85,7 @@
                       v-if="saveIf"
                       type="textarea"
                       placeholder="请输入日记内容"
-                      maxlength="3000"
+                      maxlength="500"
                       show-count
                       v-model:value="openDb.body"
                       :autosize="{
@@ -371,10 +371,6 @@ export default {
     closePlayVideo:function (){
       //停止播放
       try {
-        if(this.$refs.audioRef){
-          this.$refs.audioRef.pause();
-          this.$refs.audioRef.src = "";
-        }
         if(this.$refs.originalVideoPlayer){
           this.$refs.originalVideoPlayer.pause();
           this.$refs.originalVideoPlayer.src = "";
@@ -384,8 +380,6 @@ export default {
           this.myPlayer.pause();
         }
         this.videoOptions.sources = [];
-        this.audioUrls = [];
-        this.audioUrl = {};
       }catch (e){}
     },
     //播放视频
@@ -511,9 +505,7 @@ export default {
               await this.dVideo(f);
               break
             case "AUDIO"://音频
-              let index = this.openImagesUrlsIndex[f.fileMd5];
-              this.openImagesUrls[index].src = "/img/pc/play.png";
-              this.openImagesUrls[index].alt = "点击播放";
+                //理论上来讲日记不能上传音频,这里先不处理
               break;
           }
         }
@@ -562,16 +554,6 @@ export default {
       let fd = await FileDoownloadSmall(fso);
       if(fd.state){
         let blob = new Blob([fd.bytes],{type:f.mediaType});
-        let mediaType = f.mediaType.toUpperCase();
-        let mediaTypes = mediaType.split("/");
-        switch (mediaTypes[1]){
-          case "HEIC": //苹果设备拍摄的 新图片格式
-            try {
-              //有时候这个类型也不一定是准确的,如果本身就可以被读取,就会拒绝转换,这里如果报错后使用原始blob
-              blob = await HeicToCommon(blob);
-            }catch (e) {}
-            break;
-        }
         let src = window.URL.createObjectURL(blob);
         this.openImagesUrls[index].src = src;
       }else{
