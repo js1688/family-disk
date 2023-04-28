@@ -1,5 +1,5 @@
 # 前言
-> 前端分为:移动端(vant-ui),pc端(naive-ui),两种交互方式,应该配置nginx自动识别访问设备跳转
+> 前端分为:移动端(vant-ui),pc端(naive-ui),两种交互方式,应该配置nginx自动识别访问设备
 > 
 > 前端所有的上传和下载均为分片方式,所以它支持超大文件的上传与下载
 >
@@ -35,4 +35,96 @@ npm run dev
 ## 部署
 > 编译后,dist文件夹就是应用静态文件,可以使用nginx提供服务端口,指向这个编译后的静态文件
 
+## nginx配置例子
+``` 
+    #家庭网盘-PC端
+    server {
+        listen       80;
+        server_name  jflove.cn;
+        rewrite ^(.*)$  https://www.jflove.cn$1 permanent;
+    }
+    server {
+        listen       443;
+        server_name  jflove.cn;
+        rewrite ^(.*)$  https://www.jflove.cn$1 permanent;
+    }
+    server {
+        listen       80;
+        server_name  www.jflove.cn;
+        rewrite ^(.*)$  https://www.jflove.cn$1 permanent;
+    }
+    server {
+        # 根目录
+        root /root/html/family-disk-html/dist;
+
+        # Load configuration files for the default server block.
+        include /etc/nginx/default.d/*.conf;
+
+        listen 443;
+        server_name www.jflove.cn; #填写绑定证书的域名
+        ssl on;
+        ssl_certificate /root/ssl/www.jflove.cn_nginx/www.jflove.cn_bundle.crt;
+        ssl_certificate_key /root/ssl/www.jflove.cn_nginx/www.jflove.cn.key;
+        ssl_session_timeout 5m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
+        ssl_prefer_server_ciphers on;
+        # 下面根据user_agent可以获取
+        #移动端跳转到m
+        if ($http_user_agent ~* (mobile|nokia|iphone|ipad|android|samsung|htc|blackberry)) {
+                rewrite  ^(.*)    https://m.jflove.cn$1 permanent;
+        }
+        # 匹配协议
+        location / {
+            # 需要指向下面的 @router 否则会出现 Vue 的路由在 Nginx 中刷新出现 404
+            try_files $uri $uri/ @router;
+            index /src/pc/index.html/index.html;
+        }
+        # 对应上面的 @router，主要原因是路由的路径资源并不是一个真实的路径，所以无法找到具体的文件
+        # 因此需要 rewrite 到 index.html 中，然后交给路由在处理请求资源
+        location @router {
+            rewrite ^.*$ /src/pc/index.html last;
+        }
+    }
+
+    #家庭网盘-移动端
+    server {
+        listen       80;
+        server_name  m.jflove.cn;
+        rewrite ^(.*)$  https://m.jflove.cn$1 permanent;
+    }
+    server {
+        # 根目录
+        root /root/html/family-disk-html/dist;
+
+        # Load configuration files for the default server block.
+        include /etc/nginx/default.d/*.conf;
+
+        listen 443;
+        server_name m.jflove.cn; #填写绑定证书的域名
+        ssl on;
+        ssl_certificate /root/ssl/m.jflove.cn_nginx/m.jflove.cn_bundle.crt;
+        ssl_certificate_key /root/ssl/m.jflove.cn_nginx/m.jflove.cn.key;
+        ssl_session_timeout 5m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
+        ssl_prefer_server_ciphers on;
+        # 下面根据user_agent可以获取
+        #非移动端跳转到www
+        if ($http_user_agent !~* (mobile|nokia|iphone|ipad|android|samsung|htc|blackberry)) {
+                rewrite  ^(.*)    https://www.jflove.cn$1 permanent;
+        }
+        # 匹配协议
+        location / {
+            # 需要指向下面的 @router 否则会出现 Vue 的路由在 Nginx 中刷新出现 404
+            try_files $uri $uri/ @router;
+            index /src/mobile/index.html;
+        }
+        # 对应上面的 @router，主要原因是路由的路径资源并不是一个真实的路径，所以无法找到具体的文件
+        # 因此需要 rewrite 到 index.html 中，然后交给路由在处理请求资源
+        location @router {
+            rewrite ^.*$ /src/mobile/index.html last;
+        }
+    }
+```
 
