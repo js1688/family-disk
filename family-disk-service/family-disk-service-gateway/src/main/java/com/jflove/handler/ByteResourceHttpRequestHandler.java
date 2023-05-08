@@ -1,4 +1,4 @@
-package com.jflove.config;
+package com.jflove.handler;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.em.FileSourceENUM;
@@ -33,7 +33,7 @@ import java.io.IOException;
  */
 @Component
 @Log4j2
-public class ByteResourceHttpRequestHandlerConfig extends ResourceHttpRequestHandler {
+public class ByteResourceHttpRequestHandler extends ResourceHttpRequestHandler {
 
     public static final String RANGE_START = "BYTE_RANGE_START";
     public static final String MAX_SIZE = "BYTE_MAX_SIZE";

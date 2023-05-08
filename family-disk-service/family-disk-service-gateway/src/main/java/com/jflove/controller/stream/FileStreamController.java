@@ -1,7 +1,7 @@
 package com.jflove.controller.stream;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
+import com.jflove.handler.ByteResourceHttpRequestHandler;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileAdministration;
 import com.jflove.file.dto.FileInfoDTO;
@@ -70,7 +70,7 @@ public class FileStreamController {
     private IFileAdministration fileAdministration;
 
     @Autowired
-    private ByteResourceHttpRequestHandlerConfig resourceHttpRequestHandle;
+    private ByteResourceHttpRequestHandler resourceHttpRequestHandle;
 
     @ApiOperation(value = "媒体资源边播边下")
     @GetMapping("/media/play/{source}/{token}/{fileMd5}")
@@ -94,8 +94,8 @@ public class FileStreamController {
         }
         Assert.notNull(rel.get().getRole(),"错误的请求:正在使用的空间权限不能为空");
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,fileMd5);
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE,source);
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,rel.get().getSpaceId());
+        request.setAttribute(ByteResourceHttpRequestHandler.SOURCE,source);
+        request.setAttribute(ByteResourceHttpRequestHandler.SPACE_ID,rel.get().getSpaceId());
         resourceHttpRequestHandle.handleRequest(request, response);
     }
 
@@ -109,8 +109,8 @@ public class FileStreamController {
         Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,param.getFileMd5());
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE,param.getSource());
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,useSpaceId);
+        request.setAttribute(ByteResourceHttpRequestHandler.SOURCE,param.getSource());
+        request.setAttribute(ByteResourceHttpRequestHandler.SPACE_ID,useSpaceId);
         response.setHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,HttpHeaders.CONTENT_RANGE);
         resourceHttpRequestHandle.handleRequest(request, response);
     }

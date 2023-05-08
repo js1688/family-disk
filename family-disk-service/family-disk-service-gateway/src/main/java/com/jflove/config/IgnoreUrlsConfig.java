@@ -40,27 +40,21 @@ public class IgnoreUrlsConfig {
         if(origins == null){
             return null;
         }
-        String [] a = new String[origins.size()];
-        origins.toArray(a);
-        return a;
+        return origins.stream().toArray(String[]::new);
     }
 
     public String [] getUrlStrings(){
         if(urls == null){
             return null;
         }
-        String [] a = new String[urls.size()];
-        urls.toArray(a);
-        return a;
+        return urls.stream().toArray(String[]::new);
     }
 
     public String [] getAdminStrings(){
         if(admin == null){
             return null;
         }
-        String [] a = new String[admin.size()];
-        admin.toArray(a);
-        return a;
+        return admin.stream().toArray(String []::new);
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.jflove.impl;
+package com.jflove.service;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.config.HttpConstantConfig;
@@ -30,8 +30,8 @@ import java.util.Optional;
  * @date 2022/12/7 17:39
  * @describe 用户权限确定
  */
-@Component("UserDetailsServiceImpl")
-public class UserDetailsServiceImpl implements UserDetailsService {
+@Component("CustomUserDetailsService")
+public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private JJwtTool jJwtTool;
     @DubboReference

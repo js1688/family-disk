@@ -2,7 +2,7 @@ package com.jflove.controller.share;
 
 import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.config.ByteResourceHttpRequestHandlerConfig;
+import com.jflove.handler.ByteResourceHttpRequestHandler;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.api.INetdiskDirectory;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
@@ -55,7 +55,7 @@ public class NetdiskShareController {
     private JJwtTool jJwtTool;
 
     @Autowired
-    private ByteResourceHttpRequestHandlerConfig resourceHttpRequestHandle;
+    private ByteResourceHttpRequestHandler resourceHttpRequestHandle;
 
     private final static String SHARE_TOKEN = "SHARE_TOKEN";//分享token 头部key
 
@@ -95,8 +95,8 @@ public class NetdiskShareController {
             throw new NullPointerException(dto.getMessage());
         }
         request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,dto.getData().getFileMd5());
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SOURCE, FileSourceENUM.CLOUDDISK.getCode());
-        request.setAttribute(ByteResourceHttpRequestHandlerConfig.SPACE_ID,dto.getData().getSpaceId());
+        request.setAttribute(ByteResourceHttpRequestHandler.SOURCE, FileSourceENUM.CLOUDDISK.getCode());
+        request.setAttribute(ByteResourceHttpRequestHandler.SPACE_ID,dto.getData().getSpaceId());
         response.setHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,HttpHeaders.CONTENT_RANGE);
         resourceHttpRequestHandle.handleRequest(request, response);
     }

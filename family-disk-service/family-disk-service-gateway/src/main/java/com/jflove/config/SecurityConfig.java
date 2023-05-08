@@ -44,7 +44,7 @@ import java.util.Arrays;
 public class SecurityConfig{
 
     @Autowired
-    @Qualifier("UserDetailsServiceImpl")
+    @Qualifier("CustomUserDetailsService")
     private UserDetailsService uds;
 
     @Autowired
