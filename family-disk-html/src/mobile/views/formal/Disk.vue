@@ -46,7 +46,7 @@
     <van-back-top ight="15vw" bottom="10vh" target="#list"/>
   </van-list>
 
-  <div v-if="!roleWrite" style="position: fixed;right: 25px;bottom: 200px;">
+  <div style="position: fixed;right: 25px;bottom: 200px;">
     <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
       <template #reference>
         <van-button icon="plus" type="primary"/>
@@ -121,21 +121,6 @@
     </div>
   </van-action-sheet>
 
-  <van-action-sheet v-model:show="showUpload" title="上传文件">
-    <div>
-      <div style="margin: 16px;">
-        <van-uploader :preview-options="{closeable:true}" @click-preview="openPreview" :max-size="1024 * 1024 * 32" @oversize="onOversize" :max-count="12" :before-read="beforeRead" :disabled="uploadDisabled" accept="*" v-model="uploadFiles" multiple>
-          <van-button block hairline icon="plus" type="default">选择文件</van-button>
-        </van-uploader>
-      </div>
-      <div style="margin: 16px;">
-        <van-button round block :disabled="uploadDisabled" type="primary" @click="submitUpload" native-type="submit">
-          开始上传
-        </van-button>
-      </div>
-    </div>
-  </van-action-sheet>
-
   <van-action-sheet
       v-model:show="showShare"
       title="创建分享链接">
@@ -171,49 +156,46 @@
     </div>
   </van-action-sheet>
 
-  <van-calendar v-model:show="showShareDate" :show-confirm="false" @confirm="onConfirmShare" :max-date="maxDate"/>
-
-  <van-action-sheet @opened="playVideo" @close="pauseVideo" title="媒体播放" round v-model:show="showVideo">
-    <div style="max-width: 1200px;" id="videoBody">
-    </div>
-  </van-action-sheet>
-  <van-action-sheet v-model:show="showLargeUpload" title="大文件上传">
+  <van-action-sheet v-model:show="showLargeUpload" title="文件上传">
     <div>
       <div style="margin: 16px;">
         <van-uploader accept="*" :after-read="largeUpload"  multiple>
           <van-button style="margin-left: 15px;" icon="plus" size="small" block type="default" />
         </van-uploader>
-        <van-cell v-for="item in largeFileUploadList" :title="item.fileName.length > 10 ? item.fileName.substring(0,10) : item.fileName">
+        <van-cell v-for="value in largeFileUploadList" :title="value.file.name.length > 10 ? value.file.name.substring(0,10) : value.file.name">
           <div style="padding-top: 10px;">
-            <van-progress :percentage="item.progress" />
+            <van-progress :percentage="value.scale" />
           </div>
-          <van-button style="margin-top: 10px;" @click="largeDel(item)" v-if="item.del" type="default" size="mini">删除</van-button>
+          <van-button style="margin-top: 10px;" @click="stopFileUpload(value.md5)" type="default" size="mini">取消</van-button>
         </van-cell>
       </div>
     </div>
   </van-action-sheet>
 
-  <van-dialog :show-confirm-button="false" :show-cancel-button="false" v-model:show="showDownloadProgress" :title="downloadFileName">
-    <div style="height: 30px;margin: 10px;">
-      <van-progress :percentage="downloadFileProgress" />
-    </div>
-  </van-dialog>
-
-  <van-image-preview
-      :onClose="closeVideo"
-      v-model:show="showPreviewVideo"
-      :images="videoUrls"
-      :showIndex="false"
-      :beforeClose="videoBeforeClose"
-      closeable>
-    <template #image="{src}">
-      <!-- 为了兼容移动端和pc端,需要绑定两种事件 -->
-      <div @click.native="chickVideo" @touchend="chickVideo" style="position: absolute;top:50px;left: 0;bottom: 50px;right: 0;">
-        <video :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+  <van-action-sheet v-model:show="showDownloadList" title="下载列表">
+    <div>
+      <div style="margin: 16px;">
+        <van-cell v-for="value in downloadPlan" :title="value.data.name.length > 10 ? value.data.name.substring(0,10) : value.data.name">
+          <div style="padding-top: 10px;">
+            <van-progress :percentage="value.data.scale" />
+          </div>
+          <van-button style="margin-top: 10px;" @click="stopFileDownload(value.data.fileMd5)" type="default" size="mini">取消</van-button>
+        </van-cell>
       </div>
-    </template>
-  </van-image-preview>
-  <van-back-top ight="15vw" bottom="10vh" />
+    </div>
+  </van-action-sheet>
+
+  <van-calendar v-model:show="showShareDate" :show-confirm="false" @confirm="onConfirmShare" :max-date="maxDate"/>
+
+  <van-dialog
+      v-model:show="showPreviewVideo"
+      :show-confirm-button="false"
+      @close="closeVideo"
+      @opened="$refs.previewVideoRef.src=videoUrl"
+      :show-cancel-button="true">
+
+    <video ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+  </van-dialog>
 </template>
 
 <script>
@@ -243,11 +225,14 @@ import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
 import {isToken, key} from "@/global/KeyGlobal";
-import {FileMd5, FormatDate} from '@/global/StandaloneTools';
+import {CountFileSliceInfo, FileMd5, FormatDate} from '@/global/StandaloneTools';
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 import { saveAs } from 'file-saver';
-import '@vant/touch-emulator';//vant适配桌面端
+import '@vant/touch-emulator';
+import {FileDoownloadSmall, FileDownload, FileSoundOut, getDownloadList, StopFileDownload} from "@/global/FileDownload";
+import {FileUpload, getUploadList, StopFileUpload} from "@/global/FileUpload";
+//vant适配桌面端
 
 
 export default {
@@ -278,30 +263,30 @@ export default {
     [Dialog.name]:Dialog
   },
   setup() {
+    let roleWrite = localStorage.getItem(key().useSpaceRole) != 'WRITE';
     const addActions = [
       { text: '新建目录', icon: 'wap-nav',name:'addDirectory'},
-      { text: '上传文件', icon: 'upgrade',name:'addFile'},
-      { text: '大件上传', icon: 'upgrade',name:'addLargeFile'}
+      { text: '文件上传', icon: 'upgrade',name:'addLargeFile'},
+      { text: '下载列表', icon: 'wap-nav',name:'downloadList'}
     ];
+    //如果没有写入权限就删掉文件上传目录
+    if(roleWrite){
+      addActions.splice(1,1);
+      addActions.splice(0,1);
+    }
     const showPopover = ref(false);
-
-    const onOversize = (f) => {
-      showToast('文件太大,请选择大件上传方式');
-    };
-    const activeNames = ref([]);
     return {
+      roleWrite:roleWrite,
       maxDate: new Date(new Date().getFullYear() + 1, 12, 31),
       maxHeight:document.documentElement.clientHeight - 160,
-      activeNames,
+      fileDownloadUrl:'/stream/slice/getFile',
       addActions,
-      showPopover,
-      onOversize
+      showPopover
     };
   },
   data: function (){
     return {
       showShareDate:false,
-      roleWrite:localStorage.getItem(key().useSpaceRole) != 'WRITE',
       showShare:false,
       shareParam:{password:null,bodyId:null,invalidTime:null,url:null},
       keyword:"",
@@ -315,57 +300,65 @@ export default {
       movePid:0,
       moveId:0,
       moveList:[],
+      downloadPlan:[],
       showAddDirectory:false,
       isOverlay: false,
       showMove: false,
-      uploadDisabled:false,
       list:[],
       showUpdateName:false,
       showLargeUpload:false,
-      showUpload:false,
-      uploadFiles:[],
-      showDownloadProgress:false,
-      downloadFileName:"",
-      downloadFileProgress:0,
-      downloadFileSliceNum:0,
+      showDownloadList:false,
       openPath:[
           {name:'目录',id:0}
       ],
-      isSubscribe:false,
-      showVideo:false,
       showPreviewVideo:false,
-      videoUrls:[],
-      myPlayer:null,
+      videoUrl:'',
       largeFileUploadList:[],
-      largeDownloadTemporaryStorage:null,
-      videoOptions:{
-        controls: true,
-        playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
-        autoplay: true, //如果true,浏览器准备好时开始回放。
-        muted: false, // 默认情况下将会消除任何音频。
-        loop: false, // 导致视频一结束就重新开始。
-        preload: "auto", // 建议浏览器在<video>加载元素后是否应该开始下载视频数据。auto浏览器选择最佳行为,立即开始加载视频（如果浏览器支持）
-        language: "zh-CN",
-        aspectRatio: "16:9", // 将播放器置于流畅模式，并在计算播放器的动态大小时使用该值。值应该代表一个比例 - 用冒号分隔的两个数字（例如"16:9"或"4:3"）
-        fluid: true, // 当true时，Video.js player将拥有流体大小。换句话说，它将按比例缩放以适应其容器。
-        flash:{hls:{withCredentials:true}},//可以播放rtmp视频
-        html5:{hls:{withCredentials:true}},//可以播放m3u8视频
-        //poster: "@/assets/camera.png", //你的封面地址
-        width: document.documentElement.clientWidth,
-        height: document.documentElement.clientHeight,
-        notSupportedMessage: "此视频暂无法播放，请稍后再试", //允许覆盖Video.js无法播放媒体源时显示的默认信息。
-        controlBar: {
-          timeDivider: true,// 当前时间和持续时间的分隔符
-          durationDisplay: true,// 显示持续时间
-          remainingTimeDisplay: true,// 是否显示剩余时间功能
-          fullscreenToggle: true, //全屏按钮
-        },
-        sources:[]
-      },
-      chickVideoValue:false
+    }
+  },
+  created() {
+    if(localStorage.getItem(key().authorization) != null){
+      //添加定时任务,刷新下载列表
+      let self = this;
+      setInterval(function (){
+        //更新下载列表进度
+        let list = getDownloadList();
+        self.downloadPlan = [];
+        for (const listKey in list) {
+          let v = list[listKey];
+          v.data['scale'] = v.data.progress == 0 ? 0 : Math.floor(v.data.progress/v.data.sliceNum*100);
+          self.downloadPlan.push(v);
+        }
+        //更新上传列表进度
+        let uplist = getUploadList();
+        self.largeFileUploadList = [];
+        for (const uplistKey in uplist) {
+          let v = uplist[uplistKey];
+          v['scale'] = v.progress == 0 ? 0 : Math.floor(v.progress/v.sliceInfo.sliceNum*100);
+          if(!v.result){
+            showToast(v.resultMsg);
+            self.stopFileUpload(v.md5);
+          }else{
+            self.largeFileUploadList.push(v);
+          }
+        }
+      }, 500);
     }
   },
   methods:{
+    //取消上传
+    stopFileUpload:function (md5) {
+      StopFileUpload(md5).then(function (sf){
+        showToast(sf.msg);
+      });
+    },
+    //取消下载
+    stopFileDownload:function (md5) {
+      StopFileDownload(md5).then(function (sf){
+        showToast(sf.msg);
+      });
+    },
+    //拷贝地址
     doCopy:function (){
       let self = this;
       this.$copyText(this.shareParam.url).then(function (e) {
@@ -403,191 +396,96 @@ export default {
       this.shareParam = {password:null,bodyId:item.id,invalidTime:FormatDate(new Date()),url:null}
       this.showShare = true;
     },
-    //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
-    chickVideo:function (){
-      this.chickVideoValue = true;
-    },
-    videoBeforeClose:function (e) {
-      let ret = !this.chickVideoValue;
-      this.chickVideoValue = false;
-      return ret;
-    },
-    //点击图片预览前回调
-    openPreview:function (f) {
-      let file = f.file;
-      let mediaType = file.type.toUpperCase();
-      mediaType = mediaType.substring(0,mediaType.indexOf("/"));
-      switch (mediaType){
-        case "VIDEO"://视频
-        case "AUDIO"://音频
-          //切换到播放器播放
-          let blob = file.slice(0,file.size);
-          let url = window.URL.createObjectURL(blob);
-          this.videoUrls = [url];
-          this.showPreviewVideo = true;
-          return false;
-      }
-      return true;
-    },
     //关闭预览视频播放器
     closeVideo:function () {
+      //停止播放
       if(this.$refs.previewVideoRef){
         this.$refs.previewVideoRef.pause();
         this.$refs.previewVideoRef.src = "";
       }
-      this.videoUrls = [];
       this.showPreviewVideo = false;
     },
-    //分片上传
-    sliceUpload:function (fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback){
-      let data = new FormData();
-      data.append('originalFileName', file.name);
-      data.append('f', chunk,fileMd5 + "-" + i);
-      data.append('s', 'CLOUDDISK');
-      data.append('m', file.type);
-      data.append('n', sliceNum);
-      data.append('start', start);
-      data.append('end', end);
-      data.append('fileMd5', fileMd5);
-      data.append('totalLength', totalLength);
-      let self = this;
-      axios.post("/stream/slice/addFile", data, {
-        header:{
-          'Content-Type': 'multipart/form-data'
-        }
-      }).then((res) => {
-        if(!res.data || !res.data.result && res.data.data != 'retry'){//没有返回内容,或者返回的是错误,但是不是要求重试
-          let i = self.incrProgress(fileMd5,-1);
-          this.largeFileUploadList[i].del = true;
-          showToast(res.data.message);
-        }else if(!res.data.result && res.data.data == 'retry'){//分片失败,服务端主动要求重试
-          if(self.incrProgress(fileMd5,-1)){//先判断是否还在上传列表中,如果不在了,则不用重试了
-            self.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
-          }
-        }else if(res.data.result && res.data.data){
-          callback(res.data);//执行回调
-        }
-      }).catch((error) => {
-        console.log(error);
-        if(self.incrProgress(fileMd5,-1)){//先判断是否还在上传列表中,如果不在了,则不用重试了
-          self.sliceUpload(fileMd5,totalLength,start,end,file,chunk,i,sliceNum,callback);//重试
-        }
-      });
-    },
-    //大文件上传增加进度条
-    incrProgress:function (md5,add){
-      for (let i = 0; i < this.largeFileUploadList.length; i++) {
-        if(this.largeFileUploadList[i].fileMd5 == md5){
-          if(add == -1){
-            return i;
-          }else if(add == 100 || add == 0){
-            this.largeFileUploadList[i].progress = add;
-          }else{
-            let a = this.largeFileUploadList[i].progress + add;;
-            if(a < 100){
-              this.largeFileUploadList[i].progress = a;
-            }
-          }
-          return this.largeFileUploadList[i];
-        }
-      }
-    },
-    //大文件上传,删除
-    largeDel: function (item){
-      let i = this.incrProgress(item.fileMd5,-1);
-      this.largeFileUploadList.splice(i,1);
-    },
     //大文件上传
-    largeUpload:function (fs){
+    largeUpload:async function (fs){
       if(!fs.length){//只选择了一个文件
         fs = [fs];
       }
-      for (let i = 0; i < fs.length; i++) {
-        let file = fs[i].file;
-        let sliceSize = 1024 * 1024 * 3;//每片最大16mb
-        if(file.size < sliceSize){
-          sliceSize = file.size;
+      //判断文件是否重复添加
+      for (let i = 0; i < this.largeFileUploadList.length; i++) {
+        for (let i = 0; i < fs.length; i++) {
+          let file = fs[i].file;
+          if (file.name == this.largeFileUploadList[i].name) {
+            fs.splice(i, 1);//删除掉添加的内容
+            showToast(`文件名:[${file.name}]正在上传,请勿重复上传`);
+            break;
+          }
         }
-        let sliceNum = Math.ceil(file.size/sliceSize);//分片数量
-        let start = 0;
-        let self = this;
-        //前端获取md5值
-        FileMd5(file,sliceSize,sliceNum).then(e=>{
-          //将文件添加到上传展示列表中
-          self.largeFileUploadList.push({fileMd5:e,fileName:file.name,progress:0,sliceNum:sliceNum,del:false});
-          for (let i = 0; i < sliceNum; i++) {
-            let end = sliceSize + start;
-            let chunk = file.slice(start,end);
-            //发送分片
-            self.sliceUpload(e, file.size, start, end, file, chunk, i, sliceNum, function (d){
-              if(d.result && d.data && d.data != 'ok' && d.data != 'retry'){//所有分片合并完毕
-                self.incrProgress(e,100);//进度条
-                //将文件与网盘目录建立关系
-                axios.post('/netdisk/addDirectory', {
-                  name: file.name,
-                  pid: self.pid,
-                  fileMd5: d.data,
-                  type:"FILE",
-                  mediaType:file.type
-                }).then(function (response) {
-                  if(response.data.result && response.data.data){
-                    self.list.push(response.data.data);
-                  }
-                  showToast(response.data.message);
-                }).catch(function (error) {
-                  console.log(error);
-                });
-              }else if(d.result && d.data == 'ok'){//分片上传成功
-                self.incrProgress(e,Math.ceil(100 / sliceNum));
-              }
+      }
+      //开始上传文件
+      let self = this;
+      for (let i = 0; i < fs.length; i++) {
+        let last = fs[i];
+        //计算分片大小
+        let sliceInfo = CountFileSliceInfo(last.file);
+        //计算md5值
+        let md5 = await FileMd5(last.file,sliceInfo.sliceSize,sliceInfo.sliceNum);
+        let ret = await FileUpload(sliceInfo,last.file,md5,'CLOUDDISK',self.pid,async function (q) {
+          if(q.result){
+            //将文件与网盘目录建立关系
+            let response = await axios.post('/netdisk/addDirectory', {
+              name: q.file.name,
+              pid: q.pid,
+              fileMd5: q.md5,
+              type:"FILE",
+              mediaType:q.file.type
             });
-            start = end;
+            if(response.data.result && response.data.data){
+              self.onLoad();
+            }
+            showToast(response.data.message);
+          }else{
+            showToast(q.resultMsg);
           }
         });
+        showToast(ret.msg);
       }
     },
-    //暂停播放视频
-    pauseVideo:function (){
-      try {
-        this.videoOptions.sources = [];
-        this.myPlayer.dispose();
-        this.myPlayer.pause();
-      }catch (e){}
-    },
-    //开始播放视频
-    playVideo:function (){
-      let myVideoDiv = document.getElementById("videoBody")
-      myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
-      this.myPlayer = videojs("videoPlayer",this.videoOptions);
-    },
     //打开图片
-    openImage:function (item){
-      this.showDownloadProgress = true;
-      this.downloadFileName = item.name;
-      this.downloadFileProgress = 0;
-      this.downloadFileSliceNum = 0;
-      this.sliceDownload(item,0,function (bl){
-        let url = window.URL.createObjectURL(bl);
+    openImage:async function (item){
+      this.isOverlay = true;
+      let fso = await FileSoundOut(this.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        this.isOverlay = false;
+        showToast(fso.msg);
+        return;
+      }
+      //试探成功,开始下载
+      let fd = await FileDoownloadSmall(fso);
+      this.isOverlay = false;
+      if(fd.state){
+        let blob = new Blob([fd.bytes],{type:item.mediaType});
+        let url = window.URL.createObjectURL(blob);
         showImagePreview({
           images: [url],
           closeable: true,
           showIndex: false
         });
-      });//使用分片下载方式
+      }else{
+        showToast(fd.msg);
+        return;
+      }
     },
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
-    openVideo:function (item,gs){
-      //判断使用哪种播放器,如果是苹果公司的媒体资源则使用原生播放器播放
-      let url = key().baseURL+"stream/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
-      switch (gs) {
-        case "MP4":
-          this.videoOptions.sources.push({src:url,type:item.mediaType});
-          this.showVideo = true;
-          break
-        default:
-          this.videoUrls = [url];
-          this.showPreviewVideo = true;
+    openVideo:async function (item,gs){
+      //试探文件
+      let fso = await FileSoundOut(this.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        showToast(fso.msg);
+        return;
       }
+      let url = key().baseURL+"stream/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+      this.videoUrl = url;
+      this.showPreviewVideo = true;
     },
     //打开文件
     openFile:function (item) {
@@ -606,179 +504,18 @@ export default {
           break
       }
     },
-    //大文件下载,分片方式
-    sliceDownload:function (item,s,callback) {
-      let self = this;
-      axios.post('/stream/slice/getFile', {
-        fileMd5: item.fileMd5,
-        name: item.name,
-        source:"CLOUDDISK"
-      },{
-        responseType:"arraybuffer",
-        headers:{
-          Range:"bytes="+s+"-"
-        }
-      }).then(function (response) {
-        const { data, headers } = response;
-        try {
-          let msg = JSON.parse(data);
-          self.showDownloadProgress = false;
-          showToast(msg.message);
-          return;
-        }catch (e){}
-        let contentRange = headers["content-range"];
-        let contentLength = headers["content-length"] * 1;
-        let start = contentRange.substring(6,contentRange.indexOf("-")) * 1;
-        let end = contentRange.substring(contentRange.indexOf("-") + 1,contentRange.indexOf("/")) * 1;
-        let total = contentRange.substring(contentRange.indexOf("/") + 1) * 1;
-        if(start == 0){//第一次请求,重置缓存
-          self.largeDownloadTemporaryStorage = new Uint8Array(total);
-          //计算出它有多少分片
-          self.downloadFileSliceNum = Math.ceil(total / contentLength);
-        }
-        let retArr = new Uint8Array(data);
-        for (let i = 0; i < retArr.byteLength; i++) {
-          self.largeDownloadTemporaryStorage[start + i] = retArr[i];
-        }
-        if(end < total-1 && response.status == 206){//还有文件分片,继续请求
-          let a = self.downloadFileProgress + Math.ceil(100 / self.downloadFileSliceNum);
-          if(a < 100){
-            self.downloadFileProgress = a;
-          }
-          self.sliceDownload(item,start+contentLength,callback);
-        }else{
-          //下载完毕
-          let bl = new Blob([self.largeDownloadTemporaryStorage]);
-          self.downloadFileProgress = 100;
-          self.largeDownloadTemporaryStorage = null;
-          self.showDownloadProgress = false;
-          callback(bl);
-        }
-      }).catch(function (error) {
-        self.largeDownloadTemporaryStorage = null;
-        self.showDownloadProgress = false;
-        console.log(error);
-      });
-    },
     //下载文件
-    download:function (item) {
-      this.showDownloadProgress = true;
-      this.downloadFileName = item.name;
-      this.downloadFileProgress = 0;
-      this.downloadFileSliceNum = 0;
-      this.sliceDownload(item,0,function (bl){
-        saveAs(bl,item.name);
-      });//使用分片下载方式
-    },
-    //检查文件是否都上传完毕
-    checkEnd:function (){
-      for (let i = 0; i < this.uploadFiles.length; i++) {
-        let f = this.uploadFiles[i];
-        if(f.status == 'uploading'){//还有上传中
-          return false;
-        }
-      }
-      return true;
-    },
-    //选择文件前校验
-    beforeRead: function (files){
-      if(this.uploadFiles == null || this.uploadFiles.length == 0){
-        return true;
-      }
-      B:for (let j = 0; j < this.uploadFiles.length; j++) {
-        let oldFile = this.uploadFiles[j];
-        if(files.length){
-          A:for (let i = 0; i < files.length; i++) {
-            let nowFile = files[i];
-            if(nowFile.name == oldFile.file.name){
-              showToast("重复文件名:" + nowFile.name);
-              return false;
-            }
-          }
-        }else{
-          if(files.name == oldFile.file.name){
-            showToast("重复文件名:" + files.name);
-            return false;
-          }
-        }
-      }
-      return true;
-    },
-    //提交上传
-    submitUpload: function(){
-      if(this.uploadFiles.length == 0){
+    download:async function (item) {
+      let self = this;
+      let fso = await FileSoundOut(self.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        showToast(fso.msg);
         return;
       }
-      //设置禁用
-      this.uploadDisabled = true;
-      let self = this;
-      //开始循环上传文件
-      for (let i = 0; i < this.uploadFiles.length; i++) {
-        let f = this.uploadFiles[i];
-        f.status = "uploading";
-        f.message = "上传中";
-        let data = new FormData();
-        data.append('f', f.file);
-        data.append('s', 'CLOUDDISK');
-        data.append('m', f.file.type);
-        axios.post("/stream/addFile", data, {
-          header:{
-            'Content-Type': 'multipart/form-data'
-          }
-        }).then((res) => {
-          if(res.data.result){
-            //将文件与网盘目录建立关系
-            axios.post('/netdisk/addDirectory', {
-              name: f.file.name,
-              pid: self.pid,
-              fileMd5: res.data.data,
-              type:"FILE",
-              mediaType:f.file.type
-            }).then(function (response) {
-              if(response.data.result){
-                if(response.data.data){
-                  self.list.push(response.data.data);
-                }
-                f.status = "done";
-                f.message = "完成";
-              }else{
-                f.status = "failed";
-                f.message = response.data.message;
-              }
-              if(self.checkEnd()){
-                showToast("文件全部上传完毕");
-                //全部上传完毕后取消禁用
-                self.uploadDisabled = false;
-              }
-            }).catch(function (error) {
-              f.status = "failed";
-              f.message = "失败";
-              if(self.checkEnd()){
-                showToast("文件全部上传完毕");
-                //全部上传完毕后取消禁用
-                self.uploadDisabled = false;
-              }
-              console.log(error);
-            });
-          }else{
-            f.status = "failed";
-            f.message = res.data.message;
-            if(self.checkEnd()){
-              showToast("文件全部上传完毕");
-              //全部上传完毕后取消禁用
-              self.uploadDisabled = false;
-            }
-          }
-        }).catch((error) => {
-          console.log(error);
-          f.status = "failed";
-          f.message = "失败";
-          if(self.checkEnd()){
-            showToast("文件全部上传完毕");
-            //全部上传完毕后取消禁用
-            self.uploadDisabled = false;
-          }
-        });
+      //试探成功,开始下载
+      let fd = await FileDownload(fso);
+      if(fd){
+        showToast(fd.msg);
       }
     },
     //修改名称
@@ -922,34 +659,15 @@ export default {
     },
     addSelect: function (item){
       let cz = item.name;
-      let clean = true;
       switch (cz) {
         case 'addDirectory':
           this.showAddDirectory = true;
           break;
+        case 'downloadList':
+          this.showDownloadList = true;
+          break;
         case 'addLargeFile':
           this.showLargeUpload = true;
-          //如果列表中全部进度都是100%,代表已经上传完毕且用户不需要太关心每个文件状态,清除列表即可
-          for (let i = 0; i < this.largeFileUploadList.length; i++) {
-            if(this.largeFileUploadList[i].progress != 100){
-              clean = false;
-            }
-          }
-          if(clean){
-            this.largeFileUploadList = [];
-          }
-          break;
-        case 'addFile':
-          this.showUpload = true;
-          //如果上传列表中全是上传成功,已经上传完了且用户不需要太关心每个文件的状态,需要清除掉上传列表
-          for (let i = 0; i < this.uploadFiles.length; i++) {
-            if(this.uploadFiles[i].status != "done"){
-              clean = false;
-            }
-          }
-          if(clean){
-            this.uploadFiles = [];
-          }
           break;
       }
     },

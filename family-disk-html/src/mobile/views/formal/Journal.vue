@@ -190,7 +190,6 @@ export default {
       keyword:"",
       journalBody:"",
       journalList:[],
-      chickVideoValue:false,
       videoCoverBase64:'',
       videoUrl:''
     }

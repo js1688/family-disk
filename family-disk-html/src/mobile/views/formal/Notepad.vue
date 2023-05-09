@@ -123,8 +123,6 @@
       </v-md-editor>
     </div>
   </van-action-sheet>
-
-  <van-back-top ight="15vw" bottom="10vh" />
 </template>
 
 <script>
