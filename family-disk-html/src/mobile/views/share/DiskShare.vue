@@ -20,9 +20,11 @@
   </van-search>
 
   <van-list
+      id="list"
       v-model:loading="loading"
       :finished="finished"
       finished-text="没有更多了"
+      :style="`height:${maxHeight}px;overflow:auto;`"
       @load="onLoad"
   >
     <van-swipe-cell v-for="item in list">
@@ -35,13 +37,9 @@
         <van-button v-if="item.type == 'FILE'" square hairline type="success"  @click="download(item)" text="下载" />
       </template>
     </van-swipe-cell>
-  </van-list>
 
-  <van-dialog :show-confirm-button="false" :show-cancel-button="false" v-model:show="showDownloadProgress" :title="downloadFileName">
-    <div style="height: 30px;margin: 10px;">
-      <van-progress :percentage="downloadFileProgress" />
-    </div>
-  </van-dialog>
+    <van-back-top ight="15vw" bottom="10vh" target="#list"/>
+  </van-list>
 
   <van-action-sheet
       v-model:show="passwordShow"
@@ -65,27 +63,37 @@
     </div>
   </van-action-sheet>
 
-  <van-action-sheet @opened="playVideo" @close="pauseVideo" title="媒体播放" round v-model:show="showVideo">
-    <div style="max-width: 1200px;" id="videoBody">
+  <div style="position: fixed;right: 25px;bottom: 200px;">
+    <van-popover placement="left" v-model:show="showPopover" :actions="addActions" @select="addSelect">
+      <template #reference>
+        <van-button icon="plus" type="primary"/>
+      </template>
+    </van-popover>
+  </div>
+
+  <van-action-sheet v-model:show="showDownloadList" title="下载列表">
+    <div>
+      <div style="margin: 16px;">
+        <van-cell v-for="value in downloadPlan" :title="value.data.name.length > 10 ? value.data.name.substring(0,10) : value.data.name">
+          <div style="padding-top: 10px;">
+            <van-progress :percentage="value.data.scale" />
+          </div>
+          <van-button style="margin-top: 10px;" @click="stopFileDownload(value.data.fileMd5)" type="default" size="mini">取消</van-button>
+        </van-cell>
+      </div>
     </div>
   </van-action-sheet>
 
-  <van-image-preview
-      :onClose="closeVideo"
+  <van-dialog
       v-model:show="showPreviewVideo"
-      :images="videoUrls"
-      :showIndex="false"
-      :beforeClose="videoBeforeClose"
-      closeable>
-    <template #image="{src}">
-      <!-- 为了兼容移动端和pc端,需要绑定两种事件 -->
-      <div @click.native="chickVideo" @touchend="chickVideo" style="position: absolute;top:50px;left: 0;bottom: 50px;right: 0;">
-        <video :src="src" ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
-      </div>
-    </template>
-  </van-image-preview>
+      :show-confirm-button="false"
+      @close="closeVideo"
+      @opened="$refs.previewVideoRef.src=videoUrl"
+      :show-cancel-button="true">
 
-  <van-back-top ight="15vw" bottom="10vh" />
+    <video ref="previewVideoRef" style="height: 100%;width: 100%" controls autoplay />
+  </van-dialog>
+
 </template>
 
 <script>
@@ -115,12 +123,12 @@ import {
   ImagePreview,
   ActionSheet, showConfirmDialog, showImagePreview
 } from 'vant';
-import { saveAs } from 'file-saver';
 import axios from "axios";
 import {isToken, key} from "@/global/KeyGlobal";
-import {GetUrlParam} from "@/global/StandaloneTools";
+import {GetUrlParam, HeicToCommon, LivpToCommon} from "@/global/StandaloneTools";
 import 'video.js/dist/video-js.css';
-import videojs from "video.js";
+import {ref} from "vue";
+import {FileDoownloadSmall, FileDownload, FileSoundOut, getDownloadList, StopFileDownload} from "@/global/FileDownload";
 export default {
   name: "DiskShare",
   components:{
@@ -147,7 +155,15 @@ export default {
     [ActionSheet.name]:ActionSheet
   },
   setup() {
+    const showPopover = ref(false);
+    const addActions = [
+      { text: '下载列表', icon: 'wap-nav',name:'downloadList'}
+    ];
     return {
+      maxHeight:document.documentElement.clientHeight - 160,
+      fileDownloadUrl:'/netdisk/share/slice/getFile',
+      addActions,
+      showPopover
     };
   },
   created(){
@@ -167,6 +183,19 @@ export default {
     }else{
       this.getBody();//不需要密码,直接获得内容
     }
+
+    //添加定时任务,刷新下载列表
+    let self = this;
+    setInterval(function (){
+      //更新下载列表进度
+      let list = getDownloadList();
+      self.downloadPlan = [];
+      for (const listKey in list) {
+        let v = list[listKey];
+        v.data['scale'] = v.data.progress == 0 ? 0 : Math.floor(v.data.progress/v.data.sliceNum*100);
+        self.downloadPlan.push(v);
+      }
+    }, 500);
   },
   data() {
     return {
@@ -177,6 +206,7 @@ export default {
         {name:'目录',id:0}
       ],
       nameMap: {},
+      downloadPlan: [],
       idMap: {},
       tempToken:'',
       pid:0,
@@ -184,134 +214,47 @@ export default {
       isOverlay:false,
       passwordShow:false,
       param : {lock:null,uuid:null,password:null},
-      showDownloadProgress:false,
-      downloadFileName:"",
-      downloadFileProgress:0,
-      downloadFileSliceNum:0,
-      largeDownloadTemporaryStorage:null,
-      videoOptions:{
-        controls: true,
-        playbackRates: [0.5, 1.0, 1.5, 2.0], //播放速度
-        autoplay: true, //如果true,浏览器准备好时开始回放。
-        muted: false, // 默认情况下将会消除任何音频。
-        loop: false, // 导致视频一结束就重新开始。
-        preload: "auto", // 建议浏览器在<video>加载元素后是否应该开始下载视频数据。auto浏览器选择最佳行为,立即开始加载视频（如果浏览器支持）
-        language: "zh-CN",
-        aspectRatio: "16:9", // 将播放器置于流畅模式，并在计算播放器的动态大小时使用该值。值应该代表一个比例 - 用冒号分隔的两个数字（例如"16:9"或"4:3"）
-        fluid: true, // 当true时，Video.js player将拥有流体大小。换句话说，它将按比例缩放以适应其容器。
-        flash:{hls:{withCredentials:true}},//可以播放rtmp视频
-        html5:{hls:{withCredentials:true}},//可以播放m3u8视频
-        //poster: "@/assets/camera.png", //你的封面地址
-        width: document.documentElement.clientWidth,
-        height: document.documentElement.clientHeight,
-        notSupportedMessage: "此视频暂无法播放，请稍后再试", //允许覆盖Video.js无法播放媒体源时显示的默认信息。
-        controlBar: {
-          timeDivider: true,// 当前时间和持续时间的分隔符
-          durationDisplay: true,// 显示持续时间
-          remainingTimeDisplay: true,// 是否显示剩余时间功能
-          fullscreenToggle: true, //全屏按钮
-        },
-        sources:[]
-      },
-      showVideo:false,
       showPreviewVideo:false,
-      videoUrls:[],
-      myPlayer:null,
-      chickVideoValue:false
+      showDownloadList:false,
+      videoUrl:'',
     }
   },
   methods:{
-    //暂停播放视频
-    pauseVideo:function (){
-      try {
-        this.videoOptions.sources = [];
-        this.myPlayer.dispose();
-        this.myPlayer.pause();
-      }catch (e){}
+    //取消下载
+    stopFileDownload:function (md5) {
+      StopFileDownload(md5).then(function (sf){
+        showToast(sf.msg);
+      });
     },
-    //开始播放视频
-    playVideo:function (){
-      let myVideoDiv = document.getElementById("videoBody")
-      myVideoDiv.innerHTML = '<video id="videoPlayer" class="video-js vjs-default-skin" />';
-      this.myPlayer = videojs("videoPlayer",this.videoOptions);
-    },
-    //原生方式预览视频时，点击画面会触发关闭弹窗，这个是组件本身的时间监听，尝试了好多办法都无法解决，最后使用事件监听，如果点击的是画面则不关闭弹窗
-    chickVideo:function (){
-      this.chickVideoValue = true;
-    },
-    videoBeforeClose:function (e) {
-      let ret = !this.chickVideoValue;
-      this.chickVideoValue = false;
-      return ret;
+    addSelect: function (item){
+      let cz = item.name;
+      switch (cz) {
+        case 'downloadList':
+          this.showDownloadList = true;
+          break;
+      }
     },
     //关闭预览视频播放器
     closeVideo:function () {
+      //停止播放
       if(this.$refs.previewVideoRef){
         this.$refs.previewVideoRef.pause();
         this.$refs.previewVideoRef.src = "";
       }
-      this.videoUrls = [];
       this.showPreviewVideo = false;
     },
     //下载文件
-    download:function (item) {
-      this.showDownloadProgress = true;
-      this.downloadFileName = item.name;
-      this.downloadFileProgress = 0;
-      this.downloadFileSliceNum = 0;
-      this.sliceDownload(item,0,function (bl){
-        saveAs(bl,item.name);
-      });//使用分片下载方式
-    },
-    //大文件下载,分片方式
-    sliceDownload:function (item,s,callback) {
-      let self = this;
-      axios.get(`/netdisk/share/slice/getFile/${item.id}`, {
-        responseType:"arraybuffer",
-        headers:{
-          Range:"bytes="+s+"-"
-        }
-      }).then(function (response) {
-        const { data, headers } = response;
-        try {
-          let msg = JSON.parse(data);
-          self.showDownloadProgress = false;
-          showToast(msg.message);
-          return;
-        }catch (e){}
-        let contentRange = headers["content-range"];
-        let contentLength = headers["content-length"] * 1;
-        let start = contentRange.substring(6,contentRange.indexOf("-")) * 1;
-        let end = contentRange.substring(contentRange.indexOf("-") + 1,contentRange.indexOf("/")) * 1;
-        let total = contentRange.substring(contentRange.indexOf("/") + 1) * 1;
-        if(start == 0){//第一次请求,重置缓存
-          self.largeDownloadTemporaryStorage = new Uint8Array(total);
-          //计算出它有多少分片
-          self.downloadFileSliceNum = Math.ceil(total / contentLength);
-        }
-        let retArr = new Uint8Array(data);
-        for (let i = 0; i < retArr.byteLength; i++) {
-          self.largeDownloadTemporaryStorage[start + i] = retArr[i];
-        }
-        if(end < total-1 && response.status == 206){//还有文件分片,继续请求
-          let a = self.downloadFileProgress + Math.ceil(100 / self.downloadFileSliceNum);
-          if(a < 100){
-            self.downloadFileProgress = a;
-          }
-          self.sliceDownload(item,start+contentLength,callback);
-        }else{
-          //下载完毕
-          let bl = new Blob([self.largeDownloadTemporaryStorage]);
-          self.downloadFileProgress = 100;
-          self.largeDownloadTemporaryStorage = null;
-          self.showDownloadProgress = false;
-          callback(bl);
-        }
-      }).catch(function (error) {
-        self.largeDownloadTemporaryStorage = null;
-        self.showDownloadProgress = false;
-        console.log(error);
-      });
+    download:async function (item) {
+      let fso = await FileSoundOut(`${this.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        showToast(fso.msg);
+        return;
+      }
+      //试探成功,开始下载
+      let fd = await FileDownload(fso);
+      if(fd){
+        showToast(fd.msg);
+      }
     },
     //打开目录
     open:function(item){
@@ -325,34 +268,78 @@ export default {
         this.openFile(item);
       }
     },
-    //打开图片
-    openImage:function (item){
-      this.showDownloadProgress = true;
-      this.downloadFileName = item.name;
-      this.downloadFileProgress = 0;
-      this.downloadFileSliceNum = 0;
-      this.sliceDownload(item,0,function (bl){
-        let url = window.URL.createObjectURL(bl);
+    //打开苹果设备拍摄的实况图片
+    openLivp:async function (item) {
+      this.isOverlay = true;
+      let fso = await FileSoundOut(`${this.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        this.isOverlay = false;
+        showToast(fso.msg);
+        return;
+      }
+      //试探成功,开始下载
+      let fd = await FileDoownloadSmall(fso);
+      if(fd.state){
+        let blob = new Blob([fd.bytes]);
+        try{
+          blob = await LivpToCommon(blob);
+        }catch (e) {}
+        let url = window.URL.createObjectURL(blob);
         showImagePreview({
           images: [url],
           closeable: true,
           showIndex: false
         });
-      });//使用分片下载方式
+      }else{
+        showToast(fd.msg);
+      }
+      this.isOverlay = false;
+    },
+    //打开图片
+    openImage:async function (item){
+      this.isOverlay = true;
+      let fso = await FileSoundOut(`${this.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        this.isOverlay = false;
+        showToast(fso.msg);
+        return;
+      }
+      //试探成功,开始下载
+      let fd = await FileDoownloadSmall(fso);
+      if(fd.state){
+        let mediaType = item.mediaType.toUpperCase();
+        let mediaTypes = mediaType.split("/");
+        let blob = new Blob([fd.bytes],{type:item.mediaType});
+        switch (mediaTypes[1]){
+          case "HEIC": //苹果设备拍摄的 新图片格式
+            try {
+              //有时候这个类型也不一定是准确的,如果本身就可以被读取,就会拒绝转换,这里如果报错后使用原始blob
+              blob = await HeicToCommon(blob);
+            }catch (e) {}
+            break;
+        }
+        let url = window.URL.createObjectURL(blob);
+        showImagePreview({
+          images: [url],
+          closeable: true,
+          showIndex: false
+        });
+      }else{
+        showToast(fd.msg);
+      }
+      this.isOverlay = false;
     },
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
-    openVideo:function (item,gs){
-      //判断使用哪种播放器,如果是苹果公司的媒体资源则使用原生播放器播放
-      let url = key().baseURL+"netdisk/share/media/play/"+ this.tempToken + "/" + item.id;
-      switch (gs) {
-        case "MP4":
-          this.videoOptions.sources.push({src:url,type:item.mediaType});
-          this.showVideo = true;
-          break
-        default:
-          this.videoUrls = [url];
-          this.showPreviewVideo = true;
+    openVideo:async function (item){
+      //试探文件
+      let fso = await FileSoundOut(`${this.fileDownloadUrl}/${item.id}`,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        showToast(fso.msg);
+        return;
       }
+      let url = key().baseURL+"stream/media/play/CLOUDDISK/"+localStorage.getItem(key().authorization)  + "/" + item.fileMd5;
+      this.videoUrl = url;
+      this.showPreviewVideo = true;
     },
     //打开文件
     openFile:function (item) {
@@ -364,9 +351,19 @@ export default {
           break
         case "VIDEO"://视频
         case "AUDIO"://音频
-          this.openVideo(item,mediaTypes[1]);
+          this.openVideo(item);
           break
         default:
+          //兼容特殊文件的打开
+          let index = item.name.lastIndexOf(".");
+          if(index != -1){
+            let suffix = item.name.substring(index).toUpperCase();
+            switch (suffix) {
+              case ".LIVP"://livp,苹果设备拍摄的实况图片
+                this.openLivp(item);
+                return;
+            }
+          }
           showToast("不识别的类型,不能在线预览,请下载文件.");
           break
       }

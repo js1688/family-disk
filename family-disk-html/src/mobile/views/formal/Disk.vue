@@ -225,7 +225,7 @@ import { SwipeCell,Uploader } from 'vant';
 import { showConfirmDialog } from 'vant';
 import gws from "@/global/WebSocket";
 import {isToken, key} from "@/global/KeyGlobal";
-import {CountFileSliceInfo, FileMd5, FormatDate} from '@/global/StandaloneTools';
+import {CountFileSliceInfo, FileMd5, FormatDate, HeicToCommon, LivpToCommon} from '@/global/StandaloneTools';
 import 'video.js/dist/video-js.css';
 import videojs from "video.js";
 import { saveAs } from 'file-saver';
@@ -450,6 +450,33 @@ export default {
         showToast(ret.msg);
       }
     },
+    //打开苹果设备拍摄的实况图片
+    openLivp:async function (item) {
+      this.isOverlay = true;
+      let fso = await FileSoundOut(this.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+      if(!fso.state){
+        this.isOverlay = false;
+        showToast(fso.msg);
+        return;
+      }
+      //试探成功,开始下载
+      let fd = await FileDoownloadSmall(fso);
+      if(fd.state){
+        let blob = new Blob([fd.bytes]);
+        try{
+          blob = await LivpToCommon(blob);
+        }catch (e) {}
+        let url = window.URL.createObjectURL(blob);
+        showImagePreview({
+          images: [url],
+          closeable: true,
+          showIndex: false
+        });
+      }else{
+        showToast(fd.msg);
+      }
+      this.isOverlay = false;
+    },
     //打开图片
     openImage:async function (item){
       this.isOverlay = true;
@@ -461,9 +488,18 @@ export default {
       }
       //试探成功,开始下载
       let fd = await FileDoownloadSmall(fso);
-      this.isOverlay = false;
       if(fd.state){
+        let mediaType = item.mediaType.toUpperCase();
+        let mediaTypes = mediaType.split("/");
         let blob = new Blob([fd.bytes],{type:item.mediaType});
+        switch (mediaTypes[1]){
+          case "HEIC": //苹果设备拍摄的 新图片格式
+            try {
+              //有时候这个类型也不一定是准确的,如果本身就可以被读取,就会拒绝转换,这里如果报错后使用原始blob
+              blob = await HeicToCommon(blob);
+            }catch (e) {}
+            break;
+        }
         let url = window.URL.createObjectURL(blob);
         showImagePreview({
           images: [url],
@@ -472,11 +508,11 @@ export default {
         });
       }else{
         showToast(fd.msg);
-        return;
       }
+      this.isOverlay = false;
     },
     //打开视频,视频流通常会很大,所以需要做到边播边缓存
-    openVideo:async function (item,gs){
+    openVideo:async function (item){
       //试探文件
       let fso = await FileSoundOut(this.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
       if(!fso.state){
@@ -497,17 +533,26 @@ export default {
           break
         case "VIDEO"://视频
         case "AUDIO"://音频
-          this.openVideo(item,mediaTypes[1]);
+          this.openVideo(item);
           break
         default:
+          //兼容特殊文件的打开
+          let index = item.name.lastIndexOf(".");
+          if(index != -1){
+            let suffix = item.name.substring(index).toUpperCase();
+            switch (suffix) {
+              case ".LIVP"://livp,苹果设备拍摄的实况图片
+                this.openLivp(item);
+                return;
+            }
+          }
           showToast("不识别的类型,不能在线预览,请下载文件.");
           break
       }
     },
     //下载文件
     download:async function (item) {
-      let self = this;
-      let fso = await FileSoundOut(self.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
+      let fso = await FileSoundOut(this.fileDownloadUrl,item.fileMd5,item.name,'CLOUDDISK');
       if(!fso.state){
         showToast(fso.msg);
         return;
