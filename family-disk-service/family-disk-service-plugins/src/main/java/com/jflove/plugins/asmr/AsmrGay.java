@@ -26,31 +26,31 @@ public class AsmrGay {
             .followRedirects(HttpClient.Redirect.ALWAYS)
             .build();
 
-    private static final String name = "步非烟";
-    private static final String storage = "C:\\Users\\Administrator\\Music\\asmr/%s/%s";
-    private static final String fileNameMatching = "点心";
+    private static final String name = "唐樱樱";
+    private static final String storage = "/Users/tanjun/Music/local/asmr/%s/%s";
+    private static final String fileNameMatching = "";
 
     public static void main(String[] args) throws Exception{
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://www.asmr.pw/api/public/search"))
+                .uri(URI.create("https://www.asmrgay.com/api/fs/search"))
                 .timeout(Duration.ofMinutes(2))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(String.format("""
-                        {"path":"/","keyword":"%s"}
+                        {"parent":"/","keywords":"%s","page":1,"per_page":1000,"password":""}
                         """,name)))
                 .build();
         HttpResponse response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         JSONObject jo = JSONUtil.parseObj((String) response.body());
-        JSONArray datas = jo.getJSONArray("data");
+        JSONArray datas = jo.getJSONObject("data").getJSONArray("content");
 
         Map<String,String> fileUrls = new HashMap<>();
         datas.forEach(v->{
-            getFileUrl((JSONObject) v,fileUrls,null);
+            getFileUrl((JSONObject) v,fileUrls);
         });
         //下载服务地址池子
         List<String> downloadService = List.of(
-                "https://asmr.pipix.xyz%s","https://www.asmr.pw/d%s");
+                "https://asmr.pw/d%s?sign=%s","https://asmr.pipix.xyz%s?sign=%s","https://www.asmrgay.com/d%s?sign=%s");
         fileUrls.forEach((k,v)->{
             Path fp = Path.of(String.format(storage,name,v));
             try {
@@ -59,8 +59,10 @@ public class AsmrGay {
                     return;
                 }
             }catch (IOException e){}
+            //获取签名
+            String sign = getSign(k);
             for (String ds : downloadService){
-                String fileUrl = String.format(ds, k);
+                String fileUrl = String.format(ds, urlToEscape(k),sign);
                 if(download(fileUrl,fp)){
                     break;
                 }
@@ -94,49 +96,60 @@ public class AsmrGay {
         return false;
     }
 
-    private static void getFileUrl(JSONObject data,Map<String,String> fileUrls,String p){
+    private static String getSign(String path){
+        try {
+            HttpClient client = HttpClient.newBuilder().build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://asmr.pw/api/fs/get"))
+                    .timeout(Duration.ofMinutes(2))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(String.format("""
+                        {"password":"","path":"%s"}
+                        """,path)))
+                    .build();
+            HttpResponse response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            JSONObject jo = JSONUtil.parseObj((String) response.body());
+            JSONObject data = jo.getJSONObject("data");
+            return data.getStr("sign");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    private static void getFileUrl(JSONObject data,Map<String,String> fileUrls){
         try {
             String name = data.getStr("name");
-            if(p != null){
-                data.putOpt("path",p);
-            }
-            String path = String.format("%s/%s", data.getStr("path"), name);
-            String pathUrl = urlToEscape(path);
-            if (isDir(name)) {
+            String path = String.format("%s/%s", data.getStr("parent"), name);
+            if(data.getBool("is_dir")){
                 HttpRequest dir = HttpRequest.newBuilder()
-                        .uri(URI.create("https://www.asmr.pw/api/public/path"))
+                        .uri(URI.create("https://www.asmrgay.com/api/fs/list"))
                         .timeout(Duration.ofMinutes(2))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(
                                 String.format("""
-                                        {"path":"%s","page_num":1,"page_size":1000}
+                                        {"path":"%s","password":"","page":1,"per_page":1000,"refresh":false}
                                         """, path)))
                         .build();
                 HttpResponse dirResp = client.send(dir, HttpResponse.BodyHandlers.ofString());
                 JSONObject dirJo = JSONUtil.parseObj((String) dirResp.body());
                 JSONObject dirData = dirJo.getJSONObject("data");
-                JSONArray dirFiles = dirData.getJSONArray("files");
+                JSONArray dirFiles = dirData.getJSONArray("content");
                 dirFiles.forEach(v2 -> {
-                    getFileUrl((JSONObject) v2,fileUrls,path);
+                    ((JSONObject) v2).putOpt("parent",path);
+                    getFileUrl((JSONObject) v2,fileUrls);
                 });
-            } else if (fileNameMatching == null || pathUrl.indexOf(fileNameMatching) != -1){
-                System.out.println(String.format("添加下载地址:%s", pathUrl));
-                fileUrls.put(pathUrl, name);
+            }else{
+                //过滤文件
+                if(fileNameMatching != null && fileNameMatching.length() != 0 && name.indexOf(fileNameMatching) == -1){
+                    return;
+                }
+                System.out.println(String.format("添加下载地址:%s", path));
+                fileUrls.put(path, name);
             }
         }catch (Throwable e){
             e.printStackTrace();
-        }
-    }
-
-    private static boolean isDir(String str){
-        if (str.endsWith(".m4a") || str.endsWith(".mp3") || str.endsWith(".mp4")) {
-            return false;
-        }else if(str.endsWith(".jpg") || str.endsWith(".png")){
-            return false;
-        }else if(str.indexOf(".") != -1){//目录带.应该是文件
-            return false;
-        }else{
-            return true;
         }
     }
 
