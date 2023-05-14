@@ -65,9 +65,11 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
     public ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto,FileDiskConfigPO selectd) {
         String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){
+            long l = raf.length();
+            raf.seek(l);
             raf.write(dto.getStream());//支持追加写入
             //判断如果文件已经全部写入,则更新一下磁盘大小
-            if(raf.length() >= dto.getTotalSize()) {
+            if((l + dto.getStream().length) >= dto.getTotalSize()) {
                 //刷新磁盘可使用空间
                 File file = new File(selectd.getPath());
                 DataSize total = DataSize.ofBytes(file.getTotalSpace());
