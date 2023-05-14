@@ -116,6 +116,7 @@ public class FileAdministrationImpl implements IFileAdministration {
                 .eq(FileInfoPO::getFileMd5,fileMd5)
                 .eq(FileInfoPO::getSource,source.getCode())
                 .eq(FileInfoPO::getSpaceId,spaceId)
+                .eq(FileInfoPO::getBefore,0)//只校验上传之后
         )){
             return new ResponseHeadDTO(true,fileMd5,"用户上传过这个文件,不需要重复上传");
         }
