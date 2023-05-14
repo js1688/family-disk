@@ -87,5 +87,6 @@ public class FileInfoPO implements Serializable{
   /**
    * 是否是上传之前,意味着这个文件还未上传成功(1是0否)
    */
+  @TableField("`before`")
   private int before;
 }
