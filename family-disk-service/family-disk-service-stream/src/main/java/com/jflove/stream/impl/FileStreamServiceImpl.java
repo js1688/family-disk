@@ -111,7 +111,7 @@ public class FileStreamServiceImpl implements IFileStreamService {
 
             IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(), IFileReadAndWrit.class);
             ResponseHeadDTO<String> result = fileReadAndWrit.writByte(dto, selectd);//将分片文件执行追加写盘
-            if(result.isResult() && !StringUtils.hasLength(result.getData())){
+            if(result.isResult() && StringUtils.hasLength(result.getData())){
                 //文件全部写入了,将文件信息补全
                 po.setUpdateTime(null);
                 po.setBefore(0);//标记改成上传之后
