@@ -141,6 +141,7 @@ public class FileStreamController {
         param.setMediaType(m);
         param.setCreateUserId(useUserId);
         param.setSource(FileSourceENUM.valueOf(s));
+        param.setSpaceId(useSpaceId);
         byte[] total = f.getBytes();
         f.getInputStream().close();//读取完字节后,将流关闭掉
         param.setStream(total);
