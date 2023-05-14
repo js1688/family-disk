@@ -1,5 +1,6 @@
 package com.jflove.stream.dto;
 
+import com.jflove.file.em.FileSourceENUM;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -51,5 +52,30 @@ public class StreamWriteParamDTO implements Serializable {
      * 二进制流
      */
     private byte [] stream;
+
+    /**
+     * 文件来源
+     */
+    private FileSourceENUM source;
+
+    /**
+     * 所属空间id
+     */
+    private Long spaceId;
+
+    /**
+     * 文件原始名称
+     */
+    private String originalFileName;
+
+    /**
+     * 媒体类型
+     */
+    private String mediaType;
+
+    /**
+     * 创建用户
+     */
+    private long createUserId;
 
 }

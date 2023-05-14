@@ -1,14 +1,12 @@
 package com.jflove.controller.stream;
 
 import com.jflove.ResponseHeadDTO;
-import com.jflove.handler.ByteResourceHttpRequestHandler;
 import com.jflove.config.HttpConstantConfig;
 import com.jflove.file.api.IFileAdministration;
-import com.jflove.file.dto.FileInfoDTO;
 import com.jflove.file.em.FileSourceENUM;
+import com.jflove.handler.ByteResourceHttpRequestHandler;
 import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamWriteParamDTO;
-import com.jflove.stream.dto.StreamWriteResultDTO;
 import com.jflove.tool.JJwtTool;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.api.IUserSpace;
@@ -115,7 +113,7 @@ public class FileStreamController {
         resourceHttpRequestHandle.handleRequest(request, response);
     }
 
-    @ApiOperation(value = "上传文件(大文件,分片)")
+    @ApiOperation(value = "上传文件(大文件,分片),只能按分片顺序同步上传,不可以异步上传")
     @PostMapping("/slice/addFile")
     public ResponseHeadVO<String> sliceAddFile(@ApiParam("文件流") @RequestPart("f") MultipartFile f,
                                                @ApiParam("文件来源(NOTEPAD=记事本,CLOUDDISK=云盘,JOURNAL=日记)") @RequestParam("s") String s,
@@ -139,6 +137,9 @@ public class FileStreamController {
         param.setTotalSize(totalLength);
         param.setFileMd5(fileMd5);
         param.setShardingNum(n);
+        param.setOriginalFileName(originalFileName);
+        param.setMediaType(m);
+        param.setCreateUserId(useUserId);
         byte[] total = f.getBytes();
         f.getInputStream().close();//读取完字节后,将流关闭掉
         param.setStream(total);
@@ -162,25 +163,7 @@ public class FileStreamController {
                 param.getFileMd5(),useSpaceId,source,param.getTotalSize(),useUserId).isResult()){
             return new ResponseHeadVO<>(true,param.getFileMd5(),"上传成功,触发了秒传");//second 触发了秒传的标记
         }
-        ResponseHeadDTO<StreamWriteResultDTO> result = fileService.writeByte(param);//如果完整文件合并写盘成功,就会在data字段返回 md5值,否则只是分片写盘成功
-        if(result.isResult() && result.getData() != null){
-            //文件写盘成功了,保存文件信息
-            FileInfoDTO fidto = new FileInfoDTO();
-            fidto.setSize(param.getTotalSize());
-            fidto.setName(originalFileName);
-            fidto.setSource(source);
-            fidto.setDiskId(result.getData().getDiskId());
-            fidto.setMediaType(m);
-            fidto.setSpaceId(useSpaceId);
-            fidto.setType(param.getType());
-            fidto.setCreateUserId(useUserId);
-            fidto.setFileMd5(result.getData().getFileMd5());
-            ResponseHeadDTO dbresult = fileAdministration.addFile(fidto);
-            if(dbresult.isResult()){
-                return new ResponseHeadVO<>(result.isResult(),result.getData().getFileMd5(),result.getMessage());
-            }
-            return new ResponseHeadVO<>(dbresult.isResult(),dbresult.getMessage());
-        }
+        ResponseHeadDTO<String> result = fileService.writeByte(param);//如果完整文件合并写盘成功,就会在data字段返回 md5值,否则只是分片写盘成功
         return new ResponseHeadVO<>(result.isResult(),result.getMessage());
     }
 }

@@ -4,7 +4,6 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.stream.dto.StreamWriteParamDTO;
-import com.jflove.stream.dto.StreamWriteResultDTO;
 
 /**
  * @author tanjun
@@ -27,5 +26,5 @@ public interface IFileStreamService {
      * @param dto
      * @return
      */
-    ResponseHeadDTO<StreamWriteResultDTO> writeByte(StreamWriteParamDTO dto);
+    ResponseHeadDTO<String> writeByte(StreamWriteParamDTO dto);
 }

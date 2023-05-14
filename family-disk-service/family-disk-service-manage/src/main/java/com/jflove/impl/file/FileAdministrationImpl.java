@@ -3,14 +3,12 @@ package com.jflove.impl.file;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.api.IFileAdministration;
-import com.jflove.file.dto.FileInfoDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.mapper.file.FileInfoMapper;
 import com.jflove.po.file.FileInfoPO;
 import com.jflove.user.api.IUserSpace;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
@@ -27,16 +25,6 @@ public class FileAdministrationImpl implements IFileAdministration {
     private IUserSpace userSpace;
     @Autowired
     private FileInfoMapper fileInfoMapper;
-
-    @Override
-    @Transactional
-    public ResponseHeadDTO addFile(FileInfoDTO dto) {
-        FileInfoPO po = new FileInfoPO();
-        BeanUtils.copyProperties(dto,po);
-        po.setSource(dto.getSource().getCode());
-        fileInfoMapper.insert(po);
-        return new ResponseHeadDTO(true,"添加成功");
-    }
 
     @Override
     @Transactional

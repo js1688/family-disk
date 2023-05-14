@@ -16,8 +16,6 @@ import org.springframework.util.unit.DataSize;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * @author tanjun
@@ -64,29 +62,27 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
     }
 
     @Override
-    public ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto,FileDiskConfigPO selectd, String  tempFileSuffix, String tempPath) {
+    public ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto,FileDiskConfigPO selectd) {
         String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
-        try{
-            Files.deleteIfExists(Path.of(path));//先删除历史数据
-        }catch (IOException e){}
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){
-            //文件传输完毕,开始执行临时分片合并
-            for (int i = 0; i < dto.getShardingNum(); i++) {
-                byte [] f = Files.readAllBytes(Path.of(String.format("%s/%s-%s%s", tempPath, dto.getFileMd5(), i, tempFileSuffix)));
-                raf.write(f);//支持追加写入
+            raf.write(dto.getStream());//支持追加写入
+            //判断如果文件已经全部写入,则更新一下磁盘大小
+            if(raf.length() >= dto.getTotalSize()) {
+                //刷新磁盘可使用空间
+                File file = new File(selectd.getPath());
+                DataSize total = DataSize.ofBytes(file.getTotalSpace());
+                DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());//直接从磁盘中读取剩余可用空间,更加准确
+                selectd.setMaxSize(total.toGigabytes());
+                selectd.setUsableSize(usableSpace.toGigabytes());
+                selectd.setUpdateTime(null);
+                fileDiskConfigMapper.updateById(selectd);
+                //完整文件写盘成功,会在data中带上md5值,这个可以区分是不是完整文件写盘结束
+                return new ResponseHeadDTO(true,dto.getFileMd5(),"文件分片全部写盘成功");
             }
-            //刷新磁盘可使用空间
-            File file = new File(selectd.getPath());
-            DataSize total = DataSize.ofBytes(file.getTotalSpace());
-            DataSize usableSpace = DataSize.ofBytes(file.getUsableSpace());//直接从磁盘中读取剩余可用空间,更加准确
-            selectd.setMaxSize(total.toGigabytes());
-            selectd.setUsableSize(usableSpace.toGigabytes());
-            selectd.setUpdateTime(null);
-            fileDiskConfigMapper.updateById(selectd);
-            return new ResponseHeadDTO(true,dto.getFileMd5(),"所有分片合并成完整文件写入到磁盘成功");
+            return new ResponseHeadDTO(true,"文件分片写盘成功");
         }catch (IOException e){
-            log.error("文件分片合并写盘异常",e);
-            return new ResponseHeadDTO<>(false,"文件分片合并写盘异常");
+            log.error("文件分片写盘异常",e);
+            return new ResponseHeadDTO<>(false,"文件分片写盘异常");
         }
     }
 }

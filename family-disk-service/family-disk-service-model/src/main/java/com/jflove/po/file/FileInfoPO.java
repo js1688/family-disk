@@ -83,4 +83,9 @@ public class FileInfoPO implements Serializable{
    * 文件多媒体类型
    */
   private String mediaType;
+
+  /**
+   * 是否是上传之前,意味着这个文件还未上传成功(1是0否)
+   */
+  private int before;
 }

@@ -19,11 +19,9 @@ public interface IFileReadAndWrit {
      * 将存放在临时目录的文件各分片合并成一个文件,写入到磁盘
      * @param dto
      * @param selectd
-     * @param tempFileSuffix
-     * @param tempPath
      * @return
      */
-    ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto, FileDiskConfigPO selectd, String  tempFileSuffix, String tempPath);
+    ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto, FileDiskConfigPO selectd);
 
     /**
      * 按指定位置读取文件分片字节
