@@ -38,6 +38,9 @@ async function queueSyncUpload(){
 
         let start = i * no1.sliceInfo.sliceSize;
         let end = start + no1.sliceInfo.sliceSize;
+        if(end > no1.sliceInfo.totalSize){
+            end = no1.sliceInfo.totalSize;
+        }
         let chunk = no1.file.slice(start,end);
         let form = new FormData();
         form.append('originalFileName', no1.file.name);
