@@ -112,12 +112,15 @@ public class FileAdministrationImpl implements IFileAdministration {
     public ResponseHeadDTO checkDuplicate(String fileName,String type,String mediaType,String fileMd5,long spaceId,FileSourceENUM source,long totalSize,long createUserId) {
         //匹配库中是否已存在这个文件,如果存在则不执行写盘,直接引用已存在的文件以及磁盘id
         //检查是否已存在同空间并且同来源这个文件,如果存在则不需要添加这个文件信息
-        if(fileInfoMapper.exists(new LambdaQueryWrapper<FileInfoPO>()
+        FileInfoPO tpo = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
                 .eq(FileInfoPO::getFileMd5,fileMd5)
                 .eq(FileInfoPO::getSource,source.getCode())
                 .eq(FileInfoPO::getSpaceId,spaceId)
-                .eq(FileInfoPO::getBefore,0)//只校验上传之后
-        )){
+        );
+        if(tpo != null && tpo.getBefore() == 1){
+            return new ResponseHeadDTO(false,fileMd5,"用户正在上传这个文件");
+        }
+        if(tpo != null && tpo.getBefore() == 0){
             return new ResponseHeadDTO(true,fileMd5,"用户上传过这个文件,不需要重复上传");
         }
         FileInfoPO fip = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
