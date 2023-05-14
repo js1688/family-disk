@@ -165,6 +165,7 @@ public class FileStreamController {
                 param.getFileMd5(),useSpaceId,source,param.getTotalSize(),useUserId).isResult()){
             return new ResponseHeadVO<>(true,param.getFileMd5(),"上传成功,触发了秒传");//second 触发了秒传的标记
         }
+        param.setSeek(start);
         ResponseHeadDTO<String> result = fileService.writeByte(param);//如果完整文件合并写盘成功,就会在data字段返回 md5值,否则只是分片写盘成功
         return new ResponseHeadVO<>(result.isResult(),result.getMessage());
     }

@@ -78,4 +78,9 @@ public class StreamWriteParamDTO implements Serializable {
      */
     private long createUserId;
 
+    /**
+     * 自盘时开始的位置
+     */
+    private long seek;
+
 }
