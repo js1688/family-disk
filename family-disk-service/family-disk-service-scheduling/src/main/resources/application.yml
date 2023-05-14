@@ -9,11 +9,6 @@ spring:
 #mybatis-plus:
 #  configuration:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-# 文件临时存放地,主要是一些大文件分片传输时,最后合并前临时存放
-file:
-  storage:
-    path:
-      temp: /Users/tanjun/Downloads/temp
 logging:
   config: logback.xml
   level:

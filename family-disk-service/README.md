@@ -51,8 +51,6 @@ mysql 8.0.31
 ## 需要修改配置文件
 ### 配置数据库连接
 > 在 manage,stream,scheduling,模块中都需要修改
-### 配置分片文件临时存储目录
-> 在 stream,scheduling,模块中修改
 ### 配置邮箱发送服务器
 > 在 manage,模块中修改
 
