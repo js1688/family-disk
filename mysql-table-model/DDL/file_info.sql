@@ -10,12 +10,13 @@ create table file_info
     update_time    timestamp     null comment '修改时间',
     create_user_id int           null comment '创建用户id',
     space_id       int           null comment '所属空间id',
-    size           int           null comment '文件大小(B)',
+    size           bigint        null comment '文件大小(B)',
     source         varchar(32)   not null comment '文件来源(记事本,云盘,日记)',
     file_md5       varchar(64)   null comment '文件MD5值',
     mark_delete    int default 0 not null comment '标记删除(1是,0否)',
     delete_time    int           null comment '执行删除时间(10位长度)',
     media_type     varchar(128)  null comment '文件多媒体类型',
+    `before`       int default 0 not null comment '是否是上传之前,意味着这个文件还未上传成功(1是0否)',
     constraint file_info_file_md5_space_id_source_uindex
         unique (file_md5, space_id, source),
     constraint file_info_user_info_null_fk
