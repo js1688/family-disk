@@ -9,10 +9,10 @@
 - family-disk-service
     - family-disk-service-gateway 应用网关,http,websocket,
     - family-disk-service-manage 页面管理服务,页面增删改查,
-    - family-disk-service-file 文件服务,负责文件二进制流读写,
+    - family-disk-service-stream 文件服务,负责文件二进制流读写,注意:如果有配置本地磁盘存储方式,该模块暂时只能部署单节点
     - family-disk-service-model 数据库模型,mysql po类,mapper类
     - family-disk-service-api rpc接口标准,dubbo接口定义,以及dto类定义
-    - family-disk-service-scheduling 定时任务,做一些清理,备份相关的工作,它不是dubbo服务,也不会调用dubbo接口
+    - family-disk-service-scheduling 定时任务,做一些清理,备份相关的工作,它不是dubbo服务,也不会调用dubbo接口,暂时该模块只能部署单节点
     
     - family-disk-service-plugins 插件模块,不属于服务内,暂时没用
 ```
@@ -56,12 +56,16 @@ mysql 8.0.31
 
 ## 编译
 ```shell
-cd family-disk-service;
 mvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip;
 ```
 ## 启动
 ```shell
 sh start-app.sh start;
+```
+## 停止
+```shell
+sh start-app.sh stop;
+rm -rf logs;
 ```
 ## 日志
 > 启动后会在当前目录生成logs文件夹,下面是各模块的日志
