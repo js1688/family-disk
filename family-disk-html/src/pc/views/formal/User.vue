@@ -449,19 +449,10 @@ export default {
 
   },
   created() {
-    this.getUserInfo();
     if(localStorage.getItem(key().authorization) != null){
+      this.getUserInfo();
       this.getSpaceInfo();
       this.getMySpaceRel();
-    }
-    //判断自己有没有空间
-    let spaces = JSON.parse(localStorage.getItem(key().userAllSpaceRole));
-    this.mySpace = false;
-    for (let i = 0; i < spaces.length; i++) {
-      if(spaces[i].createUserId + '' == localStorage.getItem(key().userId)){
-        this.mySpace = true;
-        break;
-      }
     }
   },
   data: function() {
@@ -966,6 +957,7 @@ export default {
           localStorage.setItem(key().userName,res.data.data.name);
           localStorage.setItem(key().userId,res.data.data.id);
           self.spaceOptions = [];
+          self.mySpace = false;
           if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
             //找出正在使用的空间设置到缓存
             for (let i = 0; i < res.data.data.spaces.length; i++) {
@@ -977,9 +969,13 @@ export default {
               }else{//切换空间只能切到未使用的空间中去
                 self.spaceOptions.push({name:tp.title,code:tp.spaceId,role:tp.role,roleName:tp.role == 'WRITE' ? '读写':'只读'});
               }
+              //判断自己有没有空间
+              if(tp.createUserId + '' == res.data.data.id) {
+                self.mySpace = true;
+              }
             }
-            self.userInfo.email = res.data.data.email;
             localStorage.setItem(key().userAllSpaceRole,JSON.stringify(res.data.data.spaces));
+            self.userInfo.email = res.data.data.email;
           }
           self.userInfo.userName = res.data.data.name;
         }
@@ -1001,12 +997,6 @@ export default {
             self.isOverlay = false;
             if(response.data.result){//登录成功
               localStorage.setItem(key().authorization,response.data.data);//将token存储
-              //登录成功后获取用户信息
-              self.getUserInfo();
-              gws.methods.wsConnection(null);//连接socket
-              //登录成功后,清除字段值
-              self.userInfo.email = "";
-              self.userInfo.password = "";
               location.reload();
             }else{
               self.showToast(response.data.result ? "success" : "error",response.data.message);

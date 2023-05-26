@@ -347,15 +347,8 @@ export default {
     };
   },
   created() {
-    this.getUserInfo();
-    //判断自己有没有空间
-    let spaces = JSON.parse(localStorage.getItem(key().userAllSpaceRole));
-    this.mySpace = false;
-    for (let i = 0; i < spaces.length; i++) {
-      if(spaces[i].createUserId + '' == localStorage.getItem(key().userId)){
-        this.mySpace = true;
-        break;
-      }
+    if(localStorage.getItem(key().authorization) != null) {
+      this.getUserInfo();
     }
   },
   methods: {
@@ -660,6 +653,7 @@ export default {
           //登录后存储一堆数据到本地
           localStorage.setItem(key().userName,res.data.data.name);
           self.spaceOptions = [];
+          self.mySpace = false;
           if(res.data.data.spaces != null && res.data.data.spaces.length > 0){
             //找出正在使用的空间设置到缓存
             for (let i = 0; i < res.data.data.spaces.length; i++) {
@@ -669,6 +663,10 @@ export default {
                 self.spaceOptions.push({name:`${tp.title}(当前空间)`,code:tp.spaceId});
               }else{//切换空间只能切到未使用的空间中去
                 self.spaceOptions.push({name:tp.title,code:tp.spaceId});
+              }
+              //判断自己有没有空间
+              if(tp.createUserId + '' == res.data.data.id){
+                self.mySpace = true;
               }
             }
             localStorage.setItem(key().userAllSpaceRole,JSON.stringify(res.data.data.spaces));
