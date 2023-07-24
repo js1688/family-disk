@@ -6,6 +6,7 @@ import com.jflove.po.share.ShareLinkPO;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
 
@@ -16,11 +17,11 @@ import org.springframework.stereotype.Service;
  */
 @Log4j2
 @Service
-public class ShareClearService implements Runnable{
+@EnableAsync
+public class ShareClearService{
     @Autowired
     private ShareLinkMapper shareLinkMapper;
-    @Override
-    @Async
+    @Async("myTaskExecutor")
     public void run() {
         try {
             //直接删除掉已经到期的分享链接

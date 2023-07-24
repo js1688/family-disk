@@ -6,6 +6,7 @@ import com.jflove.po.file.FileDiskConfigPO;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +18,13 @@ import java.util.List;
  */
 @Service
 @Log4j2
-public class LocalFileBakService implements Runnable{
+@EnableAsync
+public class LocalFileBakService{
 
     @Autowired
     private FileDiskConfigMapper fileDiskConfigMapper;
 
-    @Override
-    @Async
+    @Async("myTaskExecutor")
     public void run() {
         try{
             //查询出所有本地磁盘

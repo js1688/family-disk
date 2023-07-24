@@ -8,6 +8,7 @@ import com.jflove.po.file.FileInfoPO;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 
@@ -23,15 +24,15 @@ import java.util.List;
  */
 @Service
 @Log4j2
-public class ClearExpireFileService implements Runnable{
+@EnableAsync
+public class ClearExpireFileService{
     @Autowired
     private FileInfoMapper fileInfoMapper;
 
     @Autowired
     private FileDiskConfigMapper fileDiskConfigMapper;
 
-    @Override
-    @Async
+    @Async("myTaskExecutor")
     public void run() {
         try{
             //查询出哪些文件信息已经到了要删除的时候

@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -20,13 +21,13 @@ import java.util.Date;
  */
 @Service
 @Log4j2
-public class ClearTempFileService implements Runnable{
+@EnableAsync
+public class ClearTempFileService{
     @Value("${file.storage.path.temp}")
     private String tempPath;//分片文件临时存放
     public static final String  tempFileSuffix = ".temp";
 
-    @Override
-    @Async
+    @Async("myTaskExecutor")
     public void run() {
         try {
             File[] fs = new File(tempPath).listFiles(e -> e.getName().endsWith(tempFileSuffix));

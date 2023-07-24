@@ -23,7 +23,7 @@ public class ThreadPoolConfiguration {
     /**
      * 工作线程池最大数量
      */
-    @Value("${spring.async.maxPoolSize:50}")
+    @Value("${spring.async.maxPoolSize:10}")
     private int maxPoolSize;
 
     /**
@@ -31,8 +31,8 @@ public class ThreadPoolConfiguration {
      * 通常用于执行一般的任务
      * @return
      */
-    @Bean(name = DEFAULT_TASK_EXECUTOR_BEAN_NAME)
-    public Executor taskExecutor() {
+    @Bean(name = "myTaskExecutor")
+    public Executor myTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         //核心线程池大小
         executor.setCorePoolSize(10);
