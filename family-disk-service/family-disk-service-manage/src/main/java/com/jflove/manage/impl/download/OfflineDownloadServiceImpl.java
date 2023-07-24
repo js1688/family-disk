@@ -80,7 +80,7 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
             Map f0 = (Map)dwInfo.get(0);
             String path = (String)f0.get("path");
             String fn = path.substring(path.lastIndexOf("/")+1);
-            if(StringUtils.hasLength(v.getFileName())){
+            if(!StringUtils.hasLength(v.getFileName())){
                 //如果没有文件名称,则补一下文件名称,因为aria没那么快返回文件名称
                 v.setFileName(fn);
                 odRecordMapper.updateById(v);
