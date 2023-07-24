@@ -86,10 +86,13 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
                 v.setFileName(fn);
                 odRecordMapper.updateById(v);
             }
-            NetdiskDirectoryPO ndp = netdiskDirectoryMapper.selectOne(
-                    new LambdaQueryWrapper<NetdiskDirectoryPO>().eq(NetdiskDirectoryPO::getId,v.getTargetId())
-                            .select(NetdiskDirectoryPO::getName)
-            );
+            NetdiskDirectoryPO ndp = null;
+            if(v.getTargetId() != 0) {
+                ndp = netdiskDirectoryMapper.selectOne(
+                        new LambdaQueryWrapper<NetdiskDirectoryPO>().eq(NetdiskDirectoryPO::getId, v.getTargetId())
+                                .select(NetdiskDirectoryPO::getName)
+                );
+            }
             //删掉不要的节点,避免暴漏过多的信息
             f0.remove("uris");
             f0.remove("path");
