@@ -9,7 +9,9 @@ import com.jflove.download.api.IOfflineDownloadService;
 import com.jflove.download.em.UriTypeENUM;
 import com.jflove.manage.service.IAria2c;
 import com.jflove.mapper.download.OdRecordMapper;
+import com.jflove.mapper.netdisk.NetdiskDirectoryMapper;
 import com.jflove.po.download.OdRecordPO;
+import com.jflove.po.netdisk.NetdiskDirectoryPO;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,11 +34,20 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
     @Autowired
     private OdRecordMapper odRecordMapper;
     @Autowired
+    private NetdiskDirectoryMapper netdiskDirectoryMapper;
+    @Autowired
     private ApplicationContext context;
 
     @Override
     @Transactional
     public ResponseHeadDTO add(UriTypeENUM uriType,String uri, Long spaceId, Long targetId) {
+        boolean is = netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .eq(NetdiskDirectoryPO::getId,targetId)
+                .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+        );
+        if(!is){
+            return new ResponseHeadDTO(false, "目标目录不存在");
+        }
         //发送下载任务给aria2
         IAria2c aria2c = context.getBean(uriType.getCode(), IAria2c.class);
         if (aria2c == null) {
@@ -49,12 +60,6 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         //拿到返回的aria2的ID, 写入到数据库中
         OdRecordPO op = new OdRecordPO();
         op.setGid(gid);
-        //查询一下,从aria2中获取到文件名称,避免多一个参数
-        List dwInfo = aria2c.getFiles(gid);
-        Map f0 = (Map)dwInfo.get(0);
-        String path = (String)f0.get("path");
-        String fileName = path.substring(path.lastIndexOf("/")+1);
-        op.setFileName(fileName);
         op.setUriType(uriType.getCode());
         op.setSpaceId(spaceId);
         op.setTargetId(targetId);
@@ -73,6 +78,14 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
             IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(v.getUriType()).getCode(), IAria2c.class);
             List dwInfo = aria2c.getFiles(v.getGid());
             Map f0 = (Map)dwInfo.get(0);
+            String path = (String)f0.get("path");
+            String fn = path.substring(path.lastIndexOf("/")+1);
+            if(StringUtils.hasLength(v.getFileName())){
+                //如果没有文件名称,则补一下文件名称,因为aria没那么快返回文件名称
+                v.setFileName(fn);
+                odRecordMapper.updateById(v);
+            }
+
             //删掉不要的节点,避免暴漏过多的信息
             f0.remove("uris");
             f0.remove("path");
