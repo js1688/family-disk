@@ -94,7 +94,7 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
             f0.remove("uris");
             f0.remove("path");
             JSONObject jo = JSONUtil.parseObj(v);
-            jo.putOpt("targetName",ndp.getName());
+            jo.putOpt("targetName", ndp == null ? "根目录" : ndp.getName());
             DataSize length = DataSize.ofBytes(Long.parseLong((String) f0.get("length")));
             DataSize completedLength = DataSize.ofBytes(Long.parseLong((String) f0.get("completedLength")));
             jo.putOpt("progress",completedLength.toMegabytes() + "/" + length.toMegabytes());
