@@ -7,6 +7,7 @@ import com.jflove.po.file.FileInfoPO;
 import com.jflove.po.user.UserSpacePO;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
@@ -31,6 +32,7 @@ public class CorrectUseSpaceService implements Runnable{
     private UserSpaceMapper userSpaceMapper;
 
     @Override
+    @Async
     public void run() {
         //查出每个空间存储的文件
         List<FileInfoPO> allSize = fileInfoMapper.selectList(new LambdaQueryWrapper<FileInfoPO>().select(FileInfoPO::getSpaceId,FileInfoPO::getSize));

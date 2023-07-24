@@ -7,6 +7,7 @@ import com.jflove.po.file.FileDiskConfigPO;
 import com.jflove.po.file.FileInfoPO;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 
@@ -30,6 +31,7 @@ public class ClearExpireFileService implements Runnable{
     private FileDiskConfigMapper fileDiskConfigMapper;
 
     @Override
+    @Async
     public void run() {
         try{
             //查询出哪些文件信息已经到了要删除的时候

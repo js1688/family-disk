@@ -1,6 +1,6 @@
 package com.jflove.test;
 
-import com.jflove.tool.JJwtTool;
+import com.jflove.gateway.tool.JJwtTool;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import lombok.extern.log4j.Log4j2;

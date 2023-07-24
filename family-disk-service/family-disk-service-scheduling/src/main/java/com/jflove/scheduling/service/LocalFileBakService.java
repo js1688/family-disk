@@ -5,6 +5,7 @@ import com.jflove.mapper.admin.FileDiskConfigMapper;
 import com.jflove.po.file.FileDiskConfigPO;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class LocalFileBakService implements Runnable{
     private FileDiskConfigMapper fileDiskConfigMapper;
 
     @Override
+    @Async
     public void run() {
         try{
             //查询出所有本地磁盘

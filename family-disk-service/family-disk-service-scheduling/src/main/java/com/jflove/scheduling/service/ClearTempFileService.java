@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -25,6 +26,7 @@ public class ClearTempFileService implements Runnable{
     public static final String  tempFileSuffix = ".temp";
 
     @Override
+    @Async
     public void run() {
         try {
             File[] fs = new File(tempPath).listFiles(e -> e.getName().endsWith(tempFileSuffix));

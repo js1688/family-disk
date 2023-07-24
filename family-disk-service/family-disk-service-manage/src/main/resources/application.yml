@@ -39,6 +39,11 @@ user:
   #是否允许用户注册
   open:
     register: true
+#离线下载服务端地址
+aria2c:
+  service:
+    token:
+    url: http://localhost:6800/jsonrpc
 
 logging:
   config: logback.xml

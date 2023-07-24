@@ -70,6 +70,11 @@
             <groupId>family-disk-service</groupId>
             <artifactId>family-disk-service-api</artifactId>
         </dependency>
+        <!-- webdav集成包 -->
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-webdav</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -91,7 +96,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <fork>true</fork>
-                    <mainClass>com.jflove.Application</mainClass>
+                    <mainClass>com.jflove.manage.Application</mainClass>
                 </configuration>
                 <executions>
                     <execution>
