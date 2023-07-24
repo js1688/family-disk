@@ -56,7 +56,7 @@ public class DownloadController {
 
     @ApiOperation(value = "查询下载文件列表")
     @PostMapping("/getFiles")
-    public ResponseHeadVO getFiles(AddParamVO param){
+    public ResponseHeadVO getFiles(@RequestBody AddParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"请先切换到空间");
