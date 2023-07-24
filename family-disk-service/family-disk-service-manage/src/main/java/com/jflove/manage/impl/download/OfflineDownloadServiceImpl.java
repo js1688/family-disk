@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.util.unit.DataSize;
 
 import java.util.List;
 import java.util.Map;
@@ -85,11 +86,18 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
                 v.setFileName(fn);
                 odRecordMapper.updateById(v);
             }
-
+            NetdiskDirectoryPO ndp = netdiskDirectoryMapper.selectOne(
+                    new LambdaQueryWrapper<NetdiskDirectoryPO>().eq(NetdiskDirectoryPO::getId,v.getTargetId())
+                            .select(NetdiskDirectoryPO::getName)
+            );
             //删掉不要的节点,避免暴漏过多的信息
             f0.remove("uris");
             f0.remove("path");
             JSONObject jo = JSONUtil.parseObj(v);
+            jo.putOpt("targetName",ndp.getName());
+            DataSize length = DataSize.ofBytes(Long.parseLong((String) f0.get("length")));
+            DataSize completedLength = DataSize.ofBytes(Long.parseLong((String) f0.get("completedLength")));
+            jo.putOpt("progress",completedLength.toMegabytes() + "/" + length.toMegabytes());
             jo.putAll(f0);
             dwTasks.add(jo);
         });
