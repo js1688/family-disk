@@ -56,12 +56,12 @@ public class DownloadController {
 
     @ApiOperation(value = "查询下载文件列表")
     @PostMapping("/getFiles")
-    public ResponseHeadVO delJournalList(){
+    public ResponseHeadVO delJournalList(AddParamVO param){
         Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
         UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
         Assert.notNull(useSpaceId,"请先切换到空间");
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
-        ResponseHeadDTO dto = offlineDownloadService.getFiles(useSpaceId);
+        ResponseHeadDTO dto = offlineDownloadService.getFiles(useSpaceId,param.getFileName());
         return new ResponseHeadVO<>(dto.getDatas());
     }
 }

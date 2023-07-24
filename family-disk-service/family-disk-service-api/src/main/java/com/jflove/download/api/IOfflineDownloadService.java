@@ -23,8 +23,9 @@ public interface IOfflineDownloadService {
     /**
      * 查询下载文件的列表
      * @param spaceId 任务关联到的空间id
+     * @param fileName 文件名称
      * @return
      */
-    ResponseHeadDTO getFiles(Long spaceId);
+    ResponseHeadDTO getFiles(Long spaceId,String fileName);
 
 }

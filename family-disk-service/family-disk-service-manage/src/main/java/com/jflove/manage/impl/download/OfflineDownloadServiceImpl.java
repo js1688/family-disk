@@ -63,8 +63,11 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
     }
 
     @Override
-    public ResponseHeadDTO getFiles(Long spaceId) {
-        List<OdRecordPO> gids = odRecordMapper.selectList(new LambdaQueryWrapper<OdRecordPO>().eq(OdRecordPO::getSpaceId,spaceId));
+    public ResponseHeadDTO getFiles(Long spaceId,String fileName) {
+        List<OdRecordPO> gids = odRecordMapper.selectList(new LambdaQueryWrapper<OdRecordPO>()
+                .eq(OdRecordPO::getSpaceId,spaceId)
+                .like(StringUtils.hasLength(fileName),OdRecordPO::getFileName,fileName)
+        );
         JSONArray dwTasks = new JSONArray(gids.size());
         gids.forEach(v->{
             IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(v.getUriType()).getCode(), IAria2c.class);

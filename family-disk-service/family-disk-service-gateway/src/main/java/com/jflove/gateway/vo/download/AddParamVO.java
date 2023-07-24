@@ -36,4 +36,7 @@ public class AddParamVO implements Serializable {
     @NotNull(message = "存放目的地不能为空")
     private Long targetId;
 
+    @ApiModelProperty(value = "文件名称")
+    private String fileName;
+
 }
