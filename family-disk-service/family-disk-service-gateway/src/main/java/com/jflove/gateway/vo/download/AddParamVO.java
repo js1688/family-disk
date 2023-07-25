@@ -39,4 +39,7 @@ public class AddParamVO implements Serializable {
     @ApiModelProperty(value = "文件名称")
     private String fileName;
 
+    @ApiModelProperty(value = "任务ID")
+    private String gid;
+
 }

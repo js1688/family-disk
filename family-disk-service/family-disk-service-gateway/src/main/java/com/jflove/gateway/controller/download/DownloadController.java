@@ -14,6 +14,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,5 +64,20 @@ public class DownloadController {
         Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
         ResponseHeadDTO dto = offlineDownloadService.getFiles(useSpaceId,param.getFileName());
         return new ResponseHeadVO<>(dto.getDatas());
+    }
+
+    @ApiOperation(value = "删除任务")
+    @PostMapping("/remove")
+    public ResponseHeadVO remove(@RequestBody AddParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有添加权限");
+        }
+        Assert.isTrue(StringUtils.hasLength(param.getGid()),"任务ID不能为空");
+        ResponseHeadDTO dto = offlineDownloadService.remove(useSpaceId,param.getGid());
+        return new ResponseHeadVO<>(dto.getData());
     }
 }
