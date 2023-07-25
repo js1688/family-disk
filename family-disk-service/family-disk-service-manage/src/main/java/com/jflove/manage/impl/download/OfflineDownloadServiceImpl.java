@@ -65,7 +65,7 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         op.setSpaceId(spaceId);
         op.setTargetId(targetId);
         odRecordMapper.insert(op);
-        return new ResponseHeadDTO(true,String.format("文件[%s]添加到离线下载任务成功",op.getFileName()));
+        return new ResponseHeadDTO(true,"添加到离线下载任务成功,请重新查询刷新进度.");
     }
 
     @Override
@@ -77,7 +77,8 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         JSONArray dwTasks = new JSONArray(gids.size());
         gids.forEach(v->{
             IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(v.getUriType()).getCode(), IAria2c.class);
-            List dwInfo = aria2c.getFiles(v.getGid());
+            Map dwMap = aria2c.tellStatus(v.getGid());
+            List dwInfo = (List)dwMap.get("files");
             Map f0 = (Map)dwInfo.get(0);
             String path = (String)f0.get("path");
             String fn = path.substring(path.lastIndexOf("/")+1);
@@ -94,14 +95,14 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
                 );
             }
             //删掉不要的节点,避免暴漏过多的信息
-            f0.remove("uris");
-            f0.remove("path");
+            dwMap.remove("dir");
+            dwMap.remove("files");
             JSONObject jo = JSONUtil.parseObj(v);
             jo.putOpt("targetName", ndp == null ? "根目录" : ndp.getName());
-            DataSize length = DataSize.ofBytes(Long.parseLong((String) f0.get("length")));
-            DataSize completedLength = DataSize.ofBytes(Long.parseLong((String) f0.get("completedLength")));
+            DataSize length = DataSize.ofBytes(Long.parseLong((String) dwMap.get("totalLength")));
+            DataSize completedLength = DataSize.ofBytes(Long.parseLong((String) dwMap.get("completedLength")));
             jo.putOpt("progress",completedLength.toMegabytes() + "/" + length.toMegabytes());
-            jo.putAll(f0);
+            jo.putAll(dwMap);
             dwTasks.add(jo);
         });
         return new ResponseHeadDTO(dwTasks);
