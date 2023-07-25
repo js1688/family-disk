@@ -2,7 +2,6 @@ package com.jflove.scheduling.service;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
@@ -76,7 +75,7 @@ public class OfflineDownloadService {
                 //查询这个空间下每个任务的下载进度
                 ResponseHeadDTO result = offlineDownloadService.getFiles(v,null);
                 if(result.getDatas() != null) {
-                    JSONArray array = (JSONArray) result.getDatas();
+                    List array = result.getDatas();
                     array.forEach(t->{
                         JSONObject jo = (JSONObject) t;
                         if(DownloadStatusENUM.complete == DownloadStatusENUM.valueOf(jo.getStr("status"))){//下载完成了,需要执行转存
