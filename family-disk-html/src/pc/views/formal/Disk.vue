@@ -263,6 +263,110 @@
 
           </n-spin>
         </div>
+        <!-- 离线下载列表 -->
+        <div v-if="offlineIf" style="width: 100%;height: 100%;">
+          <n-spin :show="isOverlay">
+            <n-card :bordered="false">
+              <div style="width: 50%;display:inline-block;">
+                <n-space :size="40" v-if="roleWrite">
+                  <n-badge value="下载" type="info" :offset="[8, -8]">
+                    <n-button text style="font-size: 24px" @click="showAddOffline = true">
+                      <n-icon>
+                        <cloud-download-outline />
+                      </n-icon>
+                    </n-button>
+                  </n-badge>
+                </n-space>
+              </div>
+              <div style="width: 50%;display:inline-block;">
+                <n-space justify="end" >
+                  <n-input-group>
+                    <n-input v-model:value="offlinekeyword" placeholder="搜索"/>
+                    <n-button ghost @click="onOfflineLoad">
+                      <n-icon>
+                        <search-outline />
+                      </n-icon>
+                    </n-button>
+                  </n-input-group>
+                </n-space>
+              </div>
+              <n-divider />
+              <div style="width: 80%;display:inline-block;">
+                <n-breadcrumb>
+                  <n-breadcrumb-item>离线下载列表</n-breadcrumb-item>
+                </n-breadcrumb>
+              </div>
+              <div style="width: 20%;display:inline-block;">
+                <n-space justify="end" >
+                  <n-tag :bordered="false" :color="{ color: '#FFF'}">已全部加载,共{{offlineData.length}}项</n-tag>
+                </n-space>
+              </div>
+              <n-data-table
+                  :columns="offlineColumns"
+                  :data="offlineData"
+                  :pagination="false"
+                  :bordered="false"
+                  :row-key="setRowKey"
+                  :checked-row-keys="rowKeys"
+                  virtual-scroll
+                  :max-height="maxHeight - 50"
+              />
+            </n-card>
+
+            <n-drawer :mask-closable="false" v-model:show="showAddOffline" :width="502">
+              <n-drawer-content title="添加下载任务" closable>
+                <n-form
+                    ref="offlineformRef"
+                    label-placement="left"
+                    label-width="auto"
+                    require-mark-placement="right-hanging"
+                    :model="offlineParam"
+                    size="large"
+                    :rules='{
+                        uri: {
+                            required: true,
+                            message: "请输入下载地址",
+                            trigger: "blur"
+                          }
+                      }'
+                >
+                  <n-form-item label="地址类型:" path="uriType">
+                    <n-select
+                        v-model:value="offlineParam.uriType"
+                        :options="[{
+                          label: '简单(HTTP/FTP/SFTP/BitTorrent)',
+                          value: 'aria2cSimple'
+                        }]"
+                    />
+                  </n-form-item>
+                  <n-form-item label="存放目录:" path="targetId">
+                    <n-select
+                        v-model:value="offlineParam.targetId"
+                        :options="targetSelectd"
+                    />
+                  </n-form-item>
+                  <n-form-item label="下载地址:" path="uri">
+                    <n-input
+                        v-model:value="offlineParam.uri"
+                        placeholder="请输入下载地址"
+                        type="textarea"
+                        :autosize="{
+                          minRows: 10,
+                          maxRows: 10
+                        }"
+                    />
+                  </n-form-item>
+                </n-form>
+                <n-card :bordered="false" style="position: absolute;bottom: 0">
+                  <n-space>
+                    <n-button type="info" @click="addOffline">确定</n-button>
+                    <n-button @click="showAddOffline = false;">取消</n-button>
+                  </n-space>
+                </n-card>
+              </n-drawer-content>
+            </n-drawer>
+          </n-spin>
+        </div>
         <!-- 下载列表 -->
         <div v-if="downloadListIf" style="width: 100%;height: 100%;">
           <n-spin :show="isOverlay">
@@ -340,12 +444,12 @@ import { h, ref } from "vue";
 import { zhCN, dateZhCN,NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider ,NDescriptions,NDescriptionsItem,
   NAnchorLink,NAnchor,NPopconfirm,NButton,NLayoutContent,NImage,NSpin,NProgress,NDataTable,NList,NListItem,
   NForm,NFormItem,NInput,NInputGroup,NLayoutFooter,NLayoutHeader,NCard,NModal,NBadge,NUpload,NDatePicker,NTimePicker,
-  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NEmpty,NImageGroup,NConfigProvider,
+  NAvatar,NDivider,NTag,NBreadcrumb,NBreadcrumbItem,NDrawer,NDrawerContent,NEmpty,NImageGroup,NConfigProvider,NSelect,
   createDiscreteApi
 } from "naive-ui";
 import {
   ExitOutline, EnterOutline, PersonAddOutline, BackspaceOutline, AddCircleOutline,
-  InformationCircleOutline, ShareSocialOutline,TrashOutline,CloudUploadOutline,
+  InformationCircleOutline, ShareSocialOutline,TrashOutline,CloudUploadOutline,CloudOfflineOutline,
   MailOutline,CloudOutline,FolderOutline,FolderOpenOutline,CloudDownloadOutline,PlayCircleOutline,StopCircleOutline,
   BuildOutline, OptionsOutline,PersonOutline,ReturnDownForward,SearchOutline,ListOutline
 } from "@vicons/ionicons5";
@@ -425,6 +529,11 @@ export default {
         icon:renderIcon(FolderOpenOutline)
       },
       {
+        label: "离线下载",
+        key: "offline",
+        icon:renderIcon(CloudOfflineOutline)
+      },
+      {
         label: "上传列表",
         key: "uploadList",
         icon:renderIcon(CloudUploadOutline)
@@ -462,8 +571,8 @@ export default {
     }
   },
   components: {
-    NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,NUpload,
-    NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,NList,NListItem,
+    NIcon,NLayout,NSwitch,NMenu,NSpace,NLayoutSider,NAnchorLink,NAnchor,NDescriptions,NDescriptionsItem,NUpload,CloudOfflineOutline,
+    NPopconfirm,NButton,NLayoutContent,NImage,ExitOutline,NSpin,NCard,NAvatar,NDivider,NProgress,NDataTable,NList,NListItem,NSelect,
     NForm,NFormItem,NInput,MailOutline,EnterOutline,PersonOutline,NInputGroup,NLayoutFooter,CloudOutline,NEmpty,PlayCircleOutline,
     NLayoutHeader,AddCircleOutline,NModal,NTag,FolderOutline,TrashOutline,CloudUploadOutline,CloudDownloadOutline,StopCircleOutline,NConfigProvider,
     ReturnDownForward,NBadge,NBreadcrumb,NBreadcrumbItem,SearchOutline,ListOutline,NDrawer,NDrawerContent,NImageGroup,NDatePicker,NTimePicker,
@@ -474,6 +583,7 @@ export default {
   created() {
     if(localStorage.getItem(key().authorization) != null){
       this.onLoad();
+      this.onOfflineLoad();
       //添加定时任务,刷新下载列表
       let self = this;
       setInterval(function (){
@@ -502,6 +612,21 @@ export default {
     }
   },
   data(){
+    let listOffline = [
+      {
+        title:"操作",
+        titleColSpan:2,
+        name:"删除",
+        width:60,
+        key:"sc",
+        play:this.delOffline,
+      },
+      {
+        name:"暂停/开始",
+        width:100,
+        key:"ztks"
+      }
+    ];
     let listButton = [
       {
         name:"删除",
@@ -562,19 +687,24 @@ export default {
       showPlayVideo:false,
       dustbinIf:false,
       uploadListIf:false,
+      offlineIf:false,
       downloadList:[],
       uploadList:[],
       showMoveDirectory:false,
       showAddDirectory:false,
       showUpdateName:false,
+      showAddOffline:false,
       simpleField:"",
       maxHeight:document.documentElement.clientHeight - 250,
       manageIf:true,
       downloadListIf:false,
       isOverlay:false,
       folderData:[],
+      offlineData:[],
+      targetSelectd:[],
       pid:0,
       keyword:'',
+      offlinekeyword:'',
       rowKeys:[],
       rowKey:null,
       folderColumns:createColumns({
@@ -597,6 +727,34 @@ export default {
             title: "修改时间",
             width:200,
             key: "updateTime"
+          }
+        ]
+      }),
+      offlineColumns:createColumns({
+        buttons:listOffline,
+        cols:[
+          {
+            title: "文件名称",
+            key: "fileName"
+          },
+          {
+            title: "存放目录",
+            key: "targetName"
+          },
+          {
+            title: "状态",
+            width:150,
+            key: "statusName"
+          },
+          {
+            title: "进度",
+            width:150,
+            key: "progress"
+          },
+          {
+            title: "添加时间",
+            width:200,
+            key: "createTime"
           }
         ]
       }),
@@ -647,6 +805,7 @@ export default {
       audioUrls:[],
       showShare:false,
       shareParam:ref({password:null,bodyId:null,invalidTime:null,url:null,bodyType:null}),
+      offlineParam:ref({uriType:'aria2cSimple',uri:null,targetId:0}),
     }
   },
   methods:{
@@ -1294,12 +1453,69 @@ export default {
         console.log(error);
       });
     },
+    delOffline:function (item) {
+      console.log(item);
+      let self = this;
+      this.showDialog("warning",'是否删除下载任务:' + item.fileName + '!',function (){
+        self.isOverlay = true;
+        axios.post('/download/remove', {
+          gid: item.gid
+        }).then(function (response) {
+          if(response.data.result){
+            self.onOfflineLoad();
+          }
+          self.showToast(response.data.result ? "success" : "error", response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      });
+    },
+    addOffline:function () {
+      let self = this;
+      this.$refs.offlineformRef.validate((errors) => {
+        if (!errors) {
+          self.isOverlay = true;
+          axios.post('/download/add', self.offlineParam).then(function (response) {
+            if(response.data.result){
+              self.offlineParam = ref({uriType:'aria2cSimple',uri:null,targetId:0});
+              self.showAddOffline = false;
+              self.onOfflineLoad();
+            }
+            self.showToast(response.data.result ? "success" : "error", response.data.message);
+            self.isOverlay = false;
+          }).catch(function (error) {
+            self.isOverlay = false;
+            console.log(error);
+          });
+        }
+      });
+    },
+    onOfflineLoad: function () {
+      this.isOverlay = true;
+      let self = this;
+      axios.post('/download/getFiles', {
+        fileName: this.offlinekeyword
+      }).then(function (response) {
+        if(response.data.result){
+          self.offlineData = response.data.datas;
+        }else{
+          self.showToast(response.data.result ? "success" : "error", response.data.message);
+        }
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
     //菜单切换
     menu:function (open){
       this.manageIf = false;
       this.dustbinIf = false;
       this.uploadListIf = false;
       this.downloadListIf = false;
+      this.offlineIf = false;
 
       this[open] = true;
     },
@@ -1314,6 +1530,31 @@ export default {
           break
         case "uploadList":
           this.menu("uploadListIf");
+          break
+        case "offline":
+          let self = this;
+          //获取一级目录,可设置的目的地目录的列表
+          axios.post('/netdisk/findDirectory', {
+            keyword: '',
+            pid: 0
+          }).then(function (response) {
+            self.targetSelectd = [
+              {
+                label: '根目录',
+                value: 0
+              }
+            ];
+
+            if(response.data.result){
+              for (let i = 0; i < response.data.datas.length; i++) {
+                self.targetSelectd.push({label: response.data.datas[i].name,value: response.data.datas[i].id});
+              }
+            }
+
+          }).catch(function (error) {
+            console.log(error);
+          });
+          this.menu("offlineIf");
           break
         case "downloadList":
           this.menu("downloadListIf");
