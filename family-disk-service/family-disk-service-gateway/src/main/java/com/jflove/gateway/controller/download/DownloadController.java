@@ -78,6 +78,6 @@ public class DownloadController {
         }
         Assert.isTrue(StringUtils.hasLength(param.getGid()),"任务ID不能为空");
         ResponseHeadDTO dto = offlineDownloadService.remove(useSpaceId,param.getGid());
-        return new ResponseHeadVO<>(dto.getData());
+        return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
     }
 }
