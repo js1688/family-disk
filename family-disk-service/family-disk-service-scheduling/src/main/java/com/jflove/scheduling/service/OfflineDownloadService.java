@@ -102,7 +102,7 @@ public class OfflineDownloadService {
                                 String md5 = fileMd5(sliceNum,sliceSize,totalLength.toBytes(),filePath);
                                 //尝试是否可以从垃圾箱恢复
                                 if(fileAdministration.dustbinRecovery(md5,v,FileSourceENUM.CLOUDDISK).isResult()){
-                                    appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5);
+                                    appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5,jo.getStr("gid"));
                                     return;
                                 }
                                 //判断用户空间是否存储的下
@@ -115,7 +115,7 @@ public class OfflineDownloadService {
                                 //尝试是否可以直接引用其它人上传的文件
                                 if(fileAdministration.checkDuplicate(fileName,type,mediaType,
                                         md5,v,FileSourceENUM.CLOUDDISK,totalLength.toBytes(),(Long)use.getData()).isResult()){
-                                    appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5);
+                                    appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5,jo.getStr("gid"));
                                     return;
                                 }
                                 //无法从其它地方直接引用,将文件执行转存
@@ -138,7 +138,7 @@ public class OfflineDownloadService {
                                         }
                                     }
                                 }
-                                appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5);
+                                appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5,jo.getStr("gid"));
                             }catch (Throwable e){
                                 log.error("发送文件流异常",e);
                             }
@@ -164,8 +164,9 @@ public class OfflineDownloadService {
      * @param fileName
      * @param pid
      * @param md5
+     * @param gid
      */
-    private void appendRel(OdRecordPO upPo,DataSize totalLength,Long spaceId,String mediaType,String fileName,int pid,String md5){
+    private void appendRel(OdRecordPO upPo,DataSize totalLength,Long spaceId,String mediaType,String fileName,int pid,String md5,String gid){
         //所有分片发送结束,开始建立网盘目录与文件的关系
         NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
         netDto.setSize(String.valueOf(totalLength.toMegabytes()));
@@ -182,7 +183,7 @@ public class OfflineDownloadService {
             return;
         }
         //文件关联成功,将下载任务设置为删除
-        ResponseHeadDTO dresult = offlineDownloadService.remove(v,jo.getStr("gid"));
+        ResponseHeadDTO dresult = offlineDownloadService.remove(spaceId,gid);
         if(!dresult.isResult()){
             upPo.setMsg(dresult.getMessage());
             odRecordMapper.updateById(upPo);
