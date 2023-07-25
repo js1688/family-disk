@@ -69,11 +69,11 @@ public class UserSpaceImpl implements IUserSpace {
             Lock lock = new ReentrantLock(true);
             spaceSizeLock.put(lockKey,lock);
         }
+        UserSpaceDTO usd = info.getData();
         try{
             spaceSizeLock.get(lockKey).lock();
             //使用大小+1mb,因为计算会忽略小数
             //这里的使用空间可能会与电脑文件上看到的不一样,因为本程序计算的字节大小是1024b为1k,电脑系统大多数都是以1000b为1k,包括大部分硬盘的存量计算也是1000
-            UserSpaceDTO usd = info.getData();
             useMb += 1;
             if(increase && usd.getMaxSize() - usd.getUseSize() <= useMb){//如果是增加已使用量
                 return new ResponseHeadDTO(false, "用户空间不足");
@@ -84,12 +84,12 @@ public class UserSpaceImpl implements IUserSpace {
                 po.setUseSize(increase ? usd.getUseSize() + useMb : usd.getUseSize() - useMb);
                 po.setUpdateTime(null);
                 userSpaceMapper.updateById(po);
-                return new ResponseHeadDTO(true, "用户空间使用量修改成功");
+                return new ResponseHeadDTO(true,usd.getCreateUserId(), "用户空间使用量修改成功");
             }
         }finally {
             spaceSizeLock.get(lockKey).unlock();
         }
-        return new ResponseHeadDTO(true, "用户空间可以存储");
+        return new ResponseHeadDTO(true,usd.getCreateUserId(), "用户空间可以存储");
     }
 
     @Override

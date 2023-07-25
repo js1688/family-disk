@@ -41,6 +41,20 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
     private ApplicationContext context;
 
     @Override
+    public ResponseHeadDTO remove(Long spaceId, String gid) {
+        OdRecordPO gidPo = odRecordMapper.selectOne(new LambdaQueryWrapper<OdRecordPO>()
+                .eq(OdRecordPO::getSpaceId,spaceId)
+                .eq(OdRecordPO::getGid,gid)
+        );
+        if(gidPo == null){
+            return new ResponseHeadDTO(false, "任务id不存在");
+        }
+        IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(gidPo.getUriType()).getCode(), IAria2c.class);
+        String result = aria2c.remove(gid);
+        return new ResponseHeadDTO(true,result,"删除任务成功");
+    }
+
+    @Override
     @Transactional
     public ResponseHeadDTO add(UriTypeENUM uriType,String uri, Long spaceId, Long targetId) {
         boolean is = netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
@@ -96,7 +110,6 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
                 );
             }
             //删掉不要的节点,避免暴漏过多的信息
-            dwMap.remove("dir");
             dwMap.remove("files");
             JSONObject jo = JSONUtil.parseObj(v);
             jo.putOpt("targetName", ndp == null ? "根目录" : ndp.getName());

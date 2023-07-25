@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 /**
@@ -22,6 +23,7 @@ public class ShareClearService{
     @Autowired
     private ShareLinkMapper shareLinkMapper;
     @Async("myTaskExecutor")
+    @Transactional
     public void run() {
         try {
             //直接删除掉已经到期的分享链接

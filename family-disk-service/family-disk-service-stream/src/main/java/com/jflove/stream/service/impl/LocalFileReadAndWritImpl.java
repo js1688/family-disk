@@ -11,6 +11,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
@@ -62,6 +63,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto,FileDiskConfigPO selectd) {
         String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){

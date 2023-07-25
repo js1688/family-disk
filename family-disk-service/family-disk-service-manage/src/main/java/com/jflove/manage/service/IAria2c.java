@@ -35,6 +35,13 @@ public interface IAria2c {
     List getFiles(String gid);
 
     /**
+     * 删除一个任务
+     * @param gid
+     * @return
+     */
+    String remove(String gid);
+
+    /**
      * 返回rpc接口发送时的参数
      * @param token 身份验证,占第0个位置,是身份验证
      * @param param 占第1个位置,是具体的参数

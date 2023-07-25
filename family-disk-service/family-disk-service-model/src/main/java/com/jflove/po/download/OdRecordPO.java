@@ -52,6 +52,11 @@ public class OdRecordPO implements Serializable{
   private String uriType;
 
   /**
+   * 描述信息
+   */
+  private String msg;
+
+  /**
    * 创建时间
    */
   @TableField(fill = FieldFill.INSERT)

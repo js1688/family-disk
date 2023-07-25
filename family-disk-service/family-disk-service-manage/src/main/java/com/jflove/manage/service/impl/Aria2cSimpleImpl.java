@@ -33,6 +33,17 @@ public class Aria2cSimpleImpl implements IAria2c {
     }
 
     @Override
+    public String remove(String gid) {
+        try {
+            String retGid = jsonRpcHttpClient.invoke("aria2.remove", rpcParam(jsonRpcHttpClient.getToken(),gid), String.class);
+            return retGid;
+        }catch (Throwable e){
+            log.error("aria2cSimple 删除下载任务异常",e);
+        }
+        return null;
+    }
+
+    @Override
     public Map tellStatus(String gid) {
         try {
             Map result = jsonRpcHttpClient.invoke("aria2.tellStatus", rpcParam(jsonRpcHttpClient.getToken(),gid), Map.class);

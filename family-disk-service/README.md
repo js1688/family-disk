@@ -12,7 +12,7 @@
     - family-disk-service-stream 文件服务,负责文件二进制流读写,注意:如果有配置本地磁盘存储方式,该模块暂时只能部署单节点
     - family-disk-service-model 数据库模型,mysql po类,mapper类
     - family-disk-service-api rpc接口标准,dubbo接口定义,以及dto类定义
-    - family-disk-service-scheduling 定时任务,做一些清理,备份相关的工作,它不是dubbo服务,也不会调用dubbo接口,暂时该模块只能部署单节点
+    - family-disk-service-scheduling 定时任务,做一些清理,备份相关的工作,它不会提供rpc接口,但是会调用rpc接口,暂时该模块只能部署单节点
     
     - family-disk-service-plugins 插件模块,不属于服务内,暂时没用
 ```

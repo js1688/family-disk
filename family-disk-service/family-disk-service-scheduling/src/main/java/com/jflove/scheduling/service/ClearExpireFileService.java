@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
@@ -33,6 +34,7 @@ public class ClearExpireFileService{
     private FileDiskConfigMapper fileDiskConfigMapper;
 
     @Async("myTaskExecutor")
+    @Transactional
     public void run() {
         try{
             //查询出哪些文件信息已经到了要删除的时候

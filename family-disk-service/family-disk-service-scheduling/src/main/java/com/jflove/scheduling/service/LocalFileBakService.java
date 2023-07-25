@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class LocalFileBakService{
     private FileDiskConfigMapper fileDiskConfigMapper;
 
     @Async("myTaskExecutor")
+    @Transactional
     public void run() {
         try{
             //查询出所有本地磁盘

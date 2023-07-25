@@ -28,4 +28,12 @@ public interface IOfflineDownloadService {
      */
     ResponseHeadDTO getFiles(Long spaceId,String fileName);
 
+    /**
+     * 删除下载任务
+     * @param spaceId
+     * @param gid
+     * @return
+     */
+    ResponseHeadDTO remove(Long spaceId,String gid);
+
 }

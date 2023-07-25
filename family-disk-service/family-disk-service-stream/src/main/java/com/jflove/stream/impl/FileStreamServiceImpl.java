@@ -16,6 +16,7 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
@@ -68,6 +69,7 @@ public class FileStreamServiceImpl implements IFileStreamService {
     }
 
     @Override
+    @Transactional
     public ResponseHeadDTO<String> writeByte(StreamWriteParamDTO dto){
         try {
             //查找文件存储在哪个磁盘中

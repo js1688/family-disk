@@ -16,8 +16,6 @@ import org.springframework.stereotype.Component;
 @EnableScheduling
 @EnableAsync
 public class TaskScheduling {
-    @Autowired
-    private ClearTempFileService clearTempService;
 
     @Autowired
     private ClearExpireFileService clearExpireFileService;
@@ -29,6 +27,8 @@ public class TaskScheduling {
     private LocalFileBakService localFileBakService;
     @Autowired
     private ShareClearService shareClearService;
+    @Autowired
+    private OfflineDownloadService offlineDownloadService;
 
     /**
      * 一分钟执行一次
@@ -39,11 +39,18 @@ public class TaskScheduling {
     }
 
     /**
+     * 10秒钟执行一次
+     */
+    @Scheduled(fixedDelay = 10000)
+    public void offlineDownload(){
+        offlineDownloadService.run();//离线下载,尝试将下载完成的任务转存
+    }
+
+    /**
      * 凌晨3点执行,
      */
     @Scheduled(cron = "0 0 3 * * ?")
     public void clearTemp() {
-        clearTempService.run();//清除临时文件
         clearExpireFileService.run();//清除过期无引用文件
         correctUseSpaceService.run();//纠正用户空间使用量
     }
