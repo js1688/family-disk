@@ -102,7 +102,7 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
             jo.putOpt("targetName", ndp == null ? "根目录" : ndp.getName());
             DataSize length = DataSize.ofBytes(Long.parseLong((String) dwMap.get("totalLength")));
             DataSize completedLength = DataSize.ofBytes(Long.parseLong((String) dwMap.get("completedLength")));
-            jo.putOpt("progress",completedLength.toMegabytes() + "/" + length.toMegabytes());
+            jo.putOpt("progress",completedLength.toMegabytes() + "/" + length.toMegabytes()+"(MB)");
             jo.putOpt("statusName", DownloadStatusENUM.valueOf((String)dwMap.get("status")).getName());
             jo.putAll(dwMap);
             dwTasks.add(jo);
