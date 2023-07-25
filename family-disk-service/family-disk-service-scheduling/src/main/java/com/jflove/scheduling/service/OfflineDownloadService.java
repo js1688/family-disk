@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.download.api.IOfflineDownloadService;
 import com.jflove.download.em.DownloadStatusENUM;
+import com.jflove.file.api.IFileAdministration;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.mapper.download.OdRecordMapper;
 import com.jflove.netdisk.api.INetdiskDirectory;
@@ -53,6 +54,8 @@ public class OfflineDownloadService {
     @DubboReference
     private INetdiskDirectory netdiskDirectory;
     @DubboReference
+    private IFileAdministration fileAdministration;
+    @DubboReference
     private IUserSpace userSpace;
 
     @Autowired
@@ -87,14 +90,6 @@ public class OfflineDownloadService {
                                 Long id = jo.getLong("id");
                                 OdRecordPO upPo = new OdRecordPO();
                                 upPo.setId(id);
-                                //判断用户空间是否存储的下
-                                ResponseHeadDTO use = userSpace.useSpaceByte(v, totalLength.toMegabytes(), true, false);
-                                if (!use.isResult()) {
-                                    upPo.setMsg("转存失败,用户存储空间不足");
-                                    odRecordMapper.updateById(upPo);
-                                    return;
-                                }
-
                                 //开始转存文件
                                 String type = "";
                                 if (fileName.indexOf(".") != -1) {
@@ -105,6 +100,25 @@ public class OfflineDownloadService {
                                 Long sliceNum = sliceInfo.get("sliceNum");//分片数量
                                 Long sliceSize = sliceInfo.get("sliceSize");//分片大小
                                 String md5 = fileMd5(sliceNum,sliceSize,totalLength.toBytes(),filePath);
+                                //尝试是否可以从垃圾箱恢复
+                                if(fileAdministration.dustbinRecovery(md5,v,FileSourceENUM.CLOUDDISK).isResult()){
+                                    appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5);
+                                    return;
+                                }
+                                //判断用户空间是否存储的下
+                                ResponseHeadDTO use = userSpace.useSpaceByte(v, totalLength.toMegabytes(), true, false);
+                                if (!use.isResult()) {
+                                    upPo.setMsg("转存失败,用户存储空间不足");
+                                    odRecordMapper.updateById(upPo);
+                                    return;
+                                }
+                                //尝试是否可以直接引用其它人上传的文件
+                                if(fileAdministration.checkDuplicate(fileName,type,mediaType,
+                                        md5,v,FileSourceENUM.CLOUDDISK,totalLength.toBytes(),(Long)use.getData()).isResult()){
+                                    appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5);
+                                    return;
+                                }
+                                //无法从其它地方直接引用,将文件执行转存
                                 try(RandomAccessFile raf = new RandomAccessFile(new File(filePath), "r")) {
                                     for (int i = 0; i <= sliceNum; i++) {
                                         byte[] a = null;
@@ -124,30 +138,7 @@ public class OfflineDownloadService {
                                         }
                                     }
                                 }
-                                //所有分片发送结束,开始建立网盘目录与文件的关系
-                                NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
-                                netDto.setSize(String.valueOf(totalLength.toMegabytes()));
-                                netDto.setType(NetdiskDirectoryENUM.FILE);
-                                netDto.setSpaceId(v);
-                                netDto.setMediaType(mediaType);
-                                netDto.setName(fileName);
-                                netDto.setPid(jo.getInt("targetId"));
-                                netDto.setFileMd5(md5);
-                                ResponseHeadDTO<NetdiskDirectoryDTO> directory = netdiskDirectory.addDirectory(netDto);
-                                if(!directory.isResult()){
-                                    upPo.setMsg(directory.getMessage());
-                                    odRecordMapper.updateById(upPo);
-                                    return;
-                                }
-                                //文件关联成功,将下载任务设置为删除
-                                ResponseHeadDTO dresult = offlineDownloadService.remove(v,jo.getStr("gid"));
-                                if(!dresult.isResult()){
-                                    upPo.setMsg(dresult.getMessage());
-                                    odRecordMapper.updateById(upPo);
-                                    return;
-                                }
-                                //任务成功转存到网盘,删除记录
-                                odRecordMapper.deleteById(id);
+                                appendRel(upPo,totalLength,v,mediaType,fileName,jo.getInt("targetId"),md5);
                             }catch (Throwable e){
                                 log.error("发送文件流异常",e);
                             }
@@ -162,6 +153,43 @@ public class OfflineDownloadService {
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     * 将文件md5与网盘建立起关系
+     * @param upPo
+     * @param totalLength
+     * @param spaceId
+     * @param mediaType
+     * @param fileName
+     * @param pid
+     * @param md5
+     */
+    private void appendRel(OdRecordPO upPo,DataSize totalLength,Long spaceId,String mediaType,String fileName,int pid,String md5){
+        //所有分片发送结束,开始建立网盘目录与文件的关系
+        NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
+        netDto.setSize(String.valueOf(totalLength.toMegabytes()));
+        netDto.setType(NetdiskDirectoryENUM.FILE);
+        netDto.setSpaceId(spaceId);
+        netDto.setMediaType(mediaType);
+        netDto.setName(fileName);
+        netDto.setPid(pid);
+        netDto.setFileMd5(md5);
+        ResponseHeadDTO<NetdiskDirectoryDTO> directory = netdiskDirectory.addDirectory(netDto);
+        if(!directory.isResult()){
+            upPo.setMsg(directory.getMessage());
+            odRecordMapper.updateById(upPo);
+            return;
+        }
+        //文件关联成功,将下载任务设置为删除
+        ResponseHeadDTO dresult = offlineDownloadService.remove(v,jo.getStr("gid"));
+        if(!dresult.isResult()){
+            upPo.setMsg(dresult.getMessage());
+            odRecordMapper.updateById(upPo);
+            return;
+        }
+        //任务成功转存到网盘,删除记录
+        odRecordMapper.deleteById(upPo.getId());
     }
 
     /**
