@@ -57,12 +57,14 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
     @Override
     @Transactional
     public ResponseHeadDTO add(UriTypeENUM uriType,String uri, Long spaceId, Long targetId) {
-        boolean is = netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
-                .eq(NetdiskDirectoryPO::getId,targetId)
-                .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
-        );
-        if(!is){
-            return new ResponseHeadDTO(false, "目标目录不存在");
+        if(targetId != 0) {
+            boolean is = netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                    .eq(NetdiskDirectoryPO::getId, targetId)
+                    .eq(NetdiskDirectoryPO::getSpaceId, spaceId)
+            );
+            if (!is) {
+                return new ResponseHeadDTO(false, "目标目录不存在");
+            }
         }
         //发送下载任务给aria2
         IAria2c aria2c = context.getBean(uriType.getCode(), IAria2c.class);
