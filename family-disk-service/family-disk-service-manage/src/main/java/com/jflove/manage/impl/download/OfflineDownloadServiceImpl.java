@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.download.api.IOfflineDownloadService;
+import com.jflove.download.em.DownloadStatusENUM;
 import com.jflove.download.em.UriTypeENUM;
 import com.jflove.manage.service.IAria2c;
 import com.jflove.mapper.download.OdRecordMapper;
@@ -102,6 +103,7 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
             DataSize length = DataSize.ofBytes(Long.parseLong((String) dwMap.get("totalLength")));
             DataSize completedLength = DataSize.ofBytes(Long.parseLong((String) dwMap.get("completedLength")));
             jo.putOpt("progress",completedLength.toMegabytes() + "/" + length.toMegabytes());
+            jo.putOpt("statusName", DownloadStatusENUM.valueOf((String)dwMap.get("status")).getName());
             jo.putAll(dwMap);
             dwTasks.add(jo);
         });
