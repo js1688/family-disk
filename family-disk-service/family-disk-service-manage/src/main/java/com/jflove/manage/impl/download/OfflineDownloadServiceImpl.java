@@ -87,11 +87,10 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         List dwInfo = (List) dwMap.get("files");
         Map f0 = (Map) dwInfo.get(0);
         String path = (String) f0.get("path");
-        log.error(path);
-        log.error(JSONUtil.toJsonStr(f0));
         try {
             Files.deleteIfExists(Path.of(path));
         }catch (Throwable e){
+            log.error("删除文件异常",e);
             return new ResponseHeadDTO(false,result,"删除任务失败,文件删除时错误");
         }
         odRecordMapper.deleteById(gidPo.getId());

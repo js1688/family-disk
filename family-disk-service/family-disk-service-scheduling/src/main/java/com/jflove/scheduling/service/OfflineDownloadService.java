@@ -3,6 +3,7 @@ package com.jflove.scheduling.service;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.download.api.IOfflineDownloadService;
@@ -87,9 +88,8 @@ public class OfflineDownloadService {
                                 String filePath = jo.getStr("dir") + "/" + fileName;
                                 Path of = Path.of(filePath);
                                 DataSize totalLength = DataSize.ofBytes(Files.size(of));
-                                Long id = jo.getLong("id");
-                                OdRecordPO upPo = new OdRecordPO();
-                                upPo.setId(id);
+                                log.error("数据是什么:{}",jo.toString());
+                                OdRecordPO upPo = jo.toBean(OdRecordPO.class);
                                 //开始转存文件
                                 String type = "";
                                 if (fileName.indexOf(".") != -1) {
@@ -167,6 +167,7 @@ public class OfflineDownloadService {
      * @param gid
      */
     private void appendRel(OdRecordPO upPo,DataSize totalLength,Long spaceId,String mediaType,String fileName,int pid,String md5,String gid){
+        log.error("进来时啥样?:{}", JSONUtil.toJsonStr(upPo));
         //所有分片发送结束,开始建立网盘目录与文件的关系
         NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
         netDto.setSize(String.valueOf(totalLength.toMegabytes()));
@@ -186,6 +187,7 @@ public class OfflineDownloadService {
         ResponseHeadDTO dresult = offlineDownloadService.remove(spaceId,gid);
         if(!dresult.isResult()){
             upPo.setMsg(dresult.getMessage());
+            log.error("真tm奇怪了:{}",JSONUtil.toJsonStr(upPo));
             odRecordMapper.updateById(upPo);
             return;
         }
