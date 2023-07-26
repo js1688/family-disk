@@ -641,7 +641,7 @@ export default {
         name:"开始",
         play:this.offlineSwitch,
         disabled:(row)=> {
-          return row.status == 'active' || row.status == 'complete';
+          return row.status != 'paused' && row.status != 'waiting' && row.status != 'error';
         },
       }
     ];
@@ -1512,7 +1512,20 @@ export default {
     },
     //离线下载任务开始暂停
     offlineSwitch:function (item){
-      console.log(item);
+      let self = this;
+      self.isOverlay = true;
+      axios.post('/download/unpause', {
+        gid: item.gid
+      }).then(function (response) {
+        if(response.data.result){
+          self.onOfflineLoad();
+        }
+        self.showToast(response.data.result ? "success" : "error", response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
     },
     //离线下载列表
     onOfflineLoad: function () {
