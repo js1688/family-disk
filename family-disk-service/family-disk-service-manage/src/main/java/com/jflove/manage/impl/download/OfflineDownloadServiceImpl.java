@@ -87,6 +87,8 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         List dwInfo = (List) dwMap.get("files");
         Map f0 = (Map) dwInfo.get(0);
         String path = (String) f0.get("path");
+        log.error(path);
+        log.error(JSONUtil.toJsonStr(f0));
         try {
             Files.deleteIfExists(Path.of(path));
         }catch (Throwable e){
