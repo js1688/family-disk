@@ -623,7 +623,7 @@ export default {
         key:"sc",
         play:this.delOffline,
         disabled:(row)=> {
-          return row.status == 'removed';
+          return row.status != 'removed';
         },
       },
       {
@@ -757,10 +757,11 @@ export default {
           },
           {
             title: "存放目录",
-            key: "targetName"
+            key: "targetName",
+            width:300
           },
           {
-            title: "状态",
+            title: "下载状态",
             width:150,
             key: "statusName"
           },
@@ -768,6 +769,11 @@ export default {
             title: "进度",
             width:150,
             key: "progress"
+          },
+          {
+            title: "转存情况",
+            width:200,
+            key: "msg"
           },
           {
             title: "添加时间",
@@ -1572,7 +1578,8 @@ export default {
           //获取一级目录,可设置的目的地目录的列表
           axios.post('/netdisk/findDirectory', {
             keyword: '',
-            pid: 0
+            pid: 0,
+            type:'FOLDER'
           }).then(function (response) {
             self.targetSelectd = [
               {
