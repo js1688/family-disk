@@ -623,7 +623,7 @@ export default {
         key:"sc",
         play:this.delOffline,
         disabled:(row)=> {
-          return row.status != 'removed';
+          return row.status == 'removed';
         },
       },
       {
