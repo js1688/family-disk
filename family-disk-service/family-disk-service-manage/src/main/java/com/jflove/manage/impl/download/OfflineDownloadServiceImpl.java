@@ -80,7 +80,9 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         }
         IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(gidPo.getUriType()).getCode(), IAria2c.class);
         String result = aria2c.remove(gid);
-        odRecordMapper.deleteById(gidPo.getId());
+        if(StringUtils.hasLength(result)) {
+            odRecordMapper.deleteById(gidPo.getId());
+        }
         return new ResponseHeadDTO(true,result,"删除任务成功");
     }
 

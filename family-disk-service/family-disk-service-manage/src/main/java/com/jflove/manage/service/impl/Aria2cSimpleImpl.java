@@ -5,6 +5,7 @@ import com.jflove.manage.service.IAria2c;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,12 +62,14 @@ public class Aria2cSimpleImpl implements IAria2c {
     public String remove(String gid) {
         try {
             String retGid = jsonRpcHttpClient.invoke("aria2.remove", rpcParam(jsonRpcHttpClient.getToken(),gid), String.class);
-            //删掉文件
-            Map dwMap = tellStatus(gid);
-            List dwInfo = (List)dwMap.get("files");
-            Map f0 = (Map)dwInfo.get(0);
-            String path = (String)f0.get("path");
-            Files.deleteIfExists(Path.of(path));
+            if(StringUtils.hasLength(retGid)) {
+                //删掉文件
+                Map dwMap = tellStatus(gid);
+                List dwInfo = (List) dwMap.get("files");
+                Map f0 = (Map) dwInfo.get(0);
+                String path = (String) f0.get("path");
+                Files.deleteIfExists(Path.of(path));
+            }
             return retGid;
         }catch (Throwable e){
             log.error("aria2cSimple 删除下载任务异常",e);
