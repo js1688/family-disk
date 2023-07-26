@@ -21,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -82,17 +80,6 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
         }
         IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(gidPo.getUriType()).getCode(), IAria2c.class);
         String result = aria2c.remove(gid);
-        //删掉文件
-        Map dwMap = aria2c.tellStatus(gidPo.getGid());
-        List dwInfo = (List) dwMap.get("files");
-        Map f0 = (Map) dwInfo.get(0);
-        String path = (String) f0.get("path");
-        try {
-            Files.deleteIfExists(Path.of(path));
-        }catch (Throwable e){
-            log.error("删除文件异常",e);
-            return new ResponseHeadDTO(false,result,"删除任务失败,文件删除时错误");
-        }
         odRecordMapper.deleteById(gidPo.getId());
         return new ResponseHeadDTO(true,result,"删除任务成功");
     }

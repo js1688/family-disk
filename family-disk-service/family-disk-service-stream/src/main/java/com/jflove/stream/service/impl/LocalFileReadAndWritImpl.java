@@ -69,6 +69,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){
             raf.seek(dto.getSeek());
             raf.write(dto.getStream());//支持追加写入
+            //todo 如果后续有注册中心,部署了多节点,这里将本次收到的写盘请求,复制发送给其它所有节点中的相同服务,这样可以做到文件在写盘的时候,是同步写入多节点,每个部署了stream服务的机器的本次磁盘都可以当做存储服务
             //判断如果文件已经全部写入,则更新一下磁盘大小
             if(raf.length() >= dto.getTotalSize()) {
                 //刷新磁盘可使用空间
