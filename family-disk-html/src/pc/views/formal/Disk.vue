@@ -497,13 +497,14 @@ const createColumns = ({
             titleColSpan:b.titleColSpan,
             render(row) {
               return h(
-                  NButton,
+                  !b.type ? NButton : b.type,
                   {
+                    value:!b.deValue ? null : b.deValue(row),
                     strong: true,
                     tertiary: true,
                     size: "small",
                     disabled: b.disabled ? b.disabled(row) : false,
-                    onClick: () => b.play(row)
+                    onClick: !b.play ? null : () => b.play(row),
                   },
                   { default: () => b.name }
               );
@@ -550,9 +551,10 @@ export default {
       }
     ];
 
-    if(!roleWrite){//如果没有修改权限,去掉上传和回收站
-      menuOptions.splice(3,1);
+    if(!roleWrite){//如果没有修改权限,去掉上传和回收站和离线下载
       menuOptions.splice(1,1);
+      menuOptions.splice(2,1);
+      menuOptions.splice(4,1);
     }
 
     return {
@@ -620,11 +622,27 @@ export default {
         width:60,
         key:"sc",
         play:this.delOffline,
+        disabled:(row)=> {
+          return row.status == 'removed';
+        },
       },
       {
-        name:"暂停/开始",
-        width:100,
-        key:"ztks"
+        width:60,
+        key:"zt",
+        name:"暂停",
+        play:this.offlineSwitch,
+        disabled:(row)=> {
+          return row.status != 'active';
+        },
+      },
+      {
+        width:70,
+        key:"ks",
+        name:"开始",
+        play:this.offlineSwitch,
+        disabled:(row)=> {
+          return row.status == 'active' || row.status == 'complete';
+        },
       }
     ];
     let listButton = [
@@ -1453,8 +1471,8 @@ export default {
         console.log(error);
       });
     },
+    //删除离线下载任务
     delOffline:function (item) {
-      console.log(item);
       let self = this;
       this.showDialog("warning",'是否删除下载任务:' + item.fileName + '!',function (){
         self.isOverlay = true;
@@ -1492,6 +1510,11 @@ export default {
         }
       });
     },
+    //离线下载任务开始暂停
+    offlineSwitch:function (item){
+      console.log(item);
+    },
+    //离线下载列表
     onOfflineLoad: function () {
       this.isOverlay = true;
       let self = this;

@@ -36,4 +36,20 @@ public interface IOfflineDownloadService {
      */
     ResponseHeadDTO remove(Long spaceId,String gid);
 
+    /**
+     * 暂停下载任务
+     * @param spaceId
+     * @param gid
+     * @return
+     */
+    ResponseHeadDTO pause(Long spaceId,String gid);
+
+    /**
+     * 取消暂停下载任务
+     * @param spaceId
+     * @param gid
+     * @return
+     */
+    ResponseHeadDTO unpause(Long spaceId,String gid);
+
 }

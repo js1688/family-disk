@@ -21,6 +21,29 @@ public class Aria2cSimpleImpl implements IAria2c {
     @Autowired
     private Aria2cJsonRpcConfig jsonRpcHttpClient;
 
+
+    @Override
+    public String pause(String gid) {
+        try {
+            String retGid = jsonRpcHttpClient.invoke("aria2.pause", rpcParam(jsonRpcHttpClient.getToken(),gid), String.class);
+            return retGid;
+        }catch (Throwable e){
+            log.error("aria2cSimple 暂停下载任务异常",e);
+        }
+        return null;
+    }
+
+    @Override
+    public String unpause(String gid) {
+        try {
+            String retGid = jsonRpcHttpClient.invoke("aria2.unpause", rpcParam(jsonRpcHttpClient.getToken(),gid), String.class);
+            return retGid;
+        }catch (Throwable e){
+            log.error("aria2cSimple 取消暂停下载任务异常",e);
+        }
+        return null;
+    }
+
     @Override
     public String addUri(String uri){
         try {

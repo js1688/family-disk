@@ -80,4 +80,34 @@ public class DownloadController {
         ResponseHeadDTO dto = offlineDownloadService.remove(useSpaceId,param.getGid());
         return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
     }
+
+    @ApiOperation(value = "取消暂停任务")
+    @PostMapping("/unpause")
+    public ResponseHeadVO unpause(@RequestBody AddParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有添加权限");
+        }
+        Assert.isTrue(StringUtils.hasLength(param.getGid()),"任务ID不能为空");
+        ResponseHeadDTO dto = offlineDownloadService.unpause(useSpaceId,param.getGid());
+        return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
+    }
+
+    @ApiOperation(value = "暂停任务")
+    @PostMapping("/pause")
+    public ResponseHeadVO pause(@RequestBody AddParamVO param){
+        Long useSpaceId = (Long)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ID);
+        UserSpaceRoleENUM useSpacerRole = (UserSpaceRoleENUM)autowiredRequest.getAttribute(HttpConstantConfig.USE_SPACE_ROLE);
+        Assert.notNull(useSpaceId,"请先切换到空间");
+        Assert.notNull(useSpacerRole,"错误的请求:正在使用的空间权限不能为空");
+        if(useSpacerRole != UserSpaceRoleENUM.WRITE){
+            throw new SecurityException("用户对该空间没有添加权限");
+        }
+        Assert.isTrue(StringUtils.hasLength(param.getGid()),"任务ID不能为空");
+        ResponseHeadDTO dto = offlineDownloadService.pause(useSpaceId,param.getGid());
+        return new ResponseHeadVO<>(dto.isResult(),dto.getData(),dto.getMessage());
+    }
 }

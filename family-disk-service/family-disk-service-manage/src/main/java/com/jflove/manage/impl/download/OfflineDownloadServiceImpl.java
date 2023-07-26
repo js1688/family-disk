@@ -41,6 +41,34 @@ public class OfflineDownloadServiceImpl implements IOfflineDownloadService {
     private ApplicationContext context;
 
     @Override
+    public ResponseHeadDTO pause(Long spaceId, String gid) {
+        OdRecordPO gidPo = odRecordMapper.selectOne(new LambdaQueryWrapper<OdRecordPO>()
+                .eq(OdRecordPO::getSpaceId,spaceId)
+                .eq(OdRecordPO::getGid,gid)
+        );
+        if(gidPo == null){
+            return new ResponseHeadDTO(false, "任务id不存在");
+        }
+        IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(gidPo.getUriType()).getCode(), IAria2c.class);
+        String result = aria2c.pause(gid);
+        return new ResponseHeadDTO(true,result,"暂停任务成功");
+    }
+
+    @Override
+    public ResponseHeadDTO unpause(Long spaceId, String gid) {
+        OdRecordPO gidPo = odRecordMapper.selectOne(new LambdaQueryWrapper<OdRecordPO>()
+                .eq(OdRecordPO::getSpaceId,spaceId)
+                .eq(OdRecordPO::getGid,gid)
+        );
+        if(gidPo == null){
+            return new ResponseHeadDTO(false, "任务id不存在");
+        }
+        IAria2c aria2c = context.getBean(UriTypeENUM.valueOf(gidPo.getUriType()).getCode(), IAria2c.class);
+        String result = aria2c.unpause(gid);
+        return new ResponseHeadDTO(true,result,"取消暂停成功");
+    }
+
+    @Override
     public ResponseHeadDTO remove(Long spaceId, String gid) {
         OdRecordPO gidPo = odRecordMapper.selectOne(new LambdaQueryWrapper<OdRecordPO>()
                 .eq(OdRecordPO::getSpaceId,spaceId)
