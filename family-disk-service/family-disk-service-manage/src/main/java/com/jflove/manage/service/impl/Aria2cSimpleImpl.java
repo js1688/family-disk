@@ -60,7 +60,12 @@ public class Aria2cSimpleImpl implements IAria2c {
     @Override
     public String remove(String gid) {
         try {
-            String retGid = jsonRpcHttpClient.invoke("aria2.remove", rpcParam(jsonRpcHttpClient.getToken(),gid), String.class);
+            String retGid = null;
+            try {
+                retGid = jsonRpcHttpClient.invoke("aria2.remove", rpcParam(jsonRpcHttpClient.getToken(), gid), String.class);
+            }catch (Throwable e){
+                log.error("调用aria2接口异常",e);
+            }
             //删掉文件
             Map dwMap = tellStatus(gid);
             List dwInfo = (List) dwMap.get("files");
