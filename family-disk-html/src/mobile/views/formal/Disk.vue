@@ -185,6 +185,76 @@
     </div>
   </van-action-sheet>
 
+  <van-action-sheet v-model:show="showOfflineList" title="离线下载">
+    <div>
+      <van-form @submit="addOffline">
+        <van-cell-group inset>
+          <van-field
+              required
+              v-model="offlineParam.uri"
+              rows="5"
+              label="地址:"
+              type="textarea"
+              :rules="[{ required: true, message: '请输入下载地址' }]"
+              placeholder="请输入下载地址"
+          />
+          <van-field label="地址类型:" required readonly
+                     v-model="offlineParam.uriTypeName"
+                     placeholder="点击选择地址类型"
+                     :rules="[{ required: true, message: '请选择地址类型' }]"
+                     @click="showUriType = true"
+          />
+          <van-field label="存放目录:" required readonly
+                     v-model="offlineParam.targetName"
+                     placeholder="点击选择目录"
+                     :rules="[{ required: true, message: '请选择存放目录' }]"
+                     @click="showOfflineTarget = true"
+          />
+          <van-picker
+              title="地址类型"
+              :columns="[{text:'简单(HTTP/FTP/SFTP/BitTorrent)',value:'aria2cSimple'}]"
+              @confirm="(v)=>{
+                offlineParam.uriTypeName = v.selectedOptions[0].text;
+                offlineParam.uriType = v.selectedOptions[0].value;
+                showUriType = false;
+                return false;
+              }"
+              v-if="showUriType"
+              @cancel="showUriType = false"
+          />
+          <van-picker
+              title="存放目录"
+              :columns="targetSelectd"
+              @confirm="(v)=>{
+                offlineParam.targetName = v.selectedOptions[0].text;
+                offlineParam.targetId = v.selectedOptions[0].value;
+                showOfflineTarget = false;
+                return false;
+              }"
+              v-if="showOfflineTarget"
+              @cancel="showOfflineTarget = false"
+          />
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" native-type="submit">
+            提交
+          </van-button>
+        </div>
+      </van-form>
+
+      <div style="margin: 16px;">
+        <van-cell v-for="value in offlineData" :title="value.fileName.length > 10 ? value.fileName.substring(0,10) : value.fileName">
+          <div style="padding-top: 10px;">
+            <van-tag plain type="primary">进度:{{value.progress}},状态:{{value.statusName}}</van-tag>
+          </div>
+          <van-button v-if="value.status != 'removed'" style="margin-top: 10px;" @click="delOffline(value)" type="danger" size="mini">删除</van-button>
+          <van-button v-if="value.status == 'active'" style="margin-top: 10px;" @click="offlineSwitch(value)" type="default" size="mini">暂停</van-button>
+          <van-button v-if="value.status == 'paused' || value.status == 'waiting' || value.status == 'error'" style="margin-top: 10px;" @click="offlineSwitch(value)" type="default" size="mini">开始</van-button>
+        </van-cell>
+      </div>
+    </div>
+  </van-action-sheet>
+
   <van-calendar v-model:show="showShareDate" :show-confirm="false" @confirm="onConfirmShare" :max-date="maxDate"/>
 
   <van-dialog
@@ -216,7 +286,7 @@ import {
   Progress,
   showImagePreview,
   NumberKeyboard,
-  Dialog, Calendar
+  Dialog, Calendar,Picker
 } from 'vant';
 import { Overlay,Loading,Collapse,CollapseItem,ImagePreview} from 'vant';
 import {createApp, ref, shallowRef} from "vue";
@@ -260,14 +330,16 @@ export default {
     [ImagePreview.name]:ImagePreview,
     [Progress.name]: Progress,
     [NumberKeyboard.name]:NumberKeyboard,
-    [Dialog.name]:Dialog
+    [Dialog.name]:Dialog,
+    [Picker.name]:Picker
   },
   setup() {
     let roleWrite = localStorage.getItem(key().useSpaceRole) != 'WRITE';
     const addActions = [
       { text: '新建目录', icon: 'wap-nav',name:'addDirectory'},
-      { text: '文件上传', icon: 'upgrade',name:'addLargeFile'},
-      { text: '下载列表', icon: 'wap-nav',name:'downloadList'}
+      { text: '文件上传', icon: 'arrow-up',name:'addLargeFile'},
+      { text: '离线下载', icon: 'down',name:'offlineList'},
+      { text: '下载列表', icon: 'arrow-down',name:'downloadList'}
     ];
     //如果没有写入权限就删掉文件上传目录
     if(roleWrite){
@@ -297,6 +369,8 @@ export default {
       finished:false,
       moveLoading:false,
       moveFinished:false,
+      showOfflineTarget:false,
+      showUriType:false,
       movePid:0,
       moveId:0,
       moveList:[],
@@ -308,12 +382,16 @@ export default {
       showUpdateName:false,
       showLargeUpload:false,
       showDownloadList:false,
+      showOfflineList:false,
       openPath:[
           {name:'目录',id:0}
       ],
       showPreviewVideo:false,
       videoUrl:'',
       largeFileUploadList:[],
+      offlineParam:{uriType:'aria2cSimple',uri:null,targetId:0,targetName:'根目录',uriTypeName:'简单(HTTP/FTP/SFTP/BitTorrent)'},
+      offlineData:[],
+      targetSelectd:[]
     }
   },
   created() {
@@ -343,9 +421,104 @@ export default {
           }
         }
       }, 500);
+      setInterval(function (){
+        //更新离线下载进度
+        self.onOfflineLoad();
+      },2000);
+
     }
   },
   methods:{
+    //删除离线下载任务
+    delOffline:function (item) {
+      let self = this;
+      showConfirmDialog({
+        title: '删除',
+        message:'是否删除下载任务:' + item.fileName + '!'
+      })
+          .then(() => {
+            self.isOverlay = true;
+            axios.post('/download/remove', {
+              gid: item.gid
+            }).then(function (response) {
+              if(response.data.result){
+                self.onOfflineLoad();
+              }
+              showToast(response.data.message);
+              self.isOverlay = false;
+            }).catch(function (error) {
+              self.isOverlay = false;
+              console.log(error);
+            });
+          }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //离线下载任务开始暂停
+    offlineSwitch:function (item){
+      let self = this;
+      self.isOverlay = true;
+      if(item.status == 'paused' || item.status == 'waiting' || item.status == 'error'){
+        axios.post('/download/unpause', {
+          gid: item.gid
+        }).then(function (response) {
+          if(response.data.result){
+            self.onOfflineLoad();
+          }
+          showToast(response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }else{
+        axios.post('/download/pause', {
+          gid: item.gid
+        }).then(function (response) {
+          if(response.data.result){
+            self.onOfflineLoad();
+          }
+          showToast(response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }
+    },
+    //离线下载
+    addOffline:function () {
+      let self = this;
+      self.isOverlay = true;
+      axios.post('/download/add', self.offlineParam).then(function (response) {
+        if(response.data.result){
+          self.offlineParam = {uriType:'aria2cSimple',uri:null,targetId:0,targetName:'根目录',uriTypeName:'简单(HTTP/FTP/SFTP/BitTorrent)'};
+          self.showAddOffline = false;
+          self.onOfflineLoad();
+        }
+        showToast(response.data.message);
+        self.isOverlay = false;
+      }).catch(function (error) {
+        self.isOverlay = false;
+        console.log(error);
+      });
+    },
+    //离线下载列表
+    onOfflineLoad: function () {
+      let self = this;
+      axios.post('/download/getFiles', {
+        fileName: ''
+      }).then(function (response) {
+        if(response.data.result){
+          self.offlineData = response.data.datas;
+        }else{
+          showToast(response.data.message);
+        }
+      }).catch(function (error) {
+        console.log(error);
+      });
+    },
     //取消上传
     stopFileUpload:function (md5) {
       StopFileUpload(md5).then(function (sf){
@@ -714,6 +887,33 @@ export default {
         case 'addLargeFile':
           this.showLargeUpload = true;
           break;
+        case 'offlineList':
+          let self = this;
+          //获取一级目录,可设置的目的地目录的列表
+          axios.post('/netdisk/findDirectory', {
+            keyword: '',
+            pid: 0,
+            type:'FOLDER'
+          }).then(function (response) {
+            self.targetSelectd = [
+              {
+                text: '根目录',
+                value: 0
+              }
+            ];
+
+            if(response.data.result){
+              for (let i = 0; i < response.data.datas.length; i++) {
+                self.targetSelectd.push({text: response.data.datas[i].name,value: response.data.datas[i].id});
+              }
+            }
+
+          }).catch(function (error) {
+            console.log(error);
+          });
+          this.showOfflineList = true;
+          break;
+
       }
     },
     jump: function (item){

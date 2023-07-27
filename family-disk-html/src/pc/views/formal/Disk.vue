@@ -1520,18 +1520,33 @@ export default {
     offlineSwitch:function (item){
       let self = this;
       self.isOverlay = true;
-      axios.post('/download/unpause', {
-        gid: item.gid
-      }).then(function (response) {
-        if(response.data.result){
-          self.onOfflineLoad();
-        }
-        self.showToast(response.data.result ? "success" : "error", response.data.message);
-        self.isOverlay = false;
-      }).catch(function (error) {
-        self.isOverlay = false;
-        console.log(error);
-      });
+      if(item.status == 'paused' || item.status == 'waiting' || item.status == 'error'){
+        axios.post('/download/unpause', {
+          gid: item.gid
+        }).then(function (response) {
+          if(response.data.result){
+            self.onOfflineLoad();
+          }
+          self.showToast(response.data.result ? "success" : "error", response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }else{
+        axios.post('/download/pause', {
+          gid: item.gid
+        }).then(function (response) {
+          if(response.data.result){
+            self.onOfflineLoad();
+          }
+          self.showToast(response.data.result ? "success" : "error", response.data.message);
+          self.isOverlay = false;
+        }).catch(function (error) {
+          self.isOverlay = false;
+          console.log(error);
+        });
+      }
     },
     //离线下载列表
     onOfflineLoad: function () {
