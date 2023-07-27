@@ -89,10 +89,7 @@ public class OfflineDownloadService {
                                 DataSize totalLength = DataSize.ofBytes(Files.size(of));
                                 OdRecordPO upPo = jo.toBean(OdRecordPO.class);
                                 //开始转存文件
-                                String type = "";
-                                if (fileName.indexOf(".") != -1) {
-                                    type = fileName.substring(fileName.indexOf("."));
-                                }
+                                String type = fileName.lastIndexOf(".") != -1 ? fileName.substring(fileName.lastIndexOf(".")) : "";
                                 String mediaType = Files.probeContentType(of);
                                 Map<String, Long> sliceInfo = countFileSliceInfo(totalLength.toBytes());
                                 Long sliceNum = sliceInfo.get("sliceNum");//分片数量
