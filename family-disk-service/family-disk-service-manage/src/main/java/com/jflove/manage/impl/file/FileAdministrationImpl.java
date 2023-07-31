@@ -82,7 +82,7 @@ public class FileAdministrationImpl implements IFileAdministration {
                 .eq(FileInfoPO::getSource,source.getCode())
         );
         if(fileInfoPO == null){
-            return new ResponseHeadDTO(0);
+            return new ResponseHeadDTO(0l);
         }
         return new ResponseHeadDTO(fileInfoPO.getSize());
     }
