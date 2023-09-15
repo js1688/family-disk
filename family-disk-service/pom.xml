@@ -28,9 +28,16 @@
         <module>family-disk-service-plugins</module>
         <module>family-disk-service-manage</module>
         <module>family-disk-service-scheduling</module>
+        <module>family-disk-service-webdav</module>
     </modules>
     <dependencyManagement>
         <dependencies>
+            <!-- webdav集成包 -->
+            <dependency>
+                <groupId>io.milton</groupId>
+                <artifactId>milton-server-ce</artifactId>
+                <version>3.1.1.488</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>

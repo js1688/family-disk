@@ -114,7 +114,7 @@ public class GetAvailableIp extends WebSocketClient {
 
 
         List<File> a = new ArrayList<>();
-        loadFile(Path.of("/Users/tanjun/Downloads/rus_Surfshark_Config"),a);
+        loadFile(Path.of("/Users/tanjun/Downloads/Surfshark_Config"),a);
         List<Map<String,String>> effective = new ArrayList<>();
         a.forEach(v->{
             try {
