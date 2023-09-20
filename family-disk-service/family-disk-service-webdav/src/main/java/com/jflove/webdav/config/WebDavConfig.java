@@ -2,6 +2,7 @@ package com.jflove.webdav.config;
 
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.ResourceFactory;
+import io.milton.http.fs.SimpleSecurityManager;
 import io.milton.servlet.SpringMiltonFilter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ public class WebDavConfig {
     public HttpManagerBuilder httpManagerBuilder(@Autowired @Qualifier("MyResourceFactory") ResourceFactory resourceFactory){
         HttpManagerBuilder builder = new HttpManagerBuilder();
         builder.setResourceFactory(resourceFactory);
+        builder.setSecurityManager(new SimpleSecurityManager());//todo 没用?
         return builder;
     }
 }

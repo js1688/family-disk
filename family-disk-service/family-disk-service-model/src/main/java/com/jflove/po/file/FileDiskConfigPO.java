@@ -30,7 +30,7 @@ public class FileDiskConfigPO implements Serializable{
   @TableId(type = IdType.AUTO)
   private long id;
   /**
-   * 磁盘类型(LOCAL,HDFS,NAS)
+   * 磁盘类型(LOCAL,NAS)
    */
   private String type;
   /**
@@ -41,13 +41,6 @@ public class FileDiskConfigPO implements Serializable{
    * 磁盘地址
    */
   private String path;
-
-  /**
-   * 如果是本地磁盘类型
-   * 可以配置备份路径
-   * 建议是挂载在计算机的另一块磁盘
-   */
-  private String bakPath;
 
   /**
    * 创建时间
