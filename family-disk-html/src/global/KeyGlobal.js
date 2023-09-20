@@ -10,7 +10,7 @@ let data = {
     // 公网
     baseURL:'https://api.jflove.cn/',
     // 局域网
-    lanURL:'https://192.168.3.20/'
+    lanURL:'https://192.168.1.2/'
 };
 
 export function keyPut(k,v){
