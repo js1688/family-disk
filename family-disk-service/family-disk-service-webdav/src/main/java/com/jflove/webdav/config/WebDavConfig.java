@@ -2,7 +2,6 @@ package com.jflove.webdav.config;
 
 import io.milton.config.HttpManagerBuilder;
 import io.milton.http.ResourceFactory;
-import io.milton.http.fs.SimpleSecurityManager;
 import io.milton.servlet.SpringMiltonFilter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +19,12 @@ import org.springframework.context.annotation.Configuration;
 @Log4j2
 public class WebDavConfig {
 
-    @Bean("miltonFilter")
-    public FilterRegistrationBean webDavFilterRegistration() {
-        final FilterRegistrationBean registration = new FilterRegistrationBean();
+    @Bean("springMiltonFilter")
+    public FilterRegistrationBean springMiltonFilter() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
         registration.setFilter(new SpringMiltonFilter());
         registration.addUrlPatterns("/*");
+        registration.setOrder(2);
         return registration;
     }
 
@@ -32,7 +32,7 @@ public class WebDavConfig {
     public HttpManagerBuilder httpManagerBuilder(@Autowired @Qualifier("MyResourceFactory") ResourceFactory resourceFactory){
         HttpManagerBuilder builder = new HttpManagerBuilder();
         builder.setResourceFactory(resourceFactory);
-        builder.setSecurityManager(new SimpleSecurityManager());//todo 没用?
+        builder.setEnableOptionsAuth(true);//开启验证,内置了多种收集认证的处理器,会自己识别不同的认证方式,其中就包含了账号与密码验证方式 BasicAuth
         return builder;
     }
 }

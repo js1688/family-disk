@@ -2,6 +2,11 @@ package com.jflove.webdav.resources;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import com.jflove.ResponseHeadDTO;
+import com.jflove.user.dto.UserInfoDTO;
+import com.jflove.user.dto.UserSpaceRelDTO;
+import com.jflove.user.em.UserRelStateENUM;
+import com.jflove.webdav.factory.ManageFactory;
 import com.jflove.webdav.vo.BaseVO;
 import io.milton.http.Auth;
 import io.milton.http.FileItem;
@@ -13,6 +18,8 @@ import io.milton.http.exceptions.NotAuthorizedException;
 import io.milton.http.exceptions.NotFoundException;
 import io.milton.resource.CollectionResource;
 import io.milton.resource.Resource;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
@@ -21,6 +28,7 @@ import java.io.OutputStream;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author: tanjun
@@ -28,15 +36,31 @@ import java.util.Map;
  * @desc: 基础的资源实现,避免实现接口重复写代码,子类可以覆盖实现真实的方法
  */
 @Log4j2
-public class BaseResource {
+@Getter
+@Setter
+public abstract class BaseResource {
 
     private BaseVO base;
 
-    public BaseResource(BaseVO base) {
-        this.base = base;
+    private ManageFactory manageFactory;
+
+    protected UserInfoDTO user;//只要验证通过就会存储用户信息
+
+    private String url;//资源url
+
+
+    public BaseResource(ManageFactory manageFactory,String url) {
+        this.manageFactory = manageFactory;
+        this.url = url;
     }
 
-    
+    /**
+     * 在验证身份后初始化资源属性对象
+     * @return
+     */
+    public abstract BaseVO initBase();
+
+
     public Long getMaxAgeSeconds(Auth auth) {
         return 60l;
     }
@@ -58,7 +82,7 @@ public class BaseResource {
 
     
     public String getUniqueId() {
-        return base.getId();
+        return String.valueOf(base.getId());
     }
 
     
@@ -68,12 +92,27 @@ public class BaseResource {
 
     
     public Object authenticate(String s, String s1) {
-        return null;
+        ResponseHeadDTO<UserInfoDTO> userInfo = manageFactory.getUserInfoByEmail(s);
+        if(!userInfo.isResult() || !userInfo.getData().getPassword().equals(s1)){
+            return null;
+        }
+        Optional<UserSpaceRelDTO> spaceRel = userInfo.getData().getSpaces().stream().filter(e->e.getState() == UserRelStateENUM.USE).findFirst();
+        if(!spaceRel.isPresent()){
+            return null;
+        }
+        long spaceId = spaceRel.get().getSpaceId();
+        log.debug("用户:{},身份验证成功,正在使用的空间id:{}",s,spaceId);
+        user = userInfo.getData();
+        base = initBase();
+        if(base == null){
+            return null;
+        }
+        return spaceRel.get().getSpaceId();//返回空间编码
     }
 
     
     public boolean authorise(Request request, Request.Method method, Auth auth) {
-        return true;
+        return auth != null && auth.getTag() != null && (long)auth.getTag() != 0;//空间id不等于空
     }
 
     

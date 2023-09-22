@@ -29,10 +29,10 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-security</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>net.sf.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -45,6 +45,10 @@
         <dependency>
             <groupId>io.milton</groupId>
             <artifactId>milton-server-ce</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>family-disk-service</groupId>
+            <artifactId>family-disk-service-api</artifactId>
         </dependency>
     </dependencies>
 

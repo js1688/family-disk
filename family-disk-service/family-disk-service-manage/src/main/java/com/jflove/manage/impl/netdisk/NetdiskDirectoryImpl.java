@@ -37,6 +37,43 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @Autowired
     private IFileAdministration fileAdministration;
 
+
+
+    @Override
+    public ResponseHeadDTO<NetdiskDirectoryDTO> findLastDirectoryByUrl(Long spaceId, String url) {
+        String [] cj = url.split("/");
+        if(cj == null || "/".equals(url)){
+            return new ResponseHeadDTO<>(false,"按层级找不到最后一个目录的信息");
+        }
+        NetdiskDirectoryPO ls = new NetdiskDirectoryPO();
+        ls.setId(0);
+        for (String name :cj) {
+            if(!StringUtils.hasLength(name)){
+                continue;
+            }
+            ls = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                    .eq(NetdiskDirectoryPO::getPid,ls.getId())
+                    .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
+                    .eq(NetdiskDirectoryPO::getName,name)
+            );
+            if(ls == null){
+                return new ResponseHeadDTO<>(false,"按层级找不到最后一个目录的信息");
+            }
+        }
+        NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
+        BeanUtils.copyProperties(ls,dto);
+        dto.setType(NetdiskDirectoryENUM.valueOf(ls.getType()));
+        if(dto.getType() == NetdiskDirectoryENUM.FILE){
+            ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(dto.getFileMd5(),spaceId,FileSourceENUM.CLOUDDISK);
+            dto.setSizeB(sizeRet.getData());
+            long mb = DataSize.ofBytes(sizeRet.getData()).toMegabytes();
+            dto.setSize(String.valueOf(mb == 0l ? 1 : mb));
+        }else{
+            dto.setSize("-");
+        }
+        return new ResponseHeadDTO<>(dto);
+    }
+
     @Override
     public ResponseHeadDTO<NetdiskDirectoryDTO> findDirectoryTree(Long spaceId, NetdiskDirectoryENUM type) {
         List<NetdiskDirectoryDTO> listDto = getNetdiskDirectoryDTOS(spaceId, 0l, null, type);
@@ -104,6 +141,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
             dto.setType(NetdiskDirectoryENUM.valueOf(v.getType()));
             if(dto.getType() == NetdiskDirectoryENUM.FILE){
                 ResponseHeadDTO<Long> sizeRet = fileAdministration.getFileSize(dto.getFileMd5(),spaceId,FileSourceENUM.CLOUDDISK);
+                dto.setSizeB(sizeRet.getData());
                 long mb = DataSize.ofBytes(sizeRet.getData()).toMegabytes();
                 dto.setSize(String.valueOf(mb == 0l ? 1 : mb));
             }else{

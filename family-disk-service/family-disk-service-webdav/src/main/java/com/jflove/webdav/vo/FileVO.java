@@ -18,12 +18,12 @@ public class FileVO extends BaseVO implements Serializable {
     private static final long serialVersionUID = -3767399183091667164L;
 
     /**
-     * 磁盘路径
+     * 文件唯一标识
      */
-    private String diskPath;
+    private String md5;
 
-    public FileVO(String name, String id, String contentType, long contentLength, String diskPath) {
-        super(name, id, contentType, contentLength);
-        this.diskPath = diskPath;
+    public FileVO(String name,long id, String contentType, long contentLength, String md5) {
+        super(name, id,contentType, contentLength);
+        this.md5 = md5;
     }
 }

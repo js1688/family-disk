@@ -35,6 +35,12 @@ public class NetdiskDirectoryDTO implements Serializable{
    * 文件占用大小(MB)
    */
   private String size;
+
+  /**
+   * 文件大小(b)
+   */
+  private long sizeB;
+
   /**
    * 文件md5值
    */

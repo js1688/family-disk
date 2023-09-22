@@ -33,6 +33,15 @@ public interface INetdiskDirectory {
     ResponseHeadDTO<NetdiskDirectoryDTO> findDirectory(Long spaceId, Long pid, String keyword, NetdiskDirectoryENUM type);
 
     /**
+     * 按路径查找最后一个目录的信息
+     * @param spaceId
+     * @param url
+     * @return
+     */
+    ResponseHeadDTO<NetdiskDirectoryDTO> findLastDirectoryByUrl(Long spaceId,String url);
+
+
+    /**
      * 查询目录完整树结构
      * @param spaceId
      * @param type

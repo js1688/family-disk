@@ -25,7 +25,7 @@ public class BaseVO implements Serializable {
     /**
      * 数据ID
      */
-    private String id;
+    private long id;
 
     /**
      * 类型
@@ -37,12 +37,12 @@ public class BaseVO implements Serializable {
      */
     private long contentLength;
 
-    public BaseVO(String name, String id) {
+    public BaseVO(String name,long id) {
         this.name = name;
         this.id = id;
     }
 
-    public BaseVO(String name, String id, String contentType, long contentLength) {
+    public BaseVO(String name ,long id,String contentType, long contentLength) {
         this.name = name;
         this.id = id;
         this.contentType = contentType;
