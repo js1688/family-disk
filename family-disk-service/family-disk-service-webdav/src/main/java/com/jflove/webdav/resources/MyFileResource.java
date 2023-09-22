@@ -8,14 +8,18 @@ import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.webdav.factory.ManageFactory;
 import com.jflove.webdav.vo.BaseVO;
 import com.jflove.webdav.vo.FileVO;
+import io.milton.http.Auth;
 import io.milton.http.Range;
 import io.milton.http.exceptions.BadRequestException;
+import io.milton.http.exceptions.ConflictException;
 import io.milton.http.exceptions.NotAuthorizedException;
 import io.milton.http.exceptions.NotFoundException;
 import io.milton.resource.FileResource;
+import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +55,7 @@ public class MyFileResource extends BaseResource implements FileResource {
             return null;
         }
         NetdiskDirectoryDTO nd = urlLast.getData();
-        this.file = new FileVO(nd.getName(),nd.getId(),nd.getMediaType(),nd.getSizeB(),nd.getFileMd5());
+        this.file = new FileVO(nd.getName(),nd.getId(),nd.getCreateTime(),nd.getUpdateTime(),nd.getMediaType(),nd.getSizeB(),nd.getFileMd5());
         return this.file;
     }
 
@@ -80,5 +84,17 @@ public class MyFileResource extends BaseResource implements FileResource {
                 outputStream.write(result.getData().getStream());
             }
         }
+    }
+
+
+    @Override
+    public Long getMaxAgeSeconds(Auth auth) {
+        return 86400l;//24h
+    }
+
+
+    @Override
+    public Resource createNew(String s, InputStream inputStream, Long aLong, String s1) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
+        return super.createNew(s, inputStream, aLong, s1);
     }
 }

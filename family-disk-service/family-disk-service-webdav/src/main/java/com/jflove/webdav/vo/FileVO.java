@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @author: tanjun
@@ -22,8 +23,8 @@ public class FileVO extends BaseVO implements Serializable {
      */
     private String md5;
 
-    public FileVO(String name,long id, String contentType, long contentLength, String md5) {
-        super(name, id,contentType, contentLength);
+    public FileVO(String name, long id, Date createDate, Date modifiedDate, String contentType, long contentLength, String md5) {
+        super(name, id,createDate,modifiedDate,contentType, contentLength);
         this.md5 = md5;
     }
 }

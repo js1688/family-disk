@@ -8,12 +8,16 @@ import com.jflove.webdav.factory.ManageFactory;
 import com.jflove.webdav.vo.BaseVO;
 import com.jflove.webdav.vo.FileVO;
 import com.jflove.webdav.vo.FolderVO;
+import io.milton.http.Auth;
 import io.milton.http.exceptions.BadRequestException;
+import io.milton.http.exceptions.ConflictException;
 import io.milton.http.exceptions.NotAuthorizedException;
 import io.milton.resource.FolderResource;
 import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,9 +58,9 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         }
         NetdiskDirectoryDTO v = urlLast.getData();
         if(NetdiskDirectoryENUM.FOLDER == v.getType()){
-            this.folder = new FolderVO(v.getName(),v.getId());
+            this.folder = new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime());
         }else if(NetdiskDirectoryENUM.FILE == v.getType()){
-            this.folder = new FolderVO(v.getName(),v.getId(),v.getMediaType(),v.getSizeB());
+            this.folder = new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB());
         }
         return this.folder;
     }
@@ -71,12 +75,22 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         List<Resource> list = new ArrayList<>(children.getDatas().size());
         children.getDatas().forEach(v->{
             if(NetdiskDirectoryENUM.FOLDER == v.getType()){
-                list.add(new MyFolderResource(new FolderVO(v.getName(),v.getId()),manageFactory));
+                list.add(new MyFolderResource(new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime()),manageFactory));
             }else if(NetdiskDirectoryENUM.FILE == v.getType()){
-                list.add(new MyFileResource(new FileVO(v.getName(),v.getId(),v.getMediaType(),v.getSizeB(),v.getFileMd5()),manageFactory));
+                list.add(new MyFileResource(new FileVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB(),v.getFileMd5()),manageFactory));
             }
         });
         return list;
     }
 
+
+    @Override
+    public Long getMaxAgeSeconds(Auth auth) {
+        return 60l;
+    }
+
+    @Override
+    public Resource createNew(String s, InputStream inputStream, Long aLong, String s1) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
+        return super.createNew(s, inputStream, aLong, s1);
+    }
 }

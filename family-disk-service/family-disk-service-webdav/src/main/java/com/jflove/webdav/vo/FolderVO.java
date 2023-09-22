@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @author: tanjun
@@ -17,11 +18,11 @@ public class FolderVO extends BaseVO implements Serializable {
     @Serial
     private static final long serialVersionUID = -3767399183091667164L;
 
-    public FolderVO(String name,long id) {
-        super(name,id);
+    public FolderVO(String name, long id, Date createDate, Date modifiedDate) {
+        super(name,id,createDate,modifiedDate);
     }
 
-    public FolderVO(String name,long id, String contentType, long contentLength) {
-        super(name, id,contentType, contentLength);
+    public FolderVO(String name,long id,Date createDate, Date modifiedDate, String contentType, long contentLength) {
+        super(name, id,createDate,modifiedDate,contentType, contentLength);
     }
 }

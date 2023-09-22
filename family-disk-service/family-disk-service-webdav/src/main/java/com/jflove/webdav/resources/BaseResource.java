@@ -1,7 +1,5 @@
 package com.jflove.webdav.resources;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
@@ -62,7 +60,7 @@ public abstract class BaseResource {
 
 
     public Long getMaxAgeSeconds(Auth auth) {
-        return 60l;
+        return null;
     }
 
     
@@ -77,7 +75,7 @@ public abstract class BaseResource {
 
     
     public Date getCreateDate() {
-        return DateUtil.parse("2022-09-13 14:17:42", DatePattern.NORM_DATETIME_MINUTE_FORMAT);
+        return base.getCreateDate();
     }
 
     
@@ -122,7 +120,7 @@ public abstract class BaseResource {
 
     
     public Date getModifiedDate() {
-        return DateUtil.parse("2023-08-13 14:17:42", DatePattern.NORM_DATETIME_MINUTE_FORMAT);
+        return base.getModifiedDate();
     }
 
     
@@ -156,7 +154,7 @@ public abstract class BaseResource {
         return null;
     }
 
-    
+
     public void sendContent(OutputStream outputStream, Range range, Map<String, String> map, String s) throws IOException, NotAuthorizedException, BadRequestException, NotFoundException {
 
     }
@@ -171,7 +169,6 @@ public abstract class BaseResource {
 
     }
 
-    
     public Resource createNew(String s, InputStream inputStream, Long aLong, String s1) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
         return null;
     }

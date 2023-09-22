@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @author: tanjun
@@ -37,15 +38,23 @@ public class BaseVO implements Serializable {
      */
     private long contentLength;
 
-    public BaseVO(String name,long id) {
+    private Date createDate;
+
+    private Date modifiedDate;
+
+    public BaseVO(String name,long id,Date createDate,Date modifiedDate) {
         this.name = name;
         this.id = id;
+        this.createDate = createDate;
+        this.modifiedDate = modifiedDate;
     }
 
-    public BaseVO(String name ,long id,String contentType, long contentLength) {
+    public BaseVO(String name ,long id,Date createDate,Date modifiedDate,String contentType, long contentLength) {
         this.name = name;
         this.id = id;
         this.contentType = contentType;
         this.contentLength = contentLength;
+        this.createDate = createDate;
+        this.modifiedDate = modifiedDate;
     }
 }
