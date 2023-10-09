@@ -3,7 +3,6 @@ package com.jflove.webdav.resources;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;
-import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.webdav.factory.ManageFactory;
 import com.jflove.webdav.vo.BaseVO;
 import com.jflove.webdav.vo.FileVO;
@@ -12,12 +11,11 @@ import io.milton.http.Auth;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.ConflictException;
 import io.milton.http.exceptions.NotAuthorizedException;
+import io.milton.resource.CollectionResource;
 import io.milton.resource.FolderResource;
 import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,13 +30,12 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     private FolderVO folder;
     private ManageFactory manageFactory;
 
-
-
-
     public MyFolderResource(String url, ManageFactory manageFactory){
         super(manageFactory,url);
         this.manageFactory = manageFactory;
     }
+
+
 
 
     public MyFolderResource(FolderVO folder,ManageFactory manageFactory) {
@@ -51,8 +48,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     @Override
     public BaseVO initBase() {
         //通过url识别出目录信息
-        long spaceId = super.getUser().getSpaces().stream().filter(e->e.getState() == UserRelStateENUM.USE).findFirst().get().getSpaceId();
-        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(spaceId,super.getUrl());
+        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(super.realm,super.getUrl());
         if(!urlLast.isResult()){
             return null;
         }
@@ -90,7 +86,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     }
 
     @Override
-    public Resource createNew(String s, InputStream inputStream, Long aLong, String s1) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
-        return super.createNew(s, inputStream, aLong, s1);
+    public CollectionResource createCollection(String s) throws NotAuthorizedException, ConflictException, BadRequestException {
+        log.debug("创建:s={}",s);
+        return null;
     }
 }

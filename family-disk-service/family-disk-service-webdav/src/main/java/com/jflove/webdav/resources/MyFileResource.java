@@ -49,8 +49,7 @@ public class MyFileResource extends BaseResource implements FileResource {
     @Override
     public BaseVO initBase() {
         //通过url识别出目录信息
-        long spaceId = super.getUser().getSpaces().stream().filter(e->e.getState() == UserRelStateENUM.USE).findFirst().get().getSpaceId();
-        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(spaceId,super.getUrl());
+        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(realm,super.getUrl());
         if(!urlLast.isResult()){
             return null;
         }

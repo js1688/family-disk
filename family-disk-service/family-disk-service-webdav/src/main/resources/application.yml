@@ -1,3 +1,4 @@
+
 server:
   port: 9999
 logging:
@@ -7,9 +8,11 @@ spring:
     ignored:
       files: #过滤掉的一些系统默认文件
         - .*
+  application:
+    name: family-disk-webdav
 dubbo:
   consumer:
-    timeout: 10000 # 超时时间
+    timeout: 30000 # 超时时间
     retries: 0 # 不重试
   application:
     name: ${spring.application.name}

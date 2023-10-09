@@ -33,7 +33,19 @@ public class MyResourceFactory implements ResourceFactory {
             log.debug("跳过的路径:{}",url);
             return null;
         }
-        if("/".equals(url.substring(url.length()-1,url.length()))){
+
+        if("/".equals(url)){//根目录
+            return new MyFolderResource(url,manageFactory);
+        }
+        //暂时判断路径如果不带后缀,或者最后一位是/就算是文件夹,目前没有好办法判断,在此时拿不到用户身份以及所属空间无法从数据库中判断目录
+        String [] sp = url.split("/");
+        String last = sp[sp.length -1];
+        if("新建的".equals(last)){
+            return null;
+        }
+        if("/".equals(last)){
+            return new MyFolderResource(url,manageFactory);
+        }else if(!last.contains(".")){
             return new MyFolderResource(url,manageFactory);
         }else{
             return new MyFileResource(url,manageFactory);

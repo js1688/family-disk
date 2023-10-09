@@ -19,6 +19,7 @@ import io.milton.resource.Resource;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,6 +45,8 @@ public abstract class BaseResource {
 
     protected UserInfoDTO user;//只要验证通过就会存储用户信息
 
+    protected Long realm;
+
     private String url;//资源url
 
 
@@ -65,26 +68,41 @@ public abstract class BaseResource {
 
     
     public String getContentType(String s) {
+        if(base == null){
+            return null;
+        }
         return base.getContentType();
     }
 
     
     public Long getContentLength() {
+        if(base == null){
+            return null;
+        }
         return base.getContentLength();
     }
 
     
     public Date getCreateDate() {
+        if(base == null){
+            return null;
+        }
         return base.getCreateDate();
     }
 
     
     public String getUniqueId() {
+        if(base == null){
+            return null;
+        }
         return String.valueOf(base.getId());
     }
 
     
     public String getName() {
+        if(base == null){
+            return null;
+        }
         return base.getName();
     }
 
@@ -98,28 +116,34 @@ public abstract class BaseResource {
         if(!spaceRel.isPresent()){
             return null;
         }
-        long spaceId = spaceRel.get().getSpaceId();
-        log.debug("用户:{},身份验证成功,正在使用的空间id:{}",s,spaceId);
+        realm = spaceRel.get().getSpaceId();
+        log.debug("用户:{},身份验证成功,正在使用的空间id:{}",s,realm);
         user = userInfo.getData();
-        base = initBase();
-        if(base == null){
-            return null;
+        if(StringUtils.hasLength(url)) {
+            base = initBase();
         }
-        return spaceRel.get().getSpaceId();//返回空间编码
+        return this;
     }
+
 
     
     public boolean authorise(Request request, Request.Method method, Auth auth) {
-        return auth != null && auth.getTag() != null && (long)auth.getTag() != 0;//空间id不等于空
+        return auth != null && auth.getTag() != null;
     }
 
     
     public String getRealm() {
-        return null;
+        if(realm == null){
+            return null;
+        }
+        return String.valueOf(realm);
     }
 
     
     public Date getModifiedDate() {
+        if(base == null){
+            return null;
+        }
         return base.getModifiedDate();
     }
 

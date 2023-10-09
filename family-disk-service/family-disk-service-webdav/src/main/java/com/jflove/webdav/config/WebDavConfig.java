@@ -32,6 +32,9 @@ public class WebDavConfig {
     public HttpManagerBuilder httpManagerBuilder(@Autowired @Qualifier("MyResourceFactory") ResourceFactory resourceFactory){
         HttpManagerBuilder builder = new HttpManagerBuilder();
         builder.setResourceFactory(resourceFactory);
+        builder.setEnableCookieAuth(false);
+        builder.setEnableDigestAuth(false);
+        builder.setEnableFormAuth(false);
         builder.setEnableOptionsAuth(true);//开启验证,内置了多种收集认证的处理器,会自己识别不同的认证方式,其中就包含了账号与密码验证方式 BasicAuth
         return builder;
     }
