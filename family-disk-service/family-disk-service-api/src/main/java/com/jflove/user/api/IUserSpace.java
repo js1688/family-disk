@@ -94,4 +94,11 @@ public interface IUserSpace {
      * @return
      */
     ResponseHeadDTO setRelRole(long useUserId, long targetUserId, UserSpaceRoleENUM role);
+
+    /**
+     * 根据空间编码查询空间信息
+     * @param code
+     * @return
+     */
+    ResponseHeadDTO<UserSpaceDTO> getSpaceByCode(String code);
 }

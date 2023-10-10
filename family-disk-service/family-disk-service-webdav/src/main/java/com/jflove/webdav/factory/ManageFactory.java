@@ -9,10 +9,13 @@ import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.user.api.IUserInfo;
+import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
+import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.webdav.vo.FolderVO;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.cache.annotation.CacheConfig;
@@ -29,10 +32,13 @@ import java.util.Optional;
 @Component
 @CacheConfig
 @Log4j2
+@Getter
 public class ManageFactory {
 
     @DubboReference
     private IUserInfo userInfo;
+    @DubboReference
+    private IUserSpace userSpace;
 
     @DubboReference
     private INetdiskDirectory netdiskDirectory;
@@ -75,14 +81,12 @@ public class ManageFactory {
      * @param url
      * @return
      */
-    @Cacheable(value = {"def"},key = "#spaceId+#url.concat('getDirectoryByUrl')")
     public ResponseHeadDTO<NetdiskDirectoryDTO> getDirectoryByUrl(long spaceId,String url){
         if("/".equals(url)){
-            NetdiskDirectoryDTO root = new NetdiskDirectoryDTO();
-            root.setName("/");
-            root.setId(0);
-            root.setType(NetdiskDirectoryENUM.FOLDER);
-            return new ResponseHeadDTO<>(root);
+            NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
+            dto.setType(NetdiskDirectoryENUM.FOLDER);
+            dto.setName(url);
+            return new ResponseHeadDTO<>(dto);
         }
         return netdiskDirectory.findLastDirectoryByUrl(spaceId,url);
     }
@@ -98,4 +102,17 @@ public class ManageFactory {
         ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(spaceRel.get().getSpaceId(),folder.getId(),null,null);
         return dto;
     }
+
+    /**
+     * 根据空间编码查询空间信息
+     * @param code
+     * @return
+     */
+    @Cacheable(value = {"def"},key = "#code.concat('getSpaceByCode')")
+    public ResponseHeadDTO<UserSpaceDTO> getSpaceByCode(String code){
+        ResponseHeadDTO<UserSpaceDTO> dto = userSpace.getSpaceByCode(code);
+        return dto;
+    }
+
+
 }

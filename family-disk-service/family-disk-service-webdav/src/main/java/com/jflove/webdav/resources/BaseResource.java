@@ -2,8 +2,9 @@ package com.jflove.webdav.resources;
 
 import com.jflove.ResponseHeadDTO;
 import com.jflove.user.dto.UserInfoDTO;
+import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.dto.UserSpaceRelDTO;
-import com.jflove.user.em.UserRelStateENUM;
+import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.webdav.factory.ManageFactory;
 import com.jflove.webdav.vo.BaseVO;
 import io.milton.http.Auth;
@@ -45,14 +46,17 @@ public abstract class BaseResource {
 
     protected UserInfoDTO user;//只要验证通过就会存储用户信息
 
-    protected Long realm;
+    protected UserSpaceDTO userSpace;//正在使用的空间信息
+
+    protected UserSpaceRoleENUM role;//空间权限
 
     private String url;//资源url
 
 
-    public BaseResource(ManageFactory manageFactory,String url) {
+    public BaseResource(ManageFactory manageFactory,String url,UserSpaceDTO userSpace) {
         this.manageFactory = manageFactory;
         this.url = url;
+        this.userSpace = userSpace;
     }
 
     /**
@@ -108,17 +112,25 @@ public abstract class BaseResource {
 
     
     public Object authenticate(String s, String s1) {
+        if(userSpace == null && "/".equals(url)){
+            return this;
+        }
+        if(userSpace == null){//没有空间信息
+            return null;
+        }
         ResponseHeadDTO<UserInfoDTO> userInfo = manageFactory.getUserInfoByEmail(s);
         if(!userInfo.isResult() || !userInfo.getData().getPassword().equals(s1)){
             return null;
         }
-        Optional<UserSpaceRelDTO> spaceRel = userInfo.getData().getSpaces().stream().filter(e->e.getState() == UserRelStateENUM.USE).findFirst();
+        //检查该用户是否拥有这个空间的权限
+        Optional<UserSpaceRelDTO> spaceRel = userInfo.getData().getSpaces().stream().filter(e->e.getSpaceId() == userSpace.getId()).findFirst();
         if(!spaceRel.isPresent()){
+            //没有这个空间的权限
             return null;
         }
-        realm = spaceRel.get().getSpaceId();
-        log.debug("用户:{},身份验证成功,正在使用的空间id:{}",s,realm);
+        role = spaceRel.get().getRole();
         user = userInfo.getData();
+        log.debug("用户:{},身份验证成功,正在使用的空间id:{},url:{}",s,userSpace.getId(),url);
         if(StringUtils.hasLength(url)) {
             base = initBase();
         }
@@ -133,10 +145,10 @@ public abstract class BaseResource {
 
     
     public String getRealm() {
-        if(realm == null){
+        if(userSpace == null){
             return null;
         }
-        return String.valueOf(realm);
+        return userSpace.getCode();
     }
 
     

@@ -1,5 +1,9 @@
 package com.jflove.webdav.factory;
 
+import com.jflove.ResponseHeadDTO;
+import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
+import com.jflove.netdisk.em.NetdiskDirectoryENUM;
+import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.webdav.config.IgnoreUrlsConfig;
 import com.jflove.webdav.resources.MyFileResource;
 import com.jflove.webdav.resources.MyFolderResource;
@@ -28,27 +32,36 @@ public class MyResourceFactory implements ResourceFactory {
 
     @Override
     public Resource getResource(String host, String url) throws NotAuthorizedException, BadRequestException {
-        log.debug("获取资源:host:{},s1:{}",host,url);
+        log.debug("访问资源:host:{},s1:{}",host,url);
         if(ignoreUrlsConfig.isSkip(url)){//需要跳过的资源路径
             log.debug("跳过的路径:{}",url);
             return null;
         }
-
         if("/".equals(url)){//根目录
-            return new MyFolderResource(url,manageFactory);
+            return new MyFolderResource(url,manageFactory,null);
         }
-        //暂时判断路径如果不带后缀,或者最后一位是/就算是文件夹,目前没有好办法判断,在此时拿不到用户身份以及所属空间无法从数据库中判断目录
-        String [] sp = url.split("/");
-        String last = sp[sp.length -1];
-        if("新建的".equals(last)){
-            return null;
+        //url的第一位必须是空间编码
+        String [] sp = url.substring(1).split("/");
+        String first = sp[0];//第一个位置一定是空间编码
+        sp[0] = "/";
+        url = String.join("/",sp);//去掉空间编码后的url
+        url = url.replaceAll("//","/");
+        log.debug("去掉空间编码后的资源:{}",url);
+        //在查询空间编码信息,和判断空间下的目录是否存在时,不涉及到授权验证问题,主要的目的是用于判断资源是否存在,因为在访问资源时会验证授权
+        //通过空间编码得到空间ID
+        ResponseHeadDTO<UserSpaceDTO> userSpace = manageFactory.getSpaceByCode(first);
+        UserSpaceDTO dto = userSpace.getData();
+        if(dto != null){//空间编码存在,判断本次要访问的目录是否存在
+            ResponseHeadDTO<NetdiskDirectoryDTO> nd = manageFactory.getDirectoryByUrl(dto.getId(),url);
+            if(!nd.isResult()){//不存在这个目录
+                return null;
+            }
+            if (nd.getData().getType() == NetdiskDirectoryENUM.FOLDER){
+                return new MyFolderResource(url,manageFactory,dto);
+            }else if(nd.getData().getType() == NetdiskDirectoryENUM.FILE){
+                return new MyFileResource(url,manageFactory,dto);
+            }
         }
-        if("/".equals(last)){
-            return new MyFolderResource(url,manageFactory);
-        }else if(!last.contains(".")){
-            return new MyFolderResource(url,manageFactory);
-        }else{
-            return new MyFileResource(url,manageFactory);
-        }
+        return new MyFolderResource(url,manageFactory,null);
     }
 }

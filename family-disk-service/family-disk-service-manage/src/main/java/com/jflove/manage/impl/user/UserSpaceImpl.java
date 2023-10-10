@@ -329,4 +329,17 @@ public class UserSpaceImpl implements IUserSpace {
         userSpaceRelMapper.updateById(usrp);
         return new ResponseHeadDTO(true,"设置权限成功");
     }
+
+    @Override
+    public ResponseHeadDTO<UserSpaceDTO> getSpaceByCode(String code) {
+        UserSpacePO po = userSpaceMapper.selectOne(new LambdaQueryWrapper<UserSpacePO>()
+                .eq(UserSpacePO::getCode,code)
+        );
+        if(po == null){
+            return new ResponseHeadDTO<>(false,"空间编码不存在");
+        }
+        UserSpaceDTO dto = new UserSpaceDTO();
+        BeanUtils.copyProperties(po,dto);
+        return new ResponseHeadDTO<>(dto);
+    }
 }
