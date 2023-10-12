@@ -13,6 +13,8 @@
     - family-disk-service-model 数据库模型,mysql po类,mapper类
     - family-disk-service-api rpc接口标准,dubbo接口定义,以及dto类定义
     - family-disk-service-scheduling 定时任务
+    - family-disk-service-webdav 网盘挂载服务
+    
     
     - family-disk-service-plugins 插件模块,不属于服务内,暂时没用
 ```
@@ -81,7 +83,46 @@ rm -rf logs;
 
 ## nginx配置例子
 ```
-#api转发
+    #webdav转发
+    server {
+        listen       80;
+        server_name  webdav.jflove.cn;
+        rewrite ^(.*)$  https://webdav.jflove.cn$1 permanent;
+    }
+    server {
+        root         /usr/share/nginx/html;
+        # Load configuration files for the default server block.
+        include /etc/nginx/default.d/*.conf;
+
+        listen 443;
+        server_name webdav.jflove.cn;
+        # 该配置默认情况为off,允许自定义请求头部的key,带下划线,默认会忽略掉
+        underscores_in_headers on;
+        ssl on;
+        ssl_certificate /root/ssl/webdav.jflove.cn_nginx/webdav.jflove.cn_bundle.crt;
+        ssl_certificate_key /root/ssl/webdav.jflove.cn_nginx/webdav.jflove.cn.key;
+        ssl_session_timeout 5m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
+        ssl_prefer_server_ciphers on;
+
+        location / {
+            #请求大小
+            client_max_body_size 32M;
+            # 重写请求头部host字段
+            proxy_set_header Host $host;
+            # 重写来源IP
+                proxy_set_header X-Real_IP $remote_addr;
+            # 重写http请求来源
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_pass http://127.0.0.1:9999;
+        }
+    }
+
+    #api转发
     server {
         listen       80;
         server_name  api.jflove.cn;
