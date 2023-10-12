@@ -2,11 +2,9 @@ package com.jflove.webdav.resources;
 
 import cn.hutool.json.JSONUtil;
 import com.jflove.ResponseHeadDTO;
-import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.webdav.factory.ManageFactory;
-import com.jflove.webdav.vo.BaseVO;
 import com.jflove.webdav.vo.FileVO;
 import io.milton.http.Auth;
 import io.milton.http.Range;
@@ -31,28 +29,11 @@ public class MyFileResource extends BaseResource implements FileResource {
     private FileVO file;
     private ManageFactory manageFactory;
 
-    public MyFileResource(String url, ManageFactory manageFactory, UserSpaceDTO userSpace){
+    public MyFileResource(String url,FileVO file, ManageFactory manageFactory,UserSpaceDTO userSpace) {
         super(manageFactory,url,userSpace);
-        this.manageFactory = manageFactory;
-    }
-
-    public MyFileResource(FileVO file, ManageFactory manageFactory,UserSpaceDTO userSpace) {
-        super(manageFactory,null,userSpace);
         this.file = file;
         super.setBase(file);
         this.manageFactory = manageFactory;
-    }
-
-    @Override
-    public BaseVO initBase() {
-        //通过url识别出目录信息
-        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(super.getUserSpace().getId(),super.getUrl());
-        if(!urlLast.isResult()){
-            return null;
-        }
-        NetdiskDirectoryDTO nd = urlLast.getData();
-        this.file = new FileVO(nd.getName(),nd.getId(),nd.getCreateTime(),nd.getUpdateTime(),nd.getMediaType(),nd.getSizeB(),nd.getFileMd5());
-        return this.file;
     }
 
     @Override
@@ -79,7 +60,6 @@ public class MyFileResource extends BaseResource implements FileResource {
             }
         }
     }
-
 
     @Override
     public Long getMaxAgeSeconds(Auth auth) {

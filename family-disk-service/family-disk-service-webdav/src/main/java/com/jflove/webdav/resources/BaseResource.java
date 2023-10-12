@@ -20,7 +20,6 @@ import io.milton.resource.Resource;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,13 +57,6 @@ public abstract class BaseResource {
         this.url = url;
         this.userSpace = userSpace;
     }
-
-    /**
-     * 在验证身份后初始化资源属性对象
-     * @return
-     */
-    public abstract BaseVO initBase();
-
 
     public Long getMaxAgeSeconds(Auth auth) {
         return null;
@@ -119,21 +111,18 @@ public abstract class BaseResource {
             return null;
         }
         ResponseHeadDTO<UserInfoDTO> userInfo = manageFactory.getUserInfoByEmail(s);
-        if(!userInfo.isResult() || !userInfo.getData().getPassword().equals(s1)){
+        if(!userInfo.isResult() || !userInfo.getData().getPassword().equals(s1)){//找不到用户
             return null;
         }
         //检查该用户是否拥有这个空间的权限
         Optional<UserSpaceRelDTO> spaceRel = userInfo.getData().getSpaces().stream().filter(e->e.getSpaceId() == userSpace.getId()).findFirst();
-        if(!spaceRel.isPresent()){
+        if(!spaceRel.isPresent()){//用户对这个空间没权限
             //没有这个空间的权限
             return null;
         }
         role = spaceRel.get().getRole();
         user = userInfo.getData();
         log.debug("用户:{},身份验证成功,正在使用的空间id:{},url:{}",s,userSpace.getId(),url);
-        if(StringUtils.hasLength(url)) {
-            base = initBase();
-        }
         return this;
     }
 
@@ -182,7 +171,15 @@ public abstract class BaseResource {
 
     
     public void delete() throws NotAuthorizedException, ConflictException, BadRequestException {
-
+        Resource r = (Resource) this;
+        //检查是否对这个空间有写入权限
+        if(role != UserSpaceRoleENUM.WRITE){
+            throw new NotAuthorizedException("没有这个空间的写入权限",r);
+        }
+        ResponseHeadDTO<Integer> result = manageFactory.getNetdiskDirectory().delDirectory(userSpace.getId(),base.getId());
+        if(!result.isResult()){
+            throw new BadRequestException(r,"删除目录失败");
+        }
     }
 
     
@@ -202,7 +199,13 @@ public abstract class BaseResource {
 
     
     public void moveTo(CollectionResource collectionResource, String s) throws ConflictException, NotAuthorizedException, BadRequestException {
-
+        Resource r = (Resource) this;
+        //检查是否对这个空间有写入权限
+        if(role != UserSpaceRoleENUM.WRITE){
+            throw new NotAuthorizedException("没有这个空间的写入权限",r);
+        }
+        MyFolderResource p = (MyFolderResource) collectionResource;
+        manageFactory.getNetdiskDirectory().moveDirectory(userSpace.getId(),base.getId(),p.getBase().getId());
     }
 
     public Resource createNew(String s, InputStream inputStream, Long aLong, String s1) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {

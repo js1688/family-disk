@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,20 +42,15 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
 
     @Override
     public ResponseHeadDTO<NetdiskDirectoryDTO> findLastDirectoryByUrl(Long spaceId, String url) {
-        String [] cj = url.split("/");
-        if(cj == null || "/".equals(url)){
-            return new ResponseHeadDTO<>(false,"按层级找不到最后一个目录的信息");
-        }
+        Path path = Path.of(url);
         NetdiskDirectoryPO ls = new NetdiskDirectoryPO();
         ls.setId(0);
-        for (String name :cj) {
-            if(!StringUtils.hasLength(name)){
-                continue;
-            }
+        for (int i = 0; i < path.getNameCount(); i++) {
+            Path ipath = path.getName(i).getFileName();
             ls = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                     .eq(NetdiskDirectoryPO::getPid,ls.getId())
                     .eq(NetdiskDirectoryPO::getSpaceId,spaceId)
-                    .eq(NetdiskDirectoryPO::getName,name)
+                    .eq(NetdiskDirectoryPO::getName,ipath.toString())
             );
             if(ls == null){
                 return new ResponseHeadDTO<>(false,"按层级找不到最后一个目录的信息");

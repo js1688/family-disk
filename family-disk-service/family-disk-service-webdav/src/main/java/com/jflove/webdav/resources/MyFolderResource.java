@@ -1,6 +1,7 @@
 package com.jflove.webdav.resources;
 
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.crypto.SecureUtil;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
@@ -9,10 +10,11 @@ import com.jflove.stream.dto.StreamWriteParamDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.webdav.factory.ManageFactory;
-import com.jflove.webdav.vo.BaseVO;
 import com.jflove.webdav.vo.FileVO;
 import com.jflove.webdav.vo.FolderVO;
 import io.milton.http.Auth;
+import io.milton.http.HttpManager;
+import io.milton.http.Request;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.ConflictException;
 import io.milton.http.exceptions.NotAuthorizedException;
@@ -27,7 +29,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author: tanjun
@@ -40,35 +41,11 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     private FolderVO folder;
     private ManageFactory manageFactory;
 
-    public MyFolderResource(String url, ManageFactory manageFactory, UserSpaceDTO userSpace){
+    public MyFolderResource(String url,FolderVO folder,ManageFactory manageFactory,UserSpaceDTO userSpace) {
         super(manageFactory,url,userSpace);
-        this.manageFactory = manageFactory;
-    }
-
-
-
-
-    public MyFolderResource(FolderVO folder,ManageFactory manageFactory,UserSpaceDTO userSpace) {
-        super(manageFactory,null,userSpace);
         this.folder = folder;
         super.setBase(folder);
         this.manageFactory = manageFactory;
-    }
-
-    @Override
-    public BaseVO initBase() {
-        //通过url识别出目录信息
-        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(super.getUserSpace().getId(),super.getUrl());
-        if(!urlLast.isResult()){
-            return null;
-        }
-        NetdiskDirectoryDTO v = urlLast.getData();
-        if(NetdiskDirectoryENUM.FOLDER == v.getType()){
-            this.folder = new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime());
-        }else if(NetdiskDirectoryENUM.FILE == v.getType()){
-            this.folder = new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB());
-        }
-        return this.folder;
     }
 
     @Override
@@ -81,9 +58,9 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         List<Resource> list = new ArrayList<>(children.getDatas().size());
         children.getDatas().forEach(v->{
             if(NetdiskDirectoryENUM.FOLDER == v.getType()){
-                list.add(new MyFolderResource(new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime()),manageFactory,super.getUserSpace()));
+                list.add(new MyFolderResource(getUrl(),new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime()),manageFactory,super.getUserSpace()));
             }else if(NetdiskDirectoryENUM.FILE == v.getType()){
-                list.add(new MyFileResource(new FileVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB(),v.getFileMd5()),manageFactory,super.getUserSpace()));
+                list.add(new MyFileResource(getUrl(),new FileVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB(),v.getFileMd5()),manageFactory,super.getUserSpace()));
             }
         });
         return list;
@@ -115,7 +92,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!result.isResult()){
             throw new BadRequestException(this,"创建文件夹失败");
         }
-        return new MyFolderResource(new FolderVO(result.getData().getName(),result.getData().getId(),result.getData().getCreateTime(),result.getData().getUpdateTime())
+        return new MyFolderResource(getUrl(),new FolderVO(result.getData().getName(),result.getData().getId(),result.getData().getCreateTime(),result.getData().getUpdateTime())
                 ,manageFactory,super.getUserSpace());
     }
 
@@ -140,8 +117,9 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     public Resource createNew(String name, InputStream inputStream, Long totalLength, String mediaType) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
         log.debug("createNew,s1:{},along:{},s1:{}",name,totalLength,mediaType);
         //检查是否对这个空间有写入权限
-        //todo 奇怪,为什么调用创建接口不先调用认证接口,导致这里拿不到一些基本的用户信息?要想想办法
-        if(super.role != UserSpaceRoleENUM.WRITE){
+        Request request = HttpManager.request();
+        BaseResource parent = (BaseResource) request.getAuthorization().getTag();//这个是父目录,直接从父目录对象中拿到权限与身份信息即可
+        if(parent.getRole() != UserSpaceRoleENUM.WRITE){
             throw new NotAuthorizedException("没有这个空间的写入权限",this);
         }
         ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(userSpace.getId(),super.getUrl());
@@ -153,7 +131,6 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
         Long sliceNum = sliceInfo.get("sliceNum");//分片数量
         Long sliceSize = sliceInfo.get("sliceSize");//分片大小
-        String fileMd5 = UUID.randomUUID().toString().replaceAll("-","");//todo 这里无法取首位的数据计算MD5值,也不确定能不能做到分片上传,所以暂时生成UUID
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
 
         //判断用户空间是否存储的下
@@ -161,19 +138,22 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if (!use.isResult()) {
             throw new BadRequestException(this,"用户存储空间不足");
         }
-
+        //持续读取每片数据,做分片读取与传输,主要是防止大文件的情况下内存溢出
+        String fileMd5 = null;
         for (int i = 0; i <= sliceNum; i++) {
             long seek = i * sliceSize;
             Long readLength = seek + sliceSize > totalLength ? totalLength - seek : sliceSize;
-            inputStream.skip(seek);
             byte [] b = inputStream.readNBytes(readLength.intValue());
+            if(fileMd5 == null){
+                fileMd5 = SecureUtil.md5(new String(b));//这里计算MD5值与其它地方上传文件不一样,区别是,这里无法直接得到尾部的一块分片,所以只把首部的分片用于计算MD5值
+            }
             StreamWriteParamDTO swpd = new StreamWriteParamDTO();
             swpd.setOriginalFileName(name);
             swpd.setSource(FileSourceENUM.CLOUDDISK);
             swpd.setSpaceId(userSpace.getId());
             swpd.setTotalSize(totalLength);
             //查询空间ID是哪个用户的
-            swpd.setCreateUserId(user.getId());
+            swpd.setCreateUserId(parent.getUser().getId());
             swpd.setType(type);
             swpd.setMediaType(mediaType);
             swpd.setShardingSort(i + 1);
@@ -199,7 +179,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!directory.isResult()){
             throw new BadRequestException(this,"文件创建上传失败");
         }
-        return new MyFolderResource(new FolderVO(directory.getData().getName(),directory.getData().getId(),directory.getData().getCreateTime(),directory.getData().getUpdateTime())
+        return new MyFolderResource(getUrl(),new FolderVO(directory.getData().getName(),directory.getData().getId(),directory.getData().getCreateTime(),directory.getData().getUpdateTime())
                 ,manageFactory,super.getUserSpace());
     }
 }

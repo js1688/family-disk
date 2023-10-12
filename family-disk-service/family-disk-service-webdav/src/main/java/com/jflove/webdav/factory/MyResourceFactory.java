@@ -7,6 +7,9 @@ import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.webdav.config.IgnoreUrlsConfig;
 import com.jflove.webdav.resources.MyFileResource;
 import com.jflove.webdav.resources.MyFolderResource;
+import com.jflove.webdav.vo.FileVO;
+import com.jflove.webdav.vo.FolderVO;
+import io.milton.common.Path;
 import io.milton.http.ResourceFactory;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.NotAuthorizedException;
@@ -38,14 +41,12 @@ public class MyResourceFactory implements ResourceFactory {
             return null;
         }
         if("/".equals(url)){//根目录
-            return new MyFolderResource(url,manageFactory,null);
+            return new MyFolderResource(url,null,manageFactory,null);
         }
-        //url的第一位必须是空间编码
-        String [] sp = url.substring(1).split("/");
-        String first = sp[0];//第一个位置一定是空间编码
-        sp[0] = "/";
-        url = String.join("/",sp);//去掉空间编码后的url
-        url = url.replaceAll("//","/");
+        Path path = Path.path(url);
+        String first = path.getFirst();//第一个位置一定是空间编码
+        Path businessPath = Path.path(String.join("/",path.getAfterFirst()));
+        url = "/" + businessPath.toPath();
         log.debug("去掉空间编码后的资源:{}",url);
         //在查询空间编码信息,和判断空间下的目录是否存在时,不涉及到授权验证问题,主要的目的是用于判断资源是否存在,因为在访问资源时会验证授权
         //通过空间编码得到空间ID
@@ -56,12 +57,15 @@ public class MyResourceFactory implements ResourceFactory {
             if(!nd.isResult()){//不存在这个目录
                 return null;
             }
-            if (nd.getData().getType() == NetdiskDirectoryENUM.FOLDER){
-                return new MyFolderResource(url,manageFactory,dto);
-            }else if(nd.getData().getType() == NetdiskDirectoryENUM.FILE){
-                return new MyFileResource(url,manageFactory,dto);
+            NetdiskDirectoryDTO v = nd.getData();
+            if (v.getType() == NetdiskDirectoryENUM.FOLDER){
+                FolderVO fv = new FolderVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB());
+                return new MyFolderResource(url,fv,manageFactory,dto);
+            }else if(v.getType() == NetdiskDirectoryENUM.FILE){
+                FileVO fv = new FileVO(v.getName(),v.getId(),v.getCreateTime(),v.getUpdateTime(),v.getMediaType(),v.getSizeB(),v.getFileMd5());
+                return new MyFileResource(url,fv,manageFactory,dto);
             }
         }
-        return new MyFolderResource(url,manageFactory,null);
+        return new MyFolderResource(url,null,manageFactory,null);
     }
 }
