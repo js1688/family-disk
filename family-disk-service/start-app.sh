@@ -22,6 +22,7 @@ family-disk-service-manage/target/family-disk-service-manage.jar
 family-disk-service-stream/target/family-disk-service-stream.jar
 family-disk-service-scheduling/target/family-disk-service-scheduling.jar
 family-disk-service-gateway/target/family-disk-service-gateway.jar
+family-disk-service-webdav/target/family-disk-service-webdav.jar
 )
 # shellcheck disable=SC2068
 for app in ${array[@]};
