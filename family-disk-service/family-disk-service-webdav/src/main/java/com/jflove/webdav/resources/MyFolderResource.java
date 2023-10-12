@@ -51,7 +51,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     @Override
     public List<? extends Resource> getChildren() throws NotAuthorizedException, BadRequestException {
         //查询子目录
-        ResponseHeadDTO<NetdiskDirectoryDTO> children = manageFactory.getChildren(super.getUser(),folder);
+        ResponseHeadDTO<NetdiskDirectoryDTO> children = manageFactory.getChildren(super.userSpace.getId(),folder);
         if(!children.isResult()){
             return new ArrayList<>();
         }

@@ -12,8 +12,6 @@ import com.jflove.user.api.IUserInfo;
 import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
 import com.jflove.user.dto.UserSpaceDTO;
-import com.jflove.user.dto.UserSpaceRelDTO;
-import com.jflove.user.em.UserRelStateENUM;
 import com.jflove.webdav.vo.FolderVO;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
@@ -21,8 +19,6 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 /**
  * @author: tanjun
@@ -93,13 +89,12 @@ public class ManageFactory {
 
     /**
      * 查找子目录
-     * @param userInfo
+     * @param spaceId
      * @param folder
      * @return
      */
-    public ResponseHeadDTO<NetdiskDirectoryDTO> getChildren(UserInfoDTO userInfo, FolderVO folder){
-        Optional<UserSpaceRelDTO> spaceRel = userInfo.getSpaces().stream().filter(e->e.getState() == UserRelStateENUM.USE).findFirst();
-        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(spaceRel.get().getSpaceId(),folder.getId(),null,null);
+    public ResponseHeadDTO<NetdiskDirectoryDTO> getChildren(long spaceId, FolderVO folder){
+        ResponseHeadDTO<NetdiskDirectoryDTO> dto = netdiskDirectory.findDirectory(spaceId,folder.getId(),null,null);
         return dto;
     }
 
