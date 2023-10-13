@@ -7,6 +7,7 @@ import com.jflove.user.dto.UserSpaceRelDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.webdav.factory.ManageFactory;
 import com.jflove.webdav.vo.BaseVO;
+import io.milton.common.Path;
 import io.milton.http.Auth;
 import io.milton.http.FileItem;
 import io.milton.http.Range;
@@ -198,14 +199,19 @@ public abstract class BaseResource {
     }
 
     
-    public void moveTo(CollectionResource collectionResource, String s) throws ConflictException, NotAuthorizedException, BadRequestException {
+    public void moveTo(CollectionResource collectionResource, String name) throws ConflictException, NotAuthorizedException, BadRequestException {
         Resource r = (Resource) this;
         //检查是否对这个空间有写入权限
         if(role != UserSpaceRoleENUM.WRITE){
             throw new NotAuthorizedException("没有这个空间的写入权限",r);
         }
         MyFolderResource p = (MyFolderResource) collectionResource;
-        manageFactory.getNetdiskDirectory().moveDirectory(userSpace.getId(),base.getId(),p.getBase().getId());
+        //这里要区分是移动到其它目录,还是修改目录名称, 可以通过方法参数中的名称判断,如果名称与url中的名称不一致则代表只是修改名称
+        if(Path.path(url).getName().equals(name)){
+            manageFactory.getNetdiskDirectory().moveDirectory(userSpace.getId(),base.getId(),p.getBase().getId());
+        }else{
+            manageFactory.getNetdiskDirectory().updateName(userSpace.getId(),base.getId(),name);
+        }
     }
 
     public Resource createNew(String s, InputStream inputStream, Long aLong, String s1) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
