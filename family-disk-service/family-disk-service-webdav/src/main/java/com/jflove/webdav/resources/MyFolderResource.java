@@ -22,6 +22,7 @@ import io.milton.resource.CollectionResource;
 import io.milton.resource.FolderResource;
 import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.unit.DataSize;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author: tanjun
@@ -115,7 +117,6 @@ public class MyFolderResource extends BaseResource implements FolderResource {
 
     @Override
     public Resource createNew(String name, InputStream inputStream, Long totalLength, String mediaType) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
-        log.debug("createNew,s1:{},along:{},s1:{}",name,totalLength,mediaType);
         //检查是否对这个空间有写入权限
         Request request = HttpManager.request();
         BaseResource parent = (BaseResource) request.getAuthorization().getTag();//这个是父目录,直接从父目录对象中拿到权限与身份信息即可
@@ -126,6 +127,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }
+        mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
+
         //从流中读取文件
         //webdav上传文件不会从垃圾箱回收,也不会直接引用其他人的资源,文件的md5也跟文件内容无关,因为目前没办法实现交互控制,以及分片控制
         Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
