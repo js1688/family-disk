@@ -6,17 +6,21 @@ import com.jflove.po.file.FileDiskConfigPO;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.stream.dto.StreamWriteParamDTO;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 import com.jflove.stream.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * @author tanjun
@@ -64,7 +68,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
 
     @Override
     @Transactional
-    public ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto,FileDiskConfigPO selectd) {
+    public ResponseHeadDTO<StreamWriteResultDTO> writByte(StreamWriteParamDTO dto, FileDiskConfigPO selectd) {
         String path = String.format("%s/%s%s", selectd.getPath(), dto.getFileMd5(), dto.getType());
         try(RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")){
             raf.seek(dto.getSeek());
@@ -78,9 +82,12 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
                 selectd.setMaxSize(total.toGigabytes());
                 selectd.setUsableSize(usableSpace.toGigabytes());
                 selectd.setUpdateTime(null);
+                if(!StringUtils.hasLength(dto.getMediaType())){//分片没有传媒体类型,已经到了最后一片,读盘分析一下
+                    dto.setMediaType(Files.probeContentType(Path.of(path)));
+                }
                 fileDiskConfigMapper.updateById(selectd);
-                //完整文件写盘成功,会在data中带上md5值,这个可以区分是不是完整文件写盘结束
-                return new ResponseHeadDTO(true,dto.getFileMd5(),"文件分片全部写盘成功");
+                //完整文件写盘成功,data会返回对象,这个可以区分是不是完整文件写盘结束
+                return new ResponseHeadDTO(true,new StreamWriteResultDTO(dto.getFileMd5(),dto.getMediaType()),"文件分片全部写盘成功");
             }
             return new ResponseHeadDTO(true,"文件分片写盘成功");
         }catch (IOException e){

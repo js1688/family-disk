@@ -8,6 +8,7 @@ import com.jflove.gateway.handler.ByteResourceHttpRequestHandler;
 import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamWriteParamDTO;
 import com.jflove.gateway.tool.JJwtTool;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 import com.jflove.user.api.IUserInfo;
 import com.jflove.user.api.IUserSpace;
 import com.jflove.user.dto.UserInfoDTO;
@@ -166,7 +167,7 @@ public class FileStreamController {
             return new ResponseHeadVO<>(true,param.getFileMd5(),"上传成功,触发了秒传");//second 触发了秒传的标记
         }
         param.setSeek(start);
-        ResponseHeadDTO<String> result = fileService.writeByte(param);//如果完整文件合并写盘成功,就会在data字段返回 md5值,否则只是分片写盘成功
+        ResponseHeadDTO<StreamWriteResultDTO> result = fileService.writeByte(param);//如果完整文件合并写盘成功,就会在data字段返回 md5值,否则只是分片写盘成功
         return new ResponseHeadVO<>(result.isResult(),result.getMessage());
     }
 }

@@ -10,6 +10,7 @@ import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.stream.dto.StreamWriteParamDTO;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 import com.jflove.stream.service.IFileReadAndWrit;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -70,7 +71,7 @@ public class FileStreamServiceImpl implements IFileStreamService {
 
     @Override
     @Transactional
-    public ResponseHeadDTO<String> writeByte(StreamWriteParamDTO dto){
+    public ResponseHeadDTO<StreamWriteResultDTO> writeByte(StreamWriteParamDTO dto){
         try {
             //查找文件存储在哪个磁盘中
             FileInfoPO po = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfoPO>()
@@ -112,13 +113,13 @@ public class FileStreamServiceImpl implements IFileStreamService {
             }
 
             IFileReadAndWrit fileReadAndWrit = applicationContext.getBean(IFileReadAndWrit.BEAN_PREFIX + selectd.getType(), IFileReadAndWrit.class);
-            ResponseHeadDTO<String> result = fileReadAndWrit.writByte(dto, selectd);//将分片文件执行追加写盘
-            if(result.isResult() && StringUtils.hasLength(result.getData())){
+            ResponseHeadDTO<StreamWriteResultDTO> result = fileReadAndWrit.writByte(dto, selectd);//将分片文件执行追加写盘
+            if(result.isResult() && result.getData() != null){
                 //文件全部写入了,将文件信息补全
                 po.setUpdateTime(null);
                 po.setBefore(0);//标记改成上传之后
-                if(!StringUtils.hasLength(po.getMediaType()) && StringUtils.hasLength(dto.getMediaType())){//有可能前面的分片没有传媒体类型,如果有一片传了就更新一下这个字段
-                    po.setMediaType(dto.getMediaType());
+                if(!StringUtils.hasLength(po.getMediaType())){//有可能前面的分片没有传媒体类型,更新一下,提高兼容性
+                    po.setMediaType(result.getData().getMediaType());
                 }
                 fileInfoMapper.updateById(po);
             }

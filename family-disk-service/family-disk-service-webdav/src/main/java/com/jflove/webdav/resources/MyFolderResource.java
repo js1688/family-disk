@@ -1,6 +1,5 @@
 package com.jflove.webdav.resources;
 
-import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.jflove.ResponseHeadDTO;
@@ -8,6 +7,7 @@ import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
 import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.stream.dto.StreamWriteParamDTO;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 import com.jflove.user.dto.UserSpaceDTO;
 import com.jflove.user.em.UserSpaceRoleENUM;
 import com.jflove.webdav.factory.ManageFactory;
@@ -24,6 +24,7 @@ import io.milton.resource.FolderResource;
 import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
 import java.io.IOException;
@@ -129,7 +130,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             throw new NotAuthorizedException("找不到父级目录",this);
         }
         mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
-        mediaType = Optional.ofNullable(mediaType).orElse(FileTypeUtil.getType(inputStream));//如果还拿不到文件类型,则从文件流中识别
+
         //从流中读取文件
         //webdav上传文件不会从垃圾箱回收,也不会直接引用其他人的资源,文件的md5也跟文件内容无关,因为目前没办法实现交互控制,以及分片控制
         Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
@@ -148,7 +149,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             long seek = i * sliceSize;
             Long readLength = seek + sliceSize > totalLength ? totalLength - seek : sliceSize;
             byte [] b = inputStream.readNBytes(readLength.intValue());
-            if(fileMd5 == null){
+            if(i == 0){
                 fileMd5 = SecureUtil.md5(new String(b));//这里计算MD5值与其它地方上传文件不一样,区别是,这里无法直接得到尾部的一块分片,所以只把首部的分片用于计算MD5值
             }
             StreamWriteParamDTO swpd = new StreamWriteParamDTO();
@@ -165,9 +166,13 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             swpd.setFileMd5(fileMd5);
             swpd.setSeek(seek);
             swpd.setStream(b);
-            ResponseHeadDTO<String> wh = manageFactory.getFileService().writeByte(swpd);
+            ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
             if (!wh.isResult()) {
                 throw new BadRequestException(this,"文件流写入失败");
+            }
+            //上传信息中没有媒体类型,则从文件流中取出类型,最后一片的时候文件流服务检查到没有媒体类型会读取文件识别文件媒体类型并返回
+            if(wh.getData() != null && !StringUtils.hasLength(mediaType)){
+                mediaType = wh.getData().getMediaType();
             }
         }
         //所有分片发送结束,开始建立网盘目录与文件的关系

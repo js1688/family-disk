@@ -5,6 +5,7 @@ import com.jflove.po.file.FileDiskConfigPO;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.stream.dto.StreamWriteParamDTO;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 
 /**
  * @author tanjun
@@ -21,7 +22,7 @@ public interface IFileReadAndWrit {
      * @param selectd
      * @return
      */
-    ResponseHeadDTO<String> writByte(StreamWriteParamDTO dto, FileDiskConfigPO selectd);
+    ResponseHeadDTO<StreamWriteResultDTO> writByte(StreamWriteParamDTO dto, FileDiskConfigPO selectd);
 
     /**
      * 按指定位置读取文件分片字节

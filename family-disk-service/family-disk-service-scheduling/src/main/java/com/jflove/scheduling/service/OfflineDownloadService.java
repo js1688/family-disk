@@ -16,6 +16,7 @@ import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.po.download.OdRecordPO;
 import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamWriteParamDTO;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 import com.jflove.user.api.IUserSpace;
 import lombok.extern.log4j.Log4j2;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -124,7 +125,7 @@ public class OfflineDownloadService {
                                         a = new byte[readLength.intValue()];
                                         raf.read(a);
 
-                                        ResponseHeadDTO<String> wr = sendStream(v, totalLength.toBytes(), fileName, (Long) use.getData(),
+                                        ResponseHeadDTO<StreamWriteResultDTO> wr = sendStream(v, totalLength.toBytes(), fileName, (Long) use.getData(),
                                                 seek, a, sliceNum.intValue(), i + 1, md5, mediaType, type);
                                         if (!wr.isResult()) {
                                             upPo.setMsg(wr.getMessage());
@@ -254,9 +255,9 @@ public class OfflineDownloadService {
      * @param mediaType 文件媒体类型
      * @param type 文件后缀类型
      */
-    private ResponseHeadDTO<String> sendStream(Long spaceId,Long totalLength,String fileName,Long createUserId,
-                            long seek,byte [] stream,Integer shardingSort,Integer shardingNum,
-                            String fileMd5,String mediaType,String type){
+    private ResponseHeadDTO<StreamWriteResultDTO> sendStream(Long spaceId, Long totalLength, String fileName, Long createUserId,
+                                                             long seek, byte [] stream, Integer shardingSort, Integer shardingNum,
+                                                             String fileMd5, String mediaType, String type){
         StreamWriteParamDTO swpd = new StreamWriteParamDTO();
         swpd.setOriginalFileName(fileName);
         swpd.setSource(FileSourceENUM.CLOUDDISK);

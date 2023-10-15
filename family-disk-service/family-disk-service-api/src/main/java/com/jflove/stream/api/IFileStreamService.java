@@ -4,6 +4,7 @@ import com.jflove.ResponseHeadDTO;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
 import com.jflove.stream.dto.StreamWriteParamDTO;
+import com.jflove.stream.dto.StreamWriteResultDTO;
 
 /**
  * @author tanjun
@@ -23,8 +24,8 @@ public interface IFileStreamService {
     /**
      * 写入文件
      * 分片方式
-     * @param dto
+     * @param dto 如果参数中没有媒体类型,会在最后一片写入后读取文件信息识别文件媒体类型并返回
      * @return
      */
-    ResponseHeadDTO<String> writeByte(StreamWriteParamDTO dto);
+    ResponseHeadDTO<StreamWriteResultDTO> writeByte(StreamWriteParamDTO dto);
 }
