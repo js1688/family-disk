@@ -117,6 +117,9 @@ public class FileStreamServiceImpl implements IFileStreamService {
                 //文件全部写入了,将文件信息补全
                 po.setUpdateTime(null);
                 po.setBefore(0);//标记改成上传之后
+                if(!StringUtils.hasLength(po.getMediaType()) && StringUtils.hasLength(dto.getMediaType())){//有可能前面的分片没有传媒体类型,如果有一片传了就更新一下这个字段
+                    po.setMediaType(dto.getMediaType());
+                }
                 fileInfoMapper.updateById(po);
             }
             return result;

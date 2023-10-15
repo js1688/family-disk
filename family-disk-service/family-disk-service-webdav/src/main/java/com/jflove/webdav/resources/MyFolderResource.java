@@ -1,5 +1,6 @@
 package com.jflove.webdav.resources;
 
+import cn.hutool.core.io.FileTypeUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.jflove.ResponseHeadDTO;
@@ -128,7 +129,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             throw new NotAuthorizedException("找不到父级目录",this);
         }
         mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
-
+        mediaType = Optional.ofNullable(mediaType).orElse(FileTypeUtil.getType(inputStream));//如果还拿不到文件类型,则从文件流中识别
         //从流中读取文件
         //webdav上传文件不会从垃圾箱回收,也不会直接引用其他人的资源,文件的md5也跟文件内容无关,因为目前没办法实现交互控制,以及分片控制
         Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
