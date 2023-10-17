@@ -2,7 +2,6 @@ package com.jflove.webdav.resources;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.digest.MD5;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
@@ -157,7 +156,6 @@ public class MyFolderResource extends BaseResource implements FolderResource {
 
     @Override
     public Resource createNew(String name, InputStream inputStream, Long totalLength, String mediaType) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
-        //todo 这里还有点问题, 有的webdav客户端,在文件还未传完时,发起了多次put请求,看上去不像是分片发送,这里还需要打个日志调试一下range字段,本地没有重现
         //todo 有些webdav客户端,上传大文件的时候会直接失败,也找不到发送的请求
         //检查是否对这个空间有写入权限
         Request request = HttpManager.request();
@@ -170,8 +168,6 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             throw new NotAuthorizedException("找不到父级目录",this);
         }
 
-        log.debug("--------------------- range:{},{},{}",request.getRangeHeader(),request.getIfRangeHeader(),request.getContentRangeHeader());
-
         //注意:mediaType 参数不可靠,有时候会传null,所以它会尝试从3个地方读取,1.方法参数,2.http请求头,3.写盘结束后从文件中读取
         mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
         //注意:totalLength 参数不可靠,有时候会传null,所以直接从写盘结束后读取长度
@@ -180,7 +176,10 @@ public class MyFolderResource extends BaseResource implements FolderResource {
 
         //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
         String fileMd5 = null;
-        Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), MD5.create().digest(name), type));
+        Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), SecureUtil.md5(name), type));
+        if(Files.exists(path)){//这个文件已存在,已经在接收文件流了
+            throw new BadRequestException("文件正在写入,不需要重复请求");
+        }
         try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
             while (!in.isFinished()){
                 byte[] b = new byte[1024];
