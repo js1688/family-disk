@@ -238,9 +238,11 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             }
         }catch (Throwable e) {
             throw new BadRequestException("网络文件缓存到服务器本地发生错误");
+        }finally {
+            //将临时文件删除
+            Files.deleteIfExists(path);
         }
-        //将临时文件删除
-        Files.deleteIfExists(path);
+
         //所有分片发送结束或无需发送分片,开始建立网盘目录与文件的关系
         NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
         netDto.setSize(totalLength.toString());
