@@ -2,6 +2,7 @@ package com.jflove.webdav.resources;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.digest.MD5;
 import com.jflove.ResponseHeadDTO;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
@@ -32,7 +33,10 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author: tanjun
@@ -165,6 +169,9 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }
+
+        log.debug("--------------------- range:{},{},{}",request.getRangeHeader(),request.getIfRangeHeader(),request.getContentRangeHeader());
+
         //注意:mediaType 参数不可靠,有时候会传null,所以它会尝试从3个地方读取,1.方法参数,2.http请求头,3.写盘结束后从文件中读取
         mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
         //注意:totalLength 参数不可靠,有时候会传null,所以直接从写盘结束后读取长度
@@ -173,7 +180,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
 
         //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
         String fileMd5 = null;
-        Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), UUID.randomUUID(), type));
+        Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), MD5.create().digest(name), type));
         try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
             while (!in.isFinished()){
                 byte[] b = new byte[1024];
