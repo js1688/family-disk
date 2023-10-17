@@ -23,16 +23,16 @@ import io.milton.resource.CollectionResource;
 import io.milton.resource.FolderResource;
 import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
+import org.apache.catalina.connector.CoyoteInputStream;
 import org.springframework.http.HttpHeaders;
-import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * @author: tanjun
@@ -117,6 +117,40 @@ public class MyFolderResource extends BaseResource implements FolderResource {
                 .build();
     }
 
+    /**
+     * 计算文件的md5值
+     * @param sliceNum
+     * @param sliceSize
+     * @param totalSize
+     * @param raf
+     * @return
+     */
+    private String fileMd5(Long sliceNum,Long sliceSize,Long totalSize,RandomAccessFile raf){
+        //拿第一个分片与最后一个分片的字节组成md5值,如果分片不大于1,则取完整的md5值
+        try{
+            raf.seek(0);
+            byte[] c = null;
+            if(sliceNum > 1) {
+                byte[] a = new byte[sliceSize.intValue()];
+                raf.read(a);
+                raf.seek(totalSize.intValue() - sliceSize.intValue());
+                byte[] b = new byte[sliceSize.intValue()];
+                raf.read(b);
+                c = new byte[a.length + b.length];
+                for (int i = 0; i < c.length; i++) {
+                    c[i] = i >= a.length ? b[i - a.length] : a[i];
+                }
+            }else {
+                c = new byte[totalSize.intValue()];
+                raf.read(c);
+            }
+            return SecureUtil.md5(new String(c));
+        }catch (IOException e){
+            log.error("计算文件md5值发生异常",e);
+        }
+        return null;
+    }
+
     @Override
     public Resource createNew(String name, InputStream inputStream, Long totalLength, String mediaType) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
         //检查是否对这个空间有写入权限
@@ -129,53 +163,76 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }
+        //注意:mediaType 参数不可靠,有时候会传null,所以它会尝试从3个地方读取,1.方法参数,2.http请求头,3.写盘结束后从文件中读取
         mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
-
-        //从流中读取文件
-        //webdav上传文件不会从垃圾箱回收,也不会直接引用其他人的资源,文件的md5也跟文件内容无关,因为目前没办法实现交互控制,以及分片控制
-        Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
-        Long sliceNum = sliceInfo.get("sliceNum");//分片数量
-        Long sliceSize = sliceInfo.get("sliceSize");//分片大小
+        //注意:totalLength 参数不可靠,有时候会传null,所以直接从写盘结束后读取长度
+        CoyoteInputStream in = (CoyoteInputStream)inputStream;
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
 
-        //判断用户空间是否存储的下
-        ResponseHeadDTO use = manageFactory.getUserSpace().useSpaceByte(userSpace.getId(), DataSize.ofBytes(totalLength).toMegabytes(), true, false);
-        if (!use.isResult()) {
-            throw new BadRequestException(this,"用户存储空间不足");
-        }
-        //持续读取每片数据,做分片读取与传输,主要是防止大文件的情况下内存溢出
+        //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
         String fileMd5 = null;
-        for (int i = 0; i <= sliceNum; i++) {
-            long seek = i * sliceSize;
-            Long readLength = seek + sliceSize > totalLength ? totalLength - seek : sliceSize;
-            byte [] b = inputStream.readNBytes(readLength.intValue());
-            if(i == 0){
-                fileMd5 = SecureUtil.md5(new String(b));//这里计算MD5值与其它地方上传文件不一样,区别是,这里无法直接得到尾部的一块分片,所以只把首部的分片用于计算MD5值
+        Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), UUID.randomUUID(), type));
+        try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
+            while (!in.isFinished()){
+                byte[] b = new byte[1024];
+                int rlen = in.read(b);
+                raf.write(b, 0, rlen);
             }
-            StreamWriteParamDTO swpd = new StreamWriteParamDTO();
-            swpd.setOriginalFileName(name);
-            swpd.setSource(FileSourceENUM.CLOUDDISK);
-            swpd.setSpaceId(userSpace.getId());
-            swpd.setTotalSize(totalLength);
-            //查询空间ID是哪个用户的
-            swpd.setCreateUserId(parent.getUser().getId());
-            swpd.setType(type);
-            swpd.setMediaType(mediaType);
-            swpd.setShardingSort(i + 1);
-            swpd.setShardingNum(sliceNum.intValue());
-            swpd.setFileMd5(fileMd5);
-            swpd.setSeek(seek);
-            swpd.setStream(b);
-            ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
-            if (!wh.isResult()) {
-                throw new BadRequestException(this,"文件流写入失败");
+            //写盘结束,从文件中读取一些必要的信息提高兼容性
+            mediaType = Optional.ofNullable(mediaType).orElse(Files.probeContentType(path));
+            totalLength = Optional.ofNullable(totalLength).orElse(raf.length());
+            //计算可传输分片大小
+            Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
+            Long sliceNum = sliceInfo.get("sliceNum");//分片数量
+            Long sliceSize = sliceInfo.get("sliceSize");//分片大小
+            fileMd5 = fileMd5(sliceNum,sliceSize,totalLength,raf);
+            //尝试是否可以从垃圾箱恢复
+            ResponseHeadDTO dr = manageFactory.getFileAdministration().dustbinRecovery(fileMd5,userSpace.getId(),FileSourceENUM.CLOUDDISK);
+            if(!dr.isResult()) {//如果没有从垃圾箱恢复
+                //判断用户空间是否存储的下
+                ResponseHeadDTO use = manageFactory.getUserSpace().useSpaceByte(userSpace.getId(), DataSize.ofBytes(totalLength).toMegabytes(), true, false);
+                if (!use.isResult()) {
+                    throw new BadRequestException(this, "用户存储空间不足");
+                }
+                //尝试是否可以直接引用其它人上传的文件
+                if(!manageFactory.getFileAdministration().checkDuplicate(name,type,mediaType,
+                        fileMd5,userSpace.getId(),FileSourceENUM.CLOUDDISK,totalLength,userSpace.getCreateUserId()).isResult()){
+                    //需要发送文件
+                    //持续读取每片数据,做分片读取与传输,主要是防止大文件的情况下内存溢出
+                    for (int i = 0; i <= sliceNum; i++) {
+                        long seek = i * sliceSize;
+                        Long readLength = seek + sliceSize > totalLength ? totalLength - seek : sliceSize;
+                        byte [] b = new byte[readLength.intValue()];
+                        //从本地磁盘中读取文件
+                        raf.seek(seek);
+                        raf.read(b);
+                        StreamWriteParamDTO swpd = new StreamWriteParamDTO();
+                        swpd.setOriginalFileName(name);
+                        swpd.setSource(FileSourceENUM.CLOUDDISK);
+                        swpd.setSpaceId(userSpace.getId());
+                        swpd.setTotalSize(totalLength);
+                        //查询空间ID是哪个用户的
+                        swpd.setCreateUserId(parent.getUser().getId());
+                        swpd.setType(type);
+                        swpd.setMediaType(mediaType);
+                        swpd.setShardingSort(i + 1);
+                        swpd.setShardingNum(sliceNum.intValue());
+                        swpd.setFileMd5(fileMd5);
+                        swpd.setSeek(seek);
+                        swpd.setStream(b);
+                        ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
+                        if (!wh.isResult()) {
+                            throw new BadRequestException(this,"文件流写入失败");
+                        }
+                    }
+                }
             }
-            //上传信息中没有媒体类型,则从文件流中取出类型,最后一片的时候文件流服务检查到没有媒体类型会读取文件识别文件媒体类型并返回
-            if(wh.getData() != null && !StringUtils.hasLength(mediaType)){
-                mediaType = wh.getData().getMediaType();
-            }
+        }catch (Throwable e) {
+            throw new BadRequestException("网络文件缓存到服务器本地发生错误");
         }
-        //所有分片发送结束,开始建立网盘目录与文件的关系
+        //将临时文件删除
+        Files.deleteIfExists(path);
+        //所有分片发送结束或无需发送分片,开始建立网盘目录与文件的关系
         NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
         netDto.setSize(totalLength.toString());
         netDto.setType(NetdiskDirectoryENUM.FILE);
