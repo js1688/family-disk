@@ -153,6 +153,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
 
     @Override
     public Resource createNew(String name, InputStream inputStream, Long totalLength, String mediaType) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
+        //todo 这里还有点问题, 有的webdav客户端,在文件还未传完时,发起了多次put请求,看上去不像是分片发送,这里还需要打个日志调试一下range字段,本地没有重现
+        //todo 有些webdav客户端,上传大文件的时候会直接失败,也找不到发送的请求
         //检查是否对这个空间有写入权限
         Request request = HttpManager.request();
         BaseResource parent = (BaseResource) request.getAuthorization().getTag();//这个是父目录,直接从父目录对象中拿到权限与身份信息即可
