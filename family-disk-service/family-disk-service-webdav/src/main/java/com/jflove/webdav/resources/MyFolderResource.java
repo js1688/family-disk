@@ -24,7 +24,6 @@ import io.milton.resource.FolderResource;
 import io.milton.resource.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.apache.catalina.connector.CoyoteInputStream;
-import org.springframework.http.HttpHeaders;
 import org.springframework.util.unit.DataSize;
 
 import java.io.IOException;
@@ -35,7 +34,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author: tanjun
@@ -154,9 +152,22 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         return null;
     }
 
+    /**
+     *
+     * @param name - the name to create within the collection. E.g. myFile.txt
+     * @param inputStream - the data to populate the resource with
+     * @param along - 长度参数不可靠,不使用它
+     * @param s - 媒体类型参数不可靠,不使用它
+     * is the responsibility of the application to create a resource which also represents those content types, or a subset
+     * @return
+     * @throws IOException
+     * @throws ConflictException
+     * @throws NotAuthorizedException
+     * @throws BadRequestException
+     */
     @Override
-    public Resource createNew(String name, InputStream inputStream, Long totalLength, String mediaType) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
-        //todo 有些webdav客户端,上传大文件的时候会直接失败,也找不到发送的请求
+    public Resource createNew(String name, InputStream inputStream, Long along, String s) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
+        //todo 有些webdav客户端,上传大文件的时候会直接失败,疑似客户端那边的限制,也不是所有的客户端不能上传大文件,也找不到发送的请求,但是本地调试的时候又没有这个问题,难道是nginx那边限制了?
         //检查是否对这个空间有写入权限
         Request request = HttpManager.request();
         BaseResource parent = (BaseResource) request.getAuthorization().getTag();//这个是父目录,直接从父目录对象中拿到权限与身份信息即可
@@ -167,15 +178,12 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }
-
-        //注意:mediaType 参数不可靠,有时候会传null,所以它会尝试从3个地方读取,1.方法参数,2.http请求头,3.写盘结束后从文件中读取
-        mediaType = Optional.ofNullable(mediaType).orElse(request.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase()));//如果从参数中拿不到就从请求头拿
-        //注意:totalLength 参数不可靠,有时候会传null,所以直接从写盘结束后读取长度
         CoyoteInputStream in = (CoyoteInputStream)inputStream;
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
-
         //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
         String fileMd5 = null;
+        String mediaType = null;
+        Long totalLength = null;
         Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), SecureUtil.md5(name), type));
         if(Files.exists(path)){//这个文件已存在,已经在接收文件流了
             throw new BadRequestException("文件正在写入,不需要重复请求");
@@ -187,8 +195,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
                 raf.write(b, 0, rlen);
             }
             //写盘结束,从文件中读取一些必要的信息提高兼容性
-            mediaType = Optional.ofNullable(mediaType).orElse(Files.probeContentType(path));
-            totalLength = Optional.ofNullable(totalLength).orElse(raf.length());
+            mediaType = Files.probeContentType(path);
+            totalLength = raf.length();
             //计算可传输分片大小
             Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
             Long sliceNum = sliceInfo.get("sliceNum");//分片数量
