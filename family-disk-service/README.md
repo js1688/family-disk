@@ -105,15 +105,11 @@ rm -rf logs;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
         ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
         ssl_prefer_server_ciphers on;
-        # 注意webdav上传文件比较复杂,如果没有https的需求,建议客户端直接通过端口访问webdav服务,不要通过nginx代理,如果要通过nginx代理注意如下参数
-        # client_max_body_size 0;#不检查文件流大小
-        # proxy_ignore_client_abort on;#当客户端主动断开时,不切断nginx与服务端的联系,nginx等待服务端执行完毕
-        # 这样子会导致客户端无法拿到正确的响应,比如文件已经上传成功了,但是客户端显示失败,不过客户端刷新一下就显示正常了,这个问题也没那么致命,后面看nginx的配置能不能解决一下
         location / {
+            #禁用客户端请求体缓冲
+            proxy_request_buffering off;
             #请求大小,不检查大小
             client_max_body_size 0;
-            #即使客户端断开连接,也不主动与服务断开,等待服务执行完
-            proxy_ignore_client_abort on;
             proxy_pass http://127.0.0.1:9999;
         }
     }
