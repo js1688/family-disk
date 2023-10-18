@@ -109,11 +109,25 @@ npm run dev
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
         ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
         ssl_prefer_server_ciphers on;
+        
+        set $if1 "true";
+
+        #大文件下载的一个插件不能走重定向,所以需要过滤掉
+        if ($uri = "/ss/sw.js") {
+            set $if1 "false";
+        }
+
         # 下面根据user_agent可以获取
         #非移动端跳转到www
         if ($http_user_agent !~* (mobile|nokia|iphone|ipad|android|samsung|htc|blackberry)) {
-                rewrite  ^(.*)    https://www.jflove.cn$1 permanent;
+            set $if1 "${if1}true";
         }
+
+        #跳转到移动端 如果2个判断都成立,那这个变量会等于truetrue
+        if ($if1 = "truetrue") {
+            rewrite  ^(.*)    https://www.jflove.cn$1 permanent;
+        }
+
         # 匹配协议
         location / {
             # 需要指向下面的 @router 否则会出现 Vue 的路由在 Nginx 中刷新出现 404

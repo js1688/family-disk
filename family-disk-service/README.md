@@ -105,19 +105,15 @@ rm -rf logs;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
         ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
         ssl_prefer_server_ciphers on;
-
+        # 注意webdav上传文件比较复杂,如果没有https的需求,建议客户端直接通过端口访问webdav服务,不要通过nginx代理,如果要通过nginx代理注意如下参数
+        # client_max_body_size 0;#不检查文件流大小
+        # proxy_ignore_client_abort on;#当客户端主动断开时,不切断nginx与服务端的联系,nginx等待服务端执行完毕
+        # 这样子会导致客户端无法拿到正确的响应,比如文件已经上传成功了,但是客户端显示失败,不过客户端刷新一下就显示正常了,这个问题也没那么致命,后面看nginx的配置能不能解决一下
         location / {
-            #请求大小
-            client_max_body_size 32M;
-            # 重写请求头部host字段
-            proxy_set_header Host $host;
-            # 重写来源IP
-                proxy_set_header X-Real_IP $remote_addr;
-            # 重写http请求来源
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
+            #请求大小,不检查大小
+            client_max_body_size 0;
+            #即使客户端断开连接,也不主动与服务断开,等待服务执行完
+            proxy_ignore_client_abort on;
             proxy_pass http://127.0.0.1:9999;
         }
     }
@@ -158,110 +154,6 @@ rm -rf logs;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
             proxy_pass http://127.0.0.1:8800;
-        }
-    }
-
-    #家庭网盘-PC端
-    server {
-        listen       80;
-        server_name  jflove.cn;
-        rewrite ^(.*)$  https://www.jflove.cn$1 permanent;
-    }
-    server {
-        listen       443;
-        server_name  jflove.cn;
-        rewrite ^(.*)$  https://www.jflove.cn$1 permanent;
-    }
-    server {
-        listen       80;
-        server_name  www.jflove.cn;
-        rewrite ^(.*)$  https://www.jflove.cn$1 permanent;
-    }
-    server {
-        # 根目录
-        root /root/html/family-disk-html/dist;
-
-        # Load configuration files for the default server block.
-        include /etc/nginx/default.d/*.conf;
-
-        listen 443;
-        server_name www.jflove.cn; #填写绑定证书的域名
-        ssl on;
-        ssl_certificate /root/ssl/www.jflove.cn_nginx/www.jflove.cn_bundle.crt;
-        ssl_certificate_key /root/ssl/www.jflove.cn_nginx/www.jflove.cn.key;
-        ssl_session_timeout 5m;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
-        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
-        ssl_prefer_server_ciphers on;
-        # 下面根据user_agent可以获取
-        #移动端跳转到m
-        if ($http_user_agent ~* (mobile|nokia|iphone|ipad|android|samsung|htc|blackberry)) {
-                rewrite  ^(.*)    https://m.jflove.cn$1 permanent;
-        }
-        # 匹配协议
-        location / {
-            # 需要指向下面的 @router 否则会出现 Vue 的路由在 Nginx 中刷新出现 404
-            try_files $uri $uri/ @router;
-            index /src/pc/index.html/index.html;
-        }
-        # 对应上面的 @router，主要原因是路由的路径资源并不是一个真实的路径，所以无法找到具体的文件
-        # 因此需要 rewrite 到 index.html 中，然后交给路由在处理请求资源
-        location @router {
-            rewrite ^.*$ /src/pc/index.html last;
-        }
-    }
-
-    #家庭网盘-移动端
-    server {
-        listen       80;
-        server_name  m.jflove.cn;
-        rewrite ^(.*)$  https://m.jflove.cn$1 permanent;
-    }
-    server {
-        # 根目录
-        root /root/html/family-disk-html/dist;
-
-        # Load configuration files for the default server block.
-        include /etc/nginx/default.d/*.conf;
-
-        listen 443;
-        server_name m.jflove.cn; #填写绑定证书的域名
-        ssl on;
-        ssl_certificate /root/ssl/m.jflove.cn_nginx/m.jflove.cn_bundle.crt;
-        ssl_certificate_key /root/ssl/m.jflove.cn_nginx/m.jflove.cn.key;
-        ssl_session_timeout 5m;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
-        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
-        ssl_prefer_server_ciphers on;
-        
-        set $if1 "true";
-
-        #大文件下载的一个插件不能走重定向,所以需要过滤掉
-        if ($uri = "/ss/sw.js") {
-            set $if1 "false";
-        }
-
-        # 下面根据user_agent可以获取
-        #非移动端跳转到www
-        if ($http_user_agent !~* (mobile|nokia|iphone|ipad|android|samsung|htc|blackberry)) {
-            set $if1 "${if1}true";
-        }
-
-        #跳转到移动端 如果2个判断都成立,那这个变量会等于truetrue
-        if ($if1 = "truetrue") {
-            rewrite  ^(.*)    https://www.jflove.cn$1 permanent;
-        }
-
-        # 匹配协议
-        location / {
-            # 需要指向下面的 @router 否则会出现 Vue 的路由在 Nginx 中刷新出现 404
-            try_files $uri $uri/ @router;
-            index /src/mobile/index.html;
-        }
-        # 对应上面的 @router，主要原因是路由的路径资源并不是一个真实的路径，所以无法找到具体的文件
-        # 因此需要 rewrite 到 index.html 中，然后交给路由在处理请求资源
-        location @router {
-            rewrite ^.*$ /src/mobile/index.html last;
         }
     }
 ```
