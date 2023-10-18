@@ -190,7 +190,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         }
         try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
             while (!in.isFinished()){
-                byte[] b = new byte[1024];
+                byte[] b = new byte[1024 * 1024 * 3];//每次期望读取3MB
                 int rlen = in.read(b);
                 raf.write(b, 0, rlen);
             }
