@@ -167,7 +167,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
      */
     @Override
     public Resource createNew(String name, InputStream inputStream, Long along, String s) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
-        //todo 有些webdav客户端,上传大文件的时候会直接失败,疑似客户端那边的限制,也不是所有的客户端不能上传大文件,也找不到发送的请求,但是本地调试的时候又没有这个问题,难道是nginx那边限制了?
+        log.error("收到了写入请求");
         //检查是否对这个空间有写入权限
         Request request = HttpManager.request();
         BaseResource parent = (BaseResource) request.getAuthorization().getTag();//这个是父目录,直接从父目录对象中拿到权限与身份信息即可
@@ -190,8 +190,9 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         }
         try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
             while (!in.isFinished()){
-                byte[] b = new byte[1024 * 1024 * 3];//每次期望读取3MB
+                byte[] b = new byte[1024 * 1024 * 3];
                 int rlen = in.read(b);
+                log.error("开始读取文件流{},{}",rlen,in.available());
                 raf.write(b, 0, rlen);
             }
             //写盘结束,从文件中读取一些必要的信息提高兼容性
