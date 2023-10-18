@@ -153,7 +153,10 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     }
 
     /**
-     *
+     * 注意webdav上传文件比较复杂,如果没有https的需求,建议客户端直接通过端口访问webdav服务,不要通过nginx代理,如果要通过nginx代理注意如下参数
+     * client_max_body_size 0;#不检查文件流大小
+     * proxy_ignore_client_abort on;#当客户端主动断开时,不切断nginx与服务端的联系,nginx等待服务端执行完毕
+     * 这样子会导致客户端无法拿到正确的响应,比如文件已经上传成功了,但是客户端显示失败,不过客户端刷新一下就显示正常了,这个问题也没那么致命,后面看nginx的配置能不能解决一下
      * @param name - the name to create within the collection. E.g. myFile.txt
      * @param inputStream - the data to populate the resource with
      * @param along - 长度参数不可靠,不使用它
