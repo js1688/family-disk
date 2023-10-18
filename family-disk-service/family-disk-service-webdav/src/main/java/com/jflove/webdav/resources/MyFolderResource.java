@@ -167,7 +167,6 @@ public class MyFolderResource extends BaseResource implements FolderResource {
      */
     @Override
     public Resource createNew(String name, InputStream inputStream, Long along, String s) throws IOException, ConflictException, NotAuthorizedException, BadRequestException {
-        log.error("收到了写入请求");
         //检查是否对这个空间有写入权限
         Request request = HttpManager.request();
         BaseResource parent = (BaseResource) request.getAuthorization().getTag();//这个是父目录,直接从父目录对象中拿到权限与身份信息即可
@@ -190,9 +189,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         }
         try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
             while (!in.isFinished()){
-                byte[] b = new byte[1024 * 1024 * 3];
+                byte[] b = new byte[8192];
                 int rlen = in.read(b);
-                log.error("开始读取文件流{},{}",rlen,in.available());
                 raf.write(b, 0, rlen);
             }
             //写盘结束,从文件中读取一些必要的信息提高兼容性
