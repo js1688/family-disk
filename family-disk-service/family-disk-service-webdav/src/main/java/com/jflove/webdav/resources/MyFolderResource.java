@@ -150,6 +150,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         }
         return null;
     }
+
     /**
      * 注意:如果使用了nginx代理服务,一定要注意如下配置
      * client_max_body_size 0;#不检查文件流大小
@@ -180,10 +181,6 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         }
         CoyoteInputStream in = (CoyoteInputStream)inputStream;
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
-        //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
-        String fileMd5 = null;
-        String mediaType = null;
-        Long totalLength = null;
         Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), SecureUtil.md5(name), type));
         if(Files.exists(path)){//这个文件已存在,已经在接收文件流了
             throw new BadRequestException("文件正在写入,不需要重复请求");
@@ -195,70 +192,92 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             //删除,达到覆盖目录的目的
             manageFactory.getNetdiskDirectory().delDirectory(userSpace.getId(),urlThis.getData().getId());
         }
-
-        try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
-            while (!in.isFinished()){
+        Long totalLength = null;
+        String fileMd5 = null;
+        Long sliceNum = null;
+        Long sliceSize = null;
+        try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
+            while (!in.isFinished()) {
                 byte[] b = new byte[8192];
                 int rlen = in.read(b);
                 raf.write(b, 0, rlen);
             }
             //写盘结束,从文件中读取一些必要的信息提高兼容性
-            mediaType = Files.probeContentType(path);
+            //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
             totalLength = raf.length();
+            fileMd5 = fileMd5(sliceNum, sliceSize, totalLength, raf);
             //计算可传输分片大小
             Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
-            Long sliceNum = sliceInfo.get("sliceNum");//分片数量
-            Long sliceSize = sliceInfo.get("sliceSize");//分片大小
-            fileMd5 = fileMd5(sliceNum,sliceSize,totalLength,raf);
-            //尝试是否可以从垃圾箱恢复
-            ResponseHeadDTO dr = manageFactory.getFileAdministration().dustbinRecovery(fileMd5,userSpace.getId(), FileSourceENUM.CLOUDDISK);
-            if(!dr.isResult()) {//如果没有从垃圾箱恢复
-                //判断用户空间是否存储的下
-                ResponseHeadDTO use = manageFactory.getUserSpace().useSpaceByte(userSpace.getId(), DataSize.ofBytes(totalLength).toMegabytes(), true, false);
-                if (!use.isResult()) {
-                    throw new BadRequestException(this, "用户存储空间不足");
-                }
-                //尝试是否可以直接引用其它人上传的文件
-                if(!manageFactory.getFileAdministration().checkDuplicate(name,type,mediaType,
-                        fileMd5,userSpace.getId(),FileSourceENUM.CLOUDDISK,totalLength,userSpace.getCreateUserId()).isResult()){
-                    //需要发送文件
+            sliceNum = sliceInfo.get("sliceNum");//分片数量
+            sliceSize = sliceInfo.get("sliceSize");//分片大小
+        }catch (Throwable e) {
+            throw new BadRequestException("网络文件缓存到服务器缓存目录发生错误");
+        }
+        String mediaType = Files.probeContentType(path);
+        //尝试是否可以从垃圾箱恢复
+        ResponseHeadDTO dr = manageFactory.getFileAdministration().dustbinRecovery(fileMd5,userSpace.getId(), FileSourceENUM.CLOUDDISK);
+        if(!dr.isResult()) {//如果没有从垃圾箱恢复
+            //判断用户空间是否存储的下
+            ResponseHeadDTO use = manageFactory.getUserSpace().useSpaceByte(userSpace.getId(), DataSize.ofBytes(totalLength).toMegabytes(), true, false);
+            if (!use.isResult()) {
+                throw new BadRequestException(this, "用户存储空间不足");
+            }
+            //尝试是否可以直接引用其它人上传的文件
+            if (!manageFactory.getFileAdministration().checkDuplicate(name, type, mediaType,
+                    fileMd5, userSpace.getId(), FileSourceENUM.CLOUDDISK, totalLength, userSpace.getCreateUserId()).isResult()) {//需要发送文件
+                //使用异步的方式去发送,防止整个过程太慢长导致客户端主动断开连接
+                Long finalSliceNum = sliceNum;
+                Long finalSliceSize = sliceSize;
+                Long finalTotalLength = totalLength;
+                String finalFileMd = fileMd5;
+                new Thread(()->{
                     //持续读取每片数据,做分片读取与传输,主要是防止大文件的情况下内存溢出
-                    for (int i = 0; i <= sliceNum; i++) {
-                        long seek = i * sliceSize;
-                        Long readLength = seek + sliceSize > totalLength ? totalLength - seek : sliceSize;
-                        byte [] b = new byte[readLength.intValue()];
-                        //从本地磁盘中读取文件
-                        raf.seek(seek);
-                        raf.read(b);
-                        StreamWriteParamDTO swpd = new StreamWriteParamDTO();
-                        swpd.setOriginalFileName(name);
-                        swpd.setSource(FileSourceENUM.CLOUDDISK);
-                        swpd.setSpaceId(userSpace.getId());
-                        swpd.setTotalSize(totalLength);
-                        //查询空间ID是哪个用户的
-                        swpd.setCreateUserId(parent.getUser().getId());
-                        swpd.setType(type);
-                        swpd.setMediaType(mediaType);
-                        swpd.setShardingSort(i + 1);
-                        swpd.setShardingNum(sliceNum.intValue());
-                        swpd.setFileMd5(fileMd5);
-                        swpd.setSeek(seek);
-                        swpd.setStream(b);
-                        ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
-                        if (!wh.isResult()) {
-                            throw new BadRequestException(this,"文件流写入失败");
+                    try(RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")){
+                        for (int i = 0; i <= finalSliceNum; i++) {
+                            long seek = i * finalSliceSize;
+                            Long readLength = seek + finalSliceSize > finalTotalLength ? finalTotalLength - seek : finalSliceSize;
+                            byte[] b = new byte[readLength.intValue()];
+                            //从本地磁盘中读取文件
+                            raf.seek(seek);
+                            raf.read(b);
+                            StreamWriteParamDTO swpd = new StreamWriteParamDTO();
+                            swpd.setOriginalFileName(name);
+                            swpd.setSource(FileSourceENUM.CLOUDDISK);
+                            swpd.setSpaceId(userSpace.getId());
+                            swpd.setTotalSize(finalTotalLength);
+                            //查询空间ID是哪个用户的
+                            swpd.setCreateUserId(parent.getUser().getId());
+                            swpd.setType(type);
+                            swpd.setMediaType(mediaType);
+                            swpd.setShardingSort(i + 1);
+                            swpd.setShardingNum(finalSliceNum.intValue());
+                            swpd.setFileMd5(finalFileMd);
+                            swpd.setSeek(seek);
+                            swpd.setStream(b);
+                            ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
+                            if (!wh.isResult()) {
+                                throw new RuntimeException(wh.getMessage());
+                            }
+                        }
+                    }catch (Throwable e) {
+                        log.error("异步发送文件流到文件存储模块失败,{}", e);
+                        //将建立起的临时关系删除掉,因为文件没有写盘成功
+                        ResponseHeadDTO<NetdiskDirectoryDTO> lsNd = manageFactory.getDirectoryByUrl(userSpace.getId(),super.getUrl() + "/" + name);
+                        if(lsNd.isResult()){
+                            manageFactory.getNetdiskDirectory().delDirectory(lsNd.getData().getSpaceId(),lsNd.getData().getId());
+                        }
+                    }finally {
+                        //将临时文件删除
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
                         }
                     }
-                }
+                }).start();
             }
-        }catch (Throwable e) {
-            throw new BadRequestException("网络文件缓存到服务器本地发生错误");
-        }finally {
-            //将临时文件删除
-            Files.deleteIfExists(path);
         }
 
-        //所有分片发送结束或无需发送分片,开始建立网盘目录与文件的关系
+        //所有分片发送结束或无需发送分片,开始建立网盘目录与文件的关系,此时关系是临时的,不代表真的把文件写盘了
         NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
         netDto.setSize(totalLength.toString());
         netDto.setType(NetdiskDirectoryENUM.FILE);
