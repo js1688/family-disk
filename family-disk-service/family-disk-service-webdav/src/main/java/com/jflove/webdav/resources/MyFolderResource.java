@@ -129,6 +129,12 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }
+        //判断要上传的文件目录是否已存在,如果已存在则先删除
+        ResponseHeadDTO<NetdiskDirectoryDTO> urlThis = manageFactory.getDirectoryByUrl(userSpace.getId(),super.getUrl() + "/" + name);
+        if(urlThis.isResult()){
+            //删除,达到覆盖目录的目的
+            manageFactory.getNetdiskDirectory().delDirectory(userSpace.getId(),urlThis.getData().getId());
+        }
         //判断用户空间是否存储的下
         ResponseHeadDTO use = manageFactory.getUserSpace().useSpaceByte(userSpace.getId(), DataSize.ofBytes(totalLength).toMegabytes(), true, false);
         if (!use.isResult()) {
