@@ -343,8 +343,7 @@ export default {
     ];
     //如果没有写入权限就删掉文件上传目录
     if(roleWrite){
-      addActions.splice(1,1);
-      addActions.splice(0,1);
+      addActions.splice(0,3);
     }
     const showPopover = ref(false);
     return {

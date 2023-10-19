@@ -7,8 +7,8 @@
           <n-spin :show="isOverlay">
             <n-card :bordered="false">
               <div style="width: 50%;display:inline-block;">
-                <n-space :size="40" v-if="roleWrite">
-                  <n-badge value="上传" type="info" :offset="[8, -8]">
+                <n-space :size="40">
+                  <n-badge value="上传" type="info" v-if="roleWrite" :offset="[8, -8]">
                     <n-upload :default-upload="false"
                               :multiple="true"
                               :show-file-list="false"
@@ -29,21 +29,21 @@
                       </n-icon>
                     </n-button>
                   </n-badge>
-                  <n-badge value="移动" type="info" :offset="[8, -8]">
+                  <n-badge value="移动" v-if="roleWrite" type="info" :offset="[8, -8]">
                     <n-button @click="showMoveDirectory = true;onMoveLoad();rowKey = null;" :disabled="!rowKeys || rowKeys.length == 0"  text style="font-size: 24px">
                       <n-icon>
                         <return-down-forward />
                       </n-icon>
                     </n-button>
                   </n-badge>
-                  <n-badge value="目录" type="info" :offset="[8, -8]">
+                  <n-badge value="目录" v-if="roleWrite" type="info" :offset="[8, -8]">
                     <n-button @click="showAddDirectory = true" text style="font-size: 24px">
                       <n-icon>
                         <add-circle-outline />
                       </n-icon>
                     </n-button>
                   </n-badge>
-                  <n-badge value="删除" type="info" :offset="[8, -8]">
+                  <n-badge value="删除" v-if="roleWrite" type="info" :offset="[8, -8]">
                     <n-button :disabled="!rowKeys || rowKeys.length == 0" @click="delsDirectory" text style="font-size: 24px">
                       <n-icon>
                         <trash-outline />
@@ -544,17 +544,15 @@ export default {
         key: "downloadList",
         icon:renderIcon(CloudDownloadOutline)
       },
-      {
-        label: "回收站",
-        key: "dustbin",
-        icon:renderIcon(TrashOutline)
-      }
+      // {
+      //   label: "回收站",
+      //   key: "dustbin",
+      //   icon:renderIcon(TrashOutline)
+      // }
     ];
 
     if(!roleWrite){//如果没有修改权限,去掉上传和回收站和离线下载
-      menuOptions.splice(1,1);
-      menuOptions.splice(2,1);
-      menuOptions.splice(4,1);
+      menuOptions.splice(1,2);
     }
 
     return {
