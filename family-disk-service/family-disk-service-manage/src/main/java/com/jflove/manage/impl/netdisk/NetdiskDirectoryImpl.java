@@ -152,13 +152,15 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @Transactional
     public ResponseHeadDTO<NetdiskDirectoryDTO> addDirectory(NetdiskDirectoryDTO dto) {
         //检查同级别下文件名是否已存在
-        if(netdiskDirectoryMapper.exists(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+        NetdiskDirectoryPO po = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                 .eq(NetdiskDirectoryPO::getPid,dto.getPid())
                 .eq(NetdiskDirectoryPO::getSpaceId,dto.getSpaceId())
                 .eq(NetdiskDirectoryPO::getName,dto.getName())
-        )){
+        );
+        if(po != null){
             if(NetdiskDirectoryENUM.FILE == dto.getType()){//如果是文件,则不报重复,直接忽略即可,因为文件本身就会覆盖
-                return new ResponseHeadDTO<>(true, "文件名重复,文件已覆盖");
+                dto.setId(po.getId());
+                return new ResponseHeadDTO<>(true,dto,"文件名重复,文件已覆盖");
             }else {
                 return new ResponseHeadDTO<>(false, "添加失败,同级下目录名已存在");
             }
@@ -175,7 +177,7 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
                 return new ResponseHeadDTO<>(false, "添加失败,父目录不是文件夹");
             }
         }
-        NetdiskDirectoryPO po = new NetdiskDirectoryPO();
+        po = new NetdiskDirectoryPO();
         BeanUtils.copyProperties(dto,po);
         po.setType(dto.getType().getCode());
         netdiskDirectoryMapper.insert(po);
