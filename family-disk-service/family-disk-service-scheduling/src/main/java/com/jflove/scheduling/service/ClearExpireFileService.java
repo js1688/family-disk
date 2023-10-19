@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,29 +38,16 @@ public class ClearExpireFileService{
     @Transactional
     public void run() {
         try{
-            //查询出哪些文件信息已经到了要删除的时候
+            //删掉标记删除了并且已经到了删除时间的数据
             long xz = System.currentTimeMillis() / 1000;
-            List<FileInfoPO> delFiles =  fileInfoMapper.selectList(new LambdaQueryWrapper<FileInfoPO>()
+            fileInfoMapper.delete(new LambdaQueryWrapper<FileInfoPO>()
                     .eq(FileInfoPO::getMarkDelete,1)
                     .lt(FileInfoPO::getDeleteTime, xz)//执行删除的时间小于了现在的时间,则代表可以删除了
             );
-            delFiles.forEach(v-> {
-                if(!fileInfoMapper.exists(new LambdaQueryWrapper<FileInfoPO>()
-                        .eq(FileInfoPO::getFileMd5, v.getFileMd5())
-                        .and(
-                                e -> e.eq(FileInfoPO::getMarkDelete, 0)//文件没有被标记删除
-                                        .or(
-                                                e2 -> e2.eq(FileInfoPO::getMarkDelete, 1).gt(FileInfoPO::getDeleteTime, xz)//文件被标记删除了但还未到清理日期
-                                        )
-                        ).last(" limit 1")
-                )){
-                    //找到文件所属磁盘信息
-                    FileDiskConfigPO selectd = fileDiskConfigMapper.selectOne(new LambdaQueryWrapper<FileDiskConfigPO>()
-                            .eq(FileDiskConfigPO::getId, v.getDiskId())
-                    );
-                    clearDisk(selectd,v);//执行清理
-                    fileInfoMapper.deleteById(v.getId());
-                }
+            //校准磁盘与数据库中的存储数量
+            List<FileDiskConfigPO> diskList = fileDiskConfigMapper.selectList(new LambdaQueryWrapper<FileDiskConfigPO>());
+            diskList.forEach(v->{
+                calibration(v);
             });
         }catch (Exception e){
             log.error("清除过期无引用文件时发生异常",e);
@@ -67,18 +55,26 @@ public class ClearExpireFileService{
     }
 
     /**
-     * 从磁盘中清理文件
+     * 校准磁盘文件与数据库中存储的数量,并且移除掉再无关联的文件
      * @param selectd
-     * @param infoPO
      * @return
      */
-    private boolean clearDisk(FileDiskConfigPO selectd,FileInfoPO infoPO) {
+    private boolean calibration(FileDiskConfigPO selectd) {
         switch (selectd.getType()){
             case "LOCAL"://本地磁盘中清理
-                String path = String.format("%s/%s%s", selectd.getPath(), infoPO.getFileMd5(), infoPO.getType());
                 try {
-                    Files.deleteIfExists(Path.of(path));
-                }catch (Exception e){}
+                    Files.list(Path.of(selectd.getPath())).forEach(v->{
+                        String name = v.getFileName().toString();
+                        String fileMd5 = name.substring(0,name.indexOf("."));
+                        if(!fileInfoMapper.exists(new LambdaQueryWrapper<FileInfoPO>()
+                                .eq(FileInfoPO::getFileMd5,fileMd5)
+                        )){//没有关联信息了,删文件
+                            try {
+                                Files.deleteIfExists(v);
+                            }catch (IOException e){}
+                        }
+                    });
+                }catch (IOException e){}
                 //刷新磁盘可使用空间
                 File file = new File(selectd.getPath());
                 DataSize total = DataSize.ofBytes(file.getTotalSpace());
