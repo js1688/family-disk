@@ -211,7 +211,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             sliceNum = sliceInfo.get("sliceNum");//分片数量
             sliceSize = sliceInfo.get("sliceSize");//分片大小
         }catch (Throwable e) {
-            throw new BadRequestException("网络文件缓存到服务器缓存目录发生错误");
+            throw new BadRequestException("网络文件缓存到服务器缓存目录发生错误",e);
         }
         String mediaType = Files.probeContentType(path);
         //尝试是否可以从垃圾箱恢复
