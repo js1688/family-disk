@@ -211,6 +211,11 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             sliceSize = sliceInfo.get("sliceSize");//分片大小
             fileMd5 = fileMd5(sliceNum, sliceSize, totalLength, raf);
         }catch (Throwable e) {
+            //将临时文件删除
+            try {
+                Files.deleteIfExists(path);
+            } catch (IOException e1) {
+            }
             throw new BadRequestException("网络文件缓存到服务器缓存目录发生错误",e);
         }
         String mediaType = Files.probeContentType(path);
