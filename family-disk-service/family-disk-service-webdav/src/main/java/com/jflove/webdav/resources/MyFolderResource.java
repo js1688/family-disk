@@ -152,8 +152,10 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             if (!wh.isResult()) {
                 throw new BadRequestException(this,wh.getMessage());
             }
-            along = wh.getData().getTotalSize();
-            s = wh.getData().getMediaType();
+            if(wh.getData() != null) {
+                along = wh.getData().getTotalSize();
+                s = wh.getData().getMediaType();
+            }
         }
 
         //所有分片发送结束或无需发送分片,开始建立网盘目录与文件的关系,此时关系是临时的,不代表真的把文件写盘了
