@@ -10,13 +10,9 @@ spring:
         - .*
   application:
     name: family-disk-webdav
-file:
-  temp:
-    # 文件上传时临时缓存目录
-    path: /Users/tanjun/Downloads/
 dubbo:
   consumer:
-    timeout: 30000 # 超时时间
+    timeout: 10000 # 超时时间
     retries: 0 # 不重试
   application:
     name: ${spring.application.name}
