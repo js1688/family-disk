@@ -184,7 +184,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
         Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), SecureUtil.md5(name), type));
         if(Files.exists(path)){//这个文件已存在,已经在接收文件流了
-            return new MyFolderResource(getUrl(),new FolderVO(name,0,new Date(),new Date())
+            return new MyFolderResource(getUrl(),new FolderVO(Path.of(getUrl()).getFileName().toString(),0,new Date(),new Date())
                     ,manageFactory,super.getUserSpace());
         }
 
@@ -268,7 +268,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
                             }
                         }
                     }catch (Throwable e) {
-                        log.error("异步发送文件流到文件存储模块失败,{}", e);
+                        log.error("异步发送文件流到文件存储模块失败", e);
                         //将建立起的临时关系删除掉,因为文件没有写盘成功
                         ResponseHeadDTO<NetdiskDirectoryDTO> lsNd = manageFactory.getDirectoryByUrl(userSpace.getId(),super.getUrl() + "/" + name);
                         if(lsNd.isResult()){
