@@ -32,7 +32,6 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -184,8 +183,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
         Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), SecureUtil.md5(name), type));
         if(Files.exists(path)){//这个文件已存在,已经在接收文件流了
-            return new MyFolderResource(getUrl(),new FolderVO(Path.of(getUrl()).getFileName().toString(),0,new Date(),new Date())
-                    ,manageFactory,super.getUserSpace());
+            return this;
         }
 
         //判断要上传的文件目录是否已存在,如果已存在则先删除
