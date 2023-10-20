@@ -205,11 +205,11 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             //写盘结束,从文件中读取一些必要的信息提高兼容性
             //因为webdav上传文件时,totalLength 和 mediaType 无法保证一定存在,所以增加缓存目录,用于对文件信息的读取
             totalLength = raf.length();
-            fileMd5 = fileMd5(sliceNum, sliceSize, totalLength, raf);
             //计算可传输分片大小
             Map<String, Long> sliceInfo = countFileSliceInfo(totalLength);
             sliceNum = sliceInfo.get("sliceNum");//分片数量
             sliceSize = sliceInfo.get("sliceSize");//分片大小
+            fileMd5 = fileMd5(sliceNum, sliceSize, totalLength, raf);
         }catch (Throwable e) {
             throw new BadRequestException("网络文件缓存到服务器缓存目录发生错误",e);
         }
