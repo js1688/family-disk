@@ -25,9 +25,10 @@ public class StreamWriteResultDTO implements Serializable {
     public StreamWriteResultDTO() {
     }
 
-    public StreamWriteResultDTO(String fileMd5, String mediaType) {
+    public StreamWriteResultDTO(String fileMd5, String mediaType,long totalSize) {
         this.fileMd5 = fileMd5;
         this.mediaType = mediaType;
+        this.totalSize = totalSize;
     }
 
     /**
@@ -39,6 +40,11 @@ public class StreamWriteResultDTO implements Serializable {
      * 媒体类型
      */
     private String mediaType;
+
+    /**
+     * 文件总大小(B)
+     */
+    private long totalSize;
 
 
 }

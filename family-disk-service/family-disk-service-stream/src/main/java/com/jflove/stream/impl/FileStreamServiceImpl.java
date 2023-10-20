@@ -121,6 +121,9 @@ public class FileStreamServiceImpl implements IFileStreamService {
                 if(!StringUtils.hasLength(po.getMediaType())){//有可能前面的分片没有传媒体类型,更新一下,提高兼容性
                     po.setMediaType(result.getData().getMediaType());
                 }
+                if(po.getSize() == 0){//有可能前面分片没有传总长度,更新一下,提高兼容性
+                    po.setSize(result.getData().getTotalSize());
+                }
                 fileInfoMapper.updateById(po);
             }
             return result;

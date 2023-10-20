@@ -85,9 +85,12 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
                 if(!StringUtils.hasLength(dto.getMediaType())){//分片没有传媒体类型,已经到了最后一片,读盘分析一下
                     dto.setMediaType(Files.probeContentType(Path.of(path)));
                 }
+                if(dto.getTotalSize() == 0){
+                    dto.setTotalSize(raf.length());
+                }
                 fileDiskConfigMapper.updateById(selectd);
                 //完整文件写盘成功,data会返回对象,这个可以区分是不是完整文件写盘结束
-                return new ResponseHeadDTO(true,new StreamWriteResultDTO(dto.getFileMd5(),dto.getMediaType()),"文件分片全部写盘成功");
+                return new ResponseHeadDTO(true,new StreamWriteResultDTO(dto.getFileMd5(),dto.getMediaType(),dto.getTotalSize()),"文件分片全部写盘成功");
             }
             return new ResponseHeadDTO(true,"文件分片写盘成功");
         }catch (IOException e){
