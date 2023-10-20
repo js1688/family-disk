@@ -85,7 +85,7 @@ public class LocalFileReadAndWritImpl implements IFileReadAndWrit {
                 if(!StringUtils.hasLength(dto.getMediaType())){//分片没有传媒体类型,已经到了最后一片,读盘分析一下
                     dto.setMediaType(Files.probeContentType(Path.of(path)));
                 }
-                if(dto.getTotalSize() == 0){
+                if(dto.getTotalSize() == 0 || dto.getTotalSize() == Long.MAX_VALUE){
                     dto.setTotalSize(raf.length());
                 }
                 fileDiskConfigMapper.updateById(selectd);

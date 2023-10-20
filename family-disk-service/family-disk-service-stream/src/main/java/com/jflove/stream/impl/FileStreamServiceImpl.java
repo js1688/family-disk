@@ -101,7 +101,9 @@ public class FileStreamServiceImpl implements IFileStreamService {
                 po.setBefore(1);//标记成上传之前,意味着它只是预占
                 po.setDiskId(selectd.getId());
                 po.setName(dto.getOriginalFileName());
-                po.setSize(dto.getTotalSize());
+                if(dto.getTotalSize() != Long.MAX_VALUE) {
+                    po.setSize(dto.getTotalSize());
+                }
                 po.setMediaType(dto.getMediaType());
                 po.setType(dto.getType());
                 po.setCreateUserId(dto.getCreateUserId());
