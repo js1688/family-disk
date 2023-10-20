@@ -81,15 +81,17 @@ public class FileStreamServiceImpl implements IFileStreamService {
             );
             FileDiskConfigPO selectd = null;
             if(po == null){//立即选择一个存储位置
-                DataSize ds = DataSize.ofBytes(dto.getTotalSize());
                 //查找出文件可以存放到哪个磁盘上
                 selectd = fileDiskConfigMapper.selectOne(new LambdaQueryWrapper<FileDiskConfigPO>()
                         .orderByDesc(FileDiskConfigPO::getUsableSize)//按可用空间降序,取最大的存储
                         .last(" limit 1")
                 );
-                //判断是否还存的下
-                if (ds.toGigabytes() > selectd.getUsableSize() - tempSpace.toGigabytes()) {
-                    return new ResponseHeadDTO<>(false,String.format("文件写盘失败,服务器存储空间已不足%sGB.",tempSpace.toGigabytes()));
+                //判断是否还存的下,如果长度是long 最大值就不判断了,因为它是一个临时的未知值
+                if(dto.getTotalSize() != Long.MAX_VALUE){
+                    DataSize ds = DataSize.ofBytes(dto.getTotalSize());
+                    if (ds.toGigabytes() > selectd.getUsableSize() - tempSpace.toGigabytes()) {
+                        return new ResponseHeadDTO<>(false,String.format("文件写盘失败,服务器存储空间已不足%sGB.",tempSpace.toGigabytes()));
+                    }
                 }
                 //将文件信息先写入到表中,临时存储,用于记录这个文件最开始就被选择了写入盘
                 po = new FileInfoPO();
