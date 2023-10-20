@@ -32,6 +32,7 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -183,7 +184,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
         Path path = Path.of(String.format("%s/%s%s", manageFactory.getFileTempPath(), SecureUtil.md5(name), type));
         if(Files.exists(path)){//这个文件已存在,已经在接收文件流了
-            throw new BadRequestException("文件正在写入,不需要重复请求");
+            return new MyFolderResource(getUrl(),new FolderVO(name,0,new Date(),new Date())
+                    ,manageFactory,super.getUserSpace());
         }
 
         //判断要上传的文件目录是否已存在,如果已存在则先删除
@@ -215,6 +217,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             try {
                 Files.deleteIfExists(path);
             } catch (IOException e1) {
+                log.error("删除临时文件出错",e);
             }
             throw new BadRequestException("网络文件缓存到服务器缓存目录发生错误",e);
         }
@@ -276,6 +279,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
                         try {
                             Files.deleteIfExists(path);
                         } catch (IOException e) {
+                            log.error("删除临时文件出错",e);
                         }
                     }
                 }).start();
