@@ -5,6 +5,7 @@ import com.jflove.file.api.IFileAdministration;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.api.INetdiskDirectory;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
+import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
@@ -78,9 +79,16 @@ public class ManageFactory {
      * 根据访问url查询到末尾的文件信息
      * @param spaceId
      * @param url
+     * @param spaceCode
      * @return
      */
-    public ResponseHeadDTO<NetdiskDirectoryDTO> getDirectoryByUrl(long spaceId,String url){
+    public ResponseHeadDTO<NetdiskDirectoryDTO> getDirectoryByUrl(long spaceId,String url,String spaceCode){
+        if("/".equals(url)){
+            NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
+            dto.setType(NetdiskDirectoryENUM.FOLDER);
+            dto.setName(spaceCode);
+            return new ResponseHeadDTO<>(dto);
+        }
         return netdiskDirectory.findLastDirectoryByUrl(spaceId,url);
     }
 

@@ -82,7 +82,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
         dto.setType(NetdiskDirectoryENUM.FOLDER);
         dto.setSpaceId(userSpace.getId());
-        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(dto.getSpaceId(),super.getUrl());
+        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(dto.getSpaceId(),super.getUrl(),userSpace.getCode());
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }
@@ -119,7 +119,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         if(parent.getRole() != UserSpaceRoleENUM.WRITE){
             throw new NotAuthorizedException("没有这个空间的写入权限",this);
         }
-        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(userSpace.getId(),super.getUrl());
+        ResponseHeadDTO<NetdiskDirectoryDTO> urlLast = manageFactory.getDirectoryByUrl(userSpace.getId(),super.getUrl(),userSpace.getCode());
         if(!urlLast.isResult()){
             throw new NotAuthorizedException("找不到父级目录",this);
         }

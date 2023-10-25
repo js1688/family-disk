@@ -18,8 +18,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-
 /**
  * @author: tanjun
  * @date: 2023/9/15 10:20 AM
@@ -55,11 +53,7 @@ public class MyResourceFactory implements ResourceFactory {
         ResponseHeadDTO<UserSpaceDTO> userSpace = manageFactory.getSpaceByCode(first);
         UserSpaceDTO dto = userSpace.getData();
         if(dto != null){//空间编码存在,判断本次要访问的目录是否存在
-            if("/".equals(url)){//访问的空间目录
-                FolderVO fv = new FolderVO(first,0,new Date(),new Date());
-                return new MyFolderResource(url,fv,manageFactory,dto);
-            }
-            ResponseHeadDTO<NetdiskDirectoryDTO> nd = manageFactory.getDirectoryByUrl(dto.getId(),url);
+            ResponseHeadDTO<NetdiskDirectoryDTO> nd = manageFactory.getDirectoryByUrl(dto.getId(),url,dto.getCode());
             if(!nd.isResult()){//不存在这个目录
                 return null;
             }
