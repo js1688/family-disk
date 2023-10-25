@@ -182,7 +182,7 @@ public class MyFolderResource extends BaseResource implements FolderResource {
             manageFactory.getNetdiskDirectory().delDirectory(userSpace.getId(),directory.getData().getId());
             throw new BadRequestException(this,e.getMessage());
         }
-        return new MyFolderResource(getUrl(),new FolderVO(directory.getData().getName(),directory.getData().getId(),directory.getData().getCreateTime(),directory.getData().getUpdateTime())
+        return new MyFolderResource(getUrl() + "/" + name,new FolderVO(directory.getData().getName(),directory.getData().getId(),directory.getData().getCreateTime(),directory.getData().getUpdateTime())
                 ,manageFactory,super.getUserSpace());
     }
 }
