@@ -105,9 +105,6 @@ public abstract class BaseResource {
 
     
     public Object authenticate(String s, String s1) {
-        if(userSpace == null && "/".equals(url)){
-            return this;
-        }
         if(userSpace == null){//没有空间信息
             return null;
         }
