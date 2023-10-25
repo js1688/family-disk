@@ -133,7 +133,7 @@ public abstract class BaseResource {
         if(!result){
             log.error("路径:{},验证未通过",url);
         }
-        return true;
+        return result;
     }
 
     
