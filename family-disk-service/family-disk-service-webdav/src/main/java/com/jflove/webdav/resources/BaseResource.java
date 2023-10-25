@@ -157,6 +157,7 @@ public abstract class BaseResource {
 
     
     public Resource child(String s) throws NotAuthorizedException, BadRequestException {
+        log.error("调用了child:{},url:{}",s,url);
         return null;
     }
 
