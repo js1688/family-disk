@@ -126,61 +126,48 @@ public class MyFolderResource extends BaseResource implements FolderResource {
         CoyoteInputStream in = (CoyoteInputStream)inputStream;
         String type = name.lastIndexOf(".") != -1 ? name.substring(name.lastIndexOf(".")) : "";
         String fileMd5 = UUID.randomUUID().toString();//webdav上传的方式导致了它不能正确使用分片计算md5,同时这种上传方式也不能从垃圾箱回收,或者引用其它人上传的资源达到秒传,因为它的md5是随机的
-        //预占目录,防止重复发送文件,以及文件流传输结束后,客户端立即请求查询当前目录结果却404这个问题
+        long seek = 0;
+        while (!in.isFinished()) {
+            byte[] b = new byte[8192];
+            int rlen = in.read(b);
+            if (rlen < b.length) {
+                b = Arrays.copyOf(b, rlen);
+            }
+            StreamWriteParamDTO swpd = new StreamWriteParamDTO();
+            swpd.setOriginalFileName(name);
+            swpd.setSource(FileSourceENUM.CLOUDDISK);
+            swpd.setSpaceId(userSpace.getId());
+            swpd.setTotalSize(Long.MAX_VALUE);//先假定总长度是long的最大值,这样传输时对方不会判断分片是否结束,由发送方来判断,如果读取完毕则发送实际长度
+            swpd.setCreateUserId(parent.getUser().getId());
+            swpd.setType(type);
+            swpd.setFileMd5(fileMd5);
+            swpd.setSeek(seek);
+            swpd.setStream(b);
+            seek += rlen;
+            if (in.isFinished()) {//读取完成了,修正文件总长度
+                swpd.setTotalSize(seek);
+            }
+            ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
+            if (!wh.isResult()) {
+                throw new RuntimeException(wh.getMessage());
+            }
+            if (wh.getData() != null) {
+                along = wh.getData().getTotalSize();
+                s = wh.getData().getMediaType();
+            }
+        }
+
         NetdiskDirectoryDTO netDto = new NetdiskDirectoryDTO();
         netDto.setType(NetdiskDirectoryENUM.FILE);
         netDto.setSpaceId(userSpace.getId());
         netDto.setName(name);
+        netDto.setSize(along.toString());
+        netDto.setMediaType(s);
         netDto.setPid(urlLast.getData().getId());
         netDto.setFileMd5(fileMd5);
         ResponseHeadDTO<NetdiskDirectoryDTO> directory = manageFactory.getNetdiskDirectory().addDirectory(netDto);
         if(!directory.isResult()){
             throw new BadRequestException(this,"建立文件与目录关系失败");
-        }
-        try {
-            long seek = 0;
-            while (!in.isFinished()) {
-                byte[] b = new byte[8192];
-                int rlen = in.read(b);
-                if (rlen < b.length) {
-                    b = Arrays.copyOf(b, rlen);
-                }
-                StreamWriteParamDTO swpd = new StreamWriteParamDTO();
-                swpd.setOriginalFileName(name);
-                swpd.setSource(FileSourceENUM.CLOUDDISK);
-                swpd.setSpaceId(userSpace.getId());
-                swpd.setTotalSize(Long.MAX_VALUE);//先假定总长度是long的最大值,这样传输时对方不会判断分片是否结束,由发送方来判断,如果读取完毕则发送实际长度
-                swpd.setCreateUserId(parent.getUser().getId());
-                swpd.setType(type);
-                swpd.setFileMd5(fileMd5);
-                swpd.setSeek(seek);
-                swpd.setStream(b);
-                seek += rlen;
-                if (in.isFinished()) {//读取完成了,修正文件总长度
-                    swpd.setTotalSize(seek);
-                }
-                ResponseHeadDTO<StreamWriteResultDTO> wh = manageFactory.getFileService().writeByte(swpd);
-                if (!wh.isResult()) {
-                    throw new RuntimeException(wh.getMessage());
-                }
-                if (wh.getData() != null) {
-                    along = wh.getData().getTotalSize();
-                    s = wh.getData().getMediaType();
-                }
-            }
-            //所有分片发送结束,将目录信息补全
-            NetdiskDirectoryDTO upDto = directory.getData();
-            upDto.setSize(along.toString());
-            upDto.setMediaType(s);
-            ResponseHeadDTO<NetdiskDirectoryDTO> upDirectory = manageFactory.getNetdiskDirectory().updateDirectory(upDto);
-            if (!upDirectory.isResult()) {
-                throw new RuntimeException("文件上传失败");
-            }
-        }catch (Throwable e){
-            log.error("发送文件流异常",e);
-            //删除预先创建的目录
-            manageFactory.getNetdiskDirectory().delDirectory(userSpace.getId(),directory.getData().getId());
-            throw new BadRequestException(this,e.getMessage());
         }
         return new MyFolderResource(getUrl() + "/" + name,new FolderVO(directory.getData().getName(),directory.getData().getId(),directory.getData().getCreateTime(),directory.getData().getUpdateTime())
                 ,manageFactory,super.getUserSpace());
