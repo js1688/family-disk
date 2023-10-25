@@ -84,35 +84,7 @@ rm -rf logs;
 ## nginx配置例子
 ```
     #webdav转发
-    server {
-        listen       80;
-        server_name  webdav.jflove.cn;
-        rewrite ^(.*)$  https://webdav.jflove.cn$1 permanent;
-    }
-    server {
-        root         /usr/share/nginx/html;
-        # Load configuration files for the default server block.
-        include /etc/nginx/default.d/*.conf;
-
-        listen 443;
-        server_name webdav.jflove.cn;
-        # 该配置默认情况为off,允许自定义请求头部的key,带下划线,默认会忽略掉
-        underscores_in_headers on;
-        ssl on;
-        ssl_certificate /root/ssl/webdav.jflove.cn_nginx/webdav.jflove.cn_bundle.crt;
-        ssl_certificate_key /root/ssl/webdav.jflove.cn_nginx/webdav.jflove.cn.key;
-        ssl_session_timeout 5m;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; #按照这个协议配置
-        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;#按照这个套件配置
-        ssl_prefer_server_ciphers on;
-        location / {
-            #禁用客户端请求体缓冲
-            proxy_request_buffering off;
-            #请求大小,不检查大小
-            client_max_body_size 0;
-            proxy_pass http://127.0.0.1:9999;
-        }
-    }
+    #暂时不建议使用nginx转发webdav,因为它总是会触发客户端主动断开499的错误,调试了很久都没有解决掉
 
     #api转发
     server {
