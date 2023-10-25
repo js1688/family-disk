@@ -5,7 +5,6 @@ import com.jflove.file.api.IFileAdministration;
 import com.jflove.file.em.FileSourceENUM;
 import com.jflove.netdisk.api.INetdiskDirectory;
 import com.jflove.netdisk.dto.NetdiskDirectoryDTO;
-import com.jflove.netdisk.em.NetdiskDirectoryENUM;
 import com.jflove.stream.api.IFileStreamService;
 import com.jflove.stream.dto.StreamReadParamDTO;
 import com.jflove.stream.dto.StreamReadResultDTO;
@@ -82,12 +81,6 @@ public class ManageFactory {
      * @return
      */
     public ResponseHeadDTO<NetdiskDirectoryDTO> getDirectoryByUrl(long spaceId,String url){
-        if("/".equals(url)){
-            NetdiskDirectoryDTO dto = new NetdiskDirectoryDTO();
-            dto.setType(NetdiskDirectoryENUM.FOLDER);
-            dto.setName(url);
-            return new ResponseHeadDTO<>(dto);
-        }
         return netdiskDirectory.findLastDirectoryByUrl(spaceId,url);
     }
 
