@@ -127,7 +127,11 @@ public abstract class BaseResource {
 
     
     public boolean authorise(Request request, Request.Method method, Auth auth) {
-        return auth != null && auth.getTag() != null;
+        boolean result = auth != null && auth.getTag() != null;
+        if(!result){
+            log.error("路径:{},验证未通过",url);
+        }
+        return result;
     }
 
     
