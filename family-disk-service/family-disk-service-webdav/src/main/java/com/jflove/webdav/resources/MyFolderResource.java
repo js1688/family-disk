@@ -167,14 +167,14 @@ public class MyFolderResource extends BaseResource implements FolderResource {
                     along = wh.getData().getTotalSize();
                     s = wh.getData().getMediaType();
                 }
-                //所有分片发送结束,将目录信息补全
-                NetdiskDirectoryDTO upDto = directory.getData();
-                upDto.setSize(along.toString());
-                upDto.setMediaType(s);
-                ResponseHeadDTO<NetdiskDirectoryDTO> upDirectory = manageFactory.getNetdiskDirectory().updateDirectory(upDto);
-                if (!upDirectory.isResult()) {
-                    throw new RuntimeException("文件上传失败");
-                }
+            }
+            //所有分片发送结束,将目录信息补全
+            NetdiskDirectoryDTO upDto = directory.getData();
+            upDto.setSize(along.toString());
+            upDto.setMediaType(s);
+            ResponseHeadDTO<NetdiskDirectoryDTO> upDirectory = manageFactory.getNetdiskDirectory().updateDirectory(upDto);
+            if (!upDirectory.isResult()) {
+                throw new RuntimeException("文件上传失败");
             }
         }catch (Throwable e){
             log.error("发送文件流异常",e);
