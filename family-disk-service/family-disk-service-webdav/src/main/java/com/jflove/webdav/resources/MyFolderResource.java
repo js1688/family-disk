@@ -97,8 +97,8 @@ public class MyFolderResource extends BaseResource implements FolderResource {
     }
 
     /**
+     * 不建议使用nginx代理webdav服务,也不建议使用类似于frp做穿透代理webdav服务,因为会导致连接不稳定的问题,我使用ipv6直连到webdav服务却没有出现稳定性问题
      * 注意:如果使用了nginx代理服务,一定要注意如下配置
-     * 暂时不建议使用nginx代理webdav,因为它总是会触发客户端主动断开nginx日志报499,调试了很久也没解决
      * client_max_body_size 0;#不检查文件流大小
      * proxy_request_buffering off;#禁用客户端请求体缓冲
      * @param name - the name to create within the collection. E.g. myFile.txt
