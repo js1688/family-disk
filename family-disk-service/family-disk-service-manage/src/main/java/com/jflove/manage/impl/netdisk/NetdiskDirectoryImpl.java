@@ -151,6 +151,18 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
     @Override
     @Transactional
     public ResponseHeadDTO<NetdiskDirectoryDTO> addDirectory(NetdiskDirectoryDTO dto) {
+        if(dto.getPid() != 0) {
+            NetdiskDirectoryPO ppo = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                    .eq(NetdiskDirectoryPO::getSpaceId, dto.getSpaceId())
+                    .eq(NetdiskDirectoryPO::getId, dto.getPid())
+            );
+            if (ppo == null) {
+                return new ResponseHeadDTO<>(false, "添加失败,父目录不存在");
+            }
+            if (NetdiskDirectoryENUM.FILE.getCode().equals(ppo.getType())) {
+                return new ResponseHeadDTO<>(false, "添加失败,父目录不是文件夹");
+            }
+        }
         //检查同级别下文件名是否已存在
         NetdiskDirectoryPO po = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
                 .eq(NetdiskDirectoryPO::getPid,dto.getPid())
@@ -165,24 +177,44 @@ public class NetdiskDirectoryImpl implements INetdiskDirectory {
                 return new ResponseHeadDTO<>(false, "添加失败,同级下目录名已存在");
             }
         }
-        if(dto.getPid() != 0) {
-            NetdiskDirectoryPO ppo = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
-                    .eq(NetdiskDirectoryPO::getSpaceId, dto.getSpaceId())
-                    .eq(NetdiskDirectoryPO::getId, dto.getPid())
-            );
-            if (ppo == null) {
-                return new ResponseHeadDTO<>(false, "添加失败,父目录不存在");
-            }
-            if (NetdiskDirectoryENUM.FILE.getCode().equals(ppo.getType())) {
-                return new ResponseHeadDTO<>(false, "添加失败,父目录不是文件夹");
-            }
-        }
         po = new NetdiskDirectoryPO();
         BeanUtils.copyProperties(dto,po);
         po.setType(dto.getType().getCode());
         netdiskDirectoryMapper.insert(po);
         dto.setId(po.getId());
         return new ResponseHeadDTO<>(true,dto,"添加成功");
+    }
+
+    @Override
+    @Transactional
+    public ResponseHeadDTO updateDirectory(NetdiskDirectoryDTO dto) {
+        if(dto.getPid() != 0) {
+            NetdiskDirectoryPO ppo = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                    .eq(NetdiskDirectoryPO::getSpaceId, dto.getSpaceId())
+                    .eq(NetdiskDirectoryPO::getId, dto.getPid())
+            );
+            if (ppo == null) {
+                return new ResponseHeadDTO<>(false, "修改失败,父目录不存在");
+            }
+            if (NetdiskDirectoryENUM.FILE.getCode().equals(ppo.getType())) {
+                return new ResponseHeadDTO<>(false, "修改失败,父目录不是文件夹");
+            }
+        }
+        //检查同级别下除了自己,文件名是否已存在
+        NetdiskDirectoryPO po = netdiskDirectoryMapper.selectOne(new LambdaQueryWrapper<NetdiskDirectoryPO>()
+                .eq(NetdiskDirectoryPO::getPid,dto.getPid())
+                .eq(NetdiskDirectoryPO::getSpaceId,dto.getSpaceId())
+                .eq(NetdiskDirectoryPO::getName,dto.getName())
+                .ne(NetdiskDirectoryPO::getId,dto.getId())
+        );
+        if(po != null){
+            return new ResponseHeadDTO<>(false, "修改失败,同级下目录名已存在");
+        }
+        po = new NetdiskDirectoryPO();
+        BeanUtils.copyProperties(dto,po);
+        po.setType(dto.getType().getCode());
+        netdiskDirectoryMapper.updateById(po);
+        return new ResponseHeadDTO<>(true,"修改成功");
     }
 
     @Override

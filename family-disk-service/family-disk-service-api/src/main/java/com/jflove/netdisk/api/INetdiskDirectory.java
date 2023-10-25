@@ -57,6 +57,13 @@ public interface INetdiskDirectory {
     ResponseHeadDTO<NetdiskDirectoryDTO> addDirectory(NetdiskDirectoryDTO dto);
 
     /**
+     * 修改目录
+     * @param dto
+     * @return
+     */
+    ResponseHeadDTO updateDirectory(NetdiskDirectoryDTO dto);
+
+    /**
      * 删除目录
      * @param spaceId
      * @param dirId
