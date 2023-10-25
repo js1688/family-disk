@@ -106,16 +106,18 @@ public abstract class BaseResource {
     
     public Object authenticate(String s, String s1) {
         if(userSpace == null){//没有空间信息
+            log.error("没有空间信息url:{}",url);
             return null;
         }
         ResponseHeadDTO<UserInfoDTO> userInfo = manageFactory.getUserInfoByEmail(s);
         if(!userInfo.isResult() || !userInfo.getData().getPassword().equals(s1)){//找不到用户
+            log.error("找不到用户url:{}",url);
             return null;
         }
         //检查该用户是否拥有这个空间的权限
         Optional<UserSpaceRelDTO> spaceRel = userInfo.getData().getSpaces().stream().filter(e->e.getSpaceId() == userSpace.getId()).findFirst();
         if(!spaceRel.isPresent()){//用户对这个空间没权限
-            //没有这个空间的权限
+            log.error("没有这个空间的权限url:{}",url);
             return null;
         }
         role = spaceRel.get().getRole();
