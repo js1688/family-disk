@@ -84,7 +84,6 @@ rm -rf logs;
 ## nginx配置例子
 ```
     #webdav转发
-    #不建议使用nginx代理webdav服务,也不建议使用类似于frp做穿透代理webdav服务,因为会导致连接不稳定的问题,我使用ipv6直连到webdav服务却没有出现稳定性问题
     server {
         listen       80;
         server_name  webdav.jflove.cn;
