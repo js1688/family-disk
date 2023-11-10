@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">家庭网盘</string>
+    <string name="disk_name">网盘</string>
+    <string name="riji_name">日记</string>
+    <string name="notepad_name">备忘录</string>
+    <string name="yonghu_name">用户</string>
 </resources>

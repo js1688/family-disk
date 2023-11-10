@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/action_search"
-        android:title="@string/menu_search"
-        android:icon="@drawable/ic_search" />
-    <item android:id="@+id/action_settings"
-        android:title="@string/menu_settings"
-        android:icon="@drawable/ic_add" />
-    <item android:id="@+id/action_navigation"
-        android:title="@string/menu_navigation"
-        android:icon="@drawable/ic_action_navigation_menu" />
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_disk"
+        android:icon="@drawable/ic_action_disk0"
+        android:title="@string/disk_name" />
+    <item android:id="@+id/action_riji"
+        android:title="@string/riji_name"
+        android:icon="@drawable/ic_action_riji0" />
+    <item android:id="@+id/action_notepad"
+        android:title="@string/notepad_name"
+        android:icon="@drawable/ic_action_notepad0" />
+    <item android:id="@+id/action_yonghu"
+        android:title="@string/yonghu_name"
+        android:icon="@drawable/ic_action_yonghu0" />
 </menu>
