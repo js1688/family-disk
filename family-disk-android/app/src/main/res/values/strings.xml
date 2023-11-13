@@ -4,4 +4,10 @@
     <string name="riji_name">日记</string>
     <string name="notepad_name">备忘录</string>
     <string name="yonghu_name">用户</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="disk_temp">网盘页面</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="riji_temp">日记页面</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
