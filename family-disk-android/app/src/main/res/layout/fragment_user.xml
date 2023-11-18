@@ -15,19 +15,70 @@
         android:src="@drawable/ic_action_logon0" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/textView_email"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:text="请先登录"
+        style="@style/globalStyle"
         android:layout_marginTop="240dp"
         android:textSize="24dp" />
     <ListView
         android:id="@+id/listView_menu"
         android:layout_width="match_parent"
         android:layout_marginTop="300dp"
-        android:layout_height="match_parent" >
-    </ListView>
+        android:choiceMode="singleChoice"
+        android:layout_height="match_parent" />
 
+    <!-- 登录面板 -->
+    <LinearLayout
+        android:id="@+id/linearLayout_logon"
+        android:gravity="bottom"
+        android:layout_width="match_parent"
+        android:visibility="invisible"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@color/translucent"
+        android:focusableInTouchMode="true"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:gravity="bottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/globalStyle"
+            android:orientation="vertical"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            >
+            <Button
+                android:id="@+id/logon_exit"
+                android:layout_gravity="end"
+                android:layout_width="80dp"
+                android:layout_height="50dp"
+                style="@style/globalStyle"
+                android:background="@android:color/transparent"
+                android:text="关闭"
+                />
+            <EditText
+                android:id="@+id/logon_email"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                style="@style/globalStyle"
+                android:hint="*邮箱" />
 
+            <EditText
+                android:id="@+id/logon_password"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                style="@style/globalStyle"
+                android:hint="*密码"
+                android:inputType="textPassword" />
+
+            <Button
+                android:id="@+id/logon_submit"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:text="登录" />
+        </LinearLayout>
+    </LinearLayout>
 </FrameLayout>
