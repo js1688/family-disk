@@ -1,9 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Familydiskandroid" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <style name="Base.Theme.family" parent="Theme.Material3.DayNight.NoActionBar">
+<!--        &lt;!&ndash; 设置状态栏为绿色——已注释&ndash;&gt;-->
+<!--         <item name="android:statusBarColor" tools:targetApi="l">@color/white</item>-->
+
+<!--        &lt;!&ndash; 设置状态栏半透明——解除注释 &ndash;&gt;-->
+<!--        <item name="android:windowTranslucentStatus">false</item>-->
+
+<!--        &lt;!&ndash; 设置底部导航栏半透明，默认false黑色，设置true半透明 &ndash;&gt;-->
+<!--        <item name="android:windowTranslucentNavigation">true</item>-->
+
+<!--        &lt;!&ndash; Android 5.0+，设置状态栏全透明透明 &ndash;&gt;-->
+<!--        <item name="android:statusBarColor" tools:targetApi="l">@android:color/transparent</item>-->
     </style>
 
-    <style name="Theme.Familydiskandroid" parent="Base.Theme.Familydiskandroid" />
+    <style name="Theme.family" parent="Base.Theme.family" />
 </resources>

@@ -1,5 +1,8 @@
 package com.jflove.android;
 
+import static com.jflove.android.api.HttpApi.LOGON_URL;
+import static com.jflove.android.api.HttpApi.REGISTER_URL;
+
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -17,6 +20,11 @@ import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.textview.MaterialTextView;
+import com.jflove.android.api.HttpApi;
+
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 
 public class UserFragment extends Fragment {
     private static final int ldId = 10000;
@@ -36,10 +44,9 @@ public class UserFragment extends Fragment {
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((adapterView, view1, i, l) -> {
             MaterialTextView v = (MaterialTextView) view1;
-            //Toast.makeText(getActivity(),String.format("选择的功能%s",v.getText()), Toast.LENGTH_SHORT).show();
             if("注册".equals(v.getText())){
                 //不重复开发了,注册时直接弹到网页版去注册
-                Uri uri = Uri.parse("https://m.jflove.cn");
+                Uri uri = Uri.parse(REGISTER_URL);
                 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                 startActivity(intent);
             }else if("登录".equals(v.getText())){
@@ -62,8 +69,18 @@ public class UserFragment extends Fragment {
         logonSubmit.setOnClickListener(view13 -> {
             EditText logonEmail = view.findViewById(R.id.logon_email);
             EditText logonPassword = view.findViewById(R.id.logon_password);
-
-            Toast.makeText(getActivity(),String.format("登录邮箱%s,密码:%s",logonEmail.getText(),logonPassword.getText()), Toast.LENGTH_SHORT).show();
+            if(StrUtil.isEmpty(logonEmail.getText()) || StrUtil.isEmpty(logonPassword.getText())){
+                Toast.makeText(getActivity(),"请输入邮箱和密码",Toast.LENGTH_SHORT).show();
+                return;
+            }
+            JSONObject param = JSONUtil.createObj().set("email", logonEmail.getText()).set("password", logonPassword.getText());
+            new HttpApi(){
+                @Override
+                public void callback(JSONObject response) {
+                    Toast.makeText(getActivity(), response.getStr("message"), Toast.LENGTH_SHORT).show();
+                    //todo 使用 DataStore 存取数据
+                }
+            }.post(LOGON_URL,param,view);
         });
         return view;
     }

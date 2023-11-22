@@ -55,22 +55,24 @@
                 android:layout_gravity="end"
                 android:layout_width="80dp"
                 android:layout_height="50dp"
-                style="@style/globalStyle"
+                style="@style/bottomStyle"
                 android:background="@android:color/transparent"
                 android:text="关闭"
                 />
             <EditText
                 android:id="@+id/logon_email"
                 android:layout_width="match_parent"
+                android:background="@drawable/border_bottom"
                 android:layout_height="50dp"
-                style="@style/globalStyle"
+                style="@style/textStyle"
                 android:hint="*邮箱" />
 
             <EditText
                 android:id="@+id/logon_password"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                style="@style/globalStyle"
+                style="@style/textStyle"
+                android:background="@drawable/border_bottom"
                 android:hint="*密码"
                 android:inputType="textPassword" />
 
@@ -78,6 +80,7 @@
                 android:id="@+id/logon_submit"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
+                style="@style/bottomStyle"
                 android:text="登录" />
         </LinearLayout>
     </LinearLayout>
