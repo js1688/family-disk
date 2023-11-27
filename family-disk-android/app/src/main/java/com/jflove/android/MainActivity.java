@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.jflove.android.api.SettingsStorageApi;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -41,9 +42,14 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+        SettingsStorageApi.init(this);
         //设置默认打开的业务面板
-        //todo 如果未登录就默认打开用户登录面板,否则打开网盘
-        switchFragment(diskFragment);
+        //如果未登录就默认打开用户登录面板,否则打开网盘
+        if(SettingsStorageApi.isExist(SettingsStorageApi.Authorization)) {
+            switchFragment(diskFragment);
+        }else{
+            switchFragment(userFragment);
+        }
     }
 
     private void switchFragment(Fragment fragment){

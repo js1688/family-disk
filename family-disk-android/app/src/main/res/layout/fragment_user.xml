@@ -23,11 +23,12 @@
         style="@style/globalStyle"
         android:layout_marginTop="240dp"
         android:textSize="24dp" />
-    <ListView
+    <ExpandableListView
         android:id="@+id/listView_menu"
         android:layout_width="match_parent"
         android:layout_marginTop="300dp"
         android:choiceMode="singleChoice"
+        android:groupIndicator="@null"
         android:layout_height="match_parent" />
 
     <!-- 登录面板 -->

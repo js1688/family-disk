@@ -27,7 +27,11 @@ public interface HttpApi {
     /**
      * 登录地址
      */
-    String LOGON_URL= API_HOST + "/user/info/emailPasswordLogin";
+    String LOGON_URL = API_HOST + "/user/info/emailPasswordLogin";
+    /**
+     * 获取当前登录账号的用户信息
+     */
+    String GET_USERINFO_URL = API_HOST + "/user/info/getUserInfo";
 
     /**
      * 调用接口后的回调处理
@@ -46,7 +50,7 @@ public interface HttpApi {
     default void post(String url, JSON param, View view){
         //todo 创建一个新的线程执行 http,有响应结果了,再调用主线程处理结果,  后面考虑使用线程池, 因为这个app调用http比较频繁
         new Thread(() -> {
-            String token = null;
+            String token = SettingsStorageApi.get(SettingsStorageApi.Authorization);
             HttpResponse response = HttpRequest.post(url)
                     .header(Header.CONTENT_TYPE,"application/json")
                     .header(Header.AUTHORIZATION,token)
@@ -56,5 +60,23 @@ public interface HttpApi {
             view.post(() -> callback(jo));
         }).start();
     }
-
+    /**
+     * 发送get请求,会自动附带token,如果有的话
+     * 安卓要求不能在主线程中访问Http,防止主线程UI卡住
+     * @param url
+     * @param view 回调方法在哪个页面执行,主要目的是将http响应结果放到主线程去执行
+     * @return
+     */
+    default void get(String url,View view){
+        //todo 创建一个新的线程执行 http,有响应结果了,再调用主线程处理结果,  后面考虑使用线程池, 因为这个app调用http比较频繁
+        new Thread(() -> {
+            String token = SettingsStorageApi.get(SettingsStorageApi.Authorization);
+            HttpResponse response = HttpRequest.get(url)
+                    .header(Header.CONTENT_TYPE,"application/json")
+                    .header(Header.AUTHORIZATION,token)
+                    .execute();
+            JSONObject jo = JSONUtil.parseObj(response.body());
+            view.post(() -> callback(jo));
+        }).start();
+    }
 }
