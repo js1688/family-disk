@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * @author: tanjun
  * @date: 2023/11/27 2:52 PM
- * @desc: 折叠列表
+ * @desc: 折叠列表,2层折叠
  */
 public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
     private Context context;
@@ -167,16 +167,6 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
         return child != null && child.size() != 0;
     }
 
-
-    class ParentHolder {
-        TextView tvParent;
-    }
-
-
-    class ChildrenHolder {
-        TextView tvChild;
-    }
-
     /**
      * 用于刷新更新后的数据
      * @param list
@@ -184,5 +174,15 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
     public void reFreshData(List<Map<String,Object>> list) {
         this.list = list;
         notifyDataSetChanged();
+    }
+
+    //todo 这两个行的样式还得调一下
+    class ParentHolder {
+        TextView tvParent;
+    }
+
+
+    class ChildrenHolder {
+        TextView tvChild;
     }
 }

@@ -74,6 +74,9 @@ public class MenuClickEvent implements View.OnClickListener{
             List<Map> menu4 = new ArrayList<>();
             menu4.add(Map.of("name","加入我的空间","id",41l));
             menu4.add(Map.of("name","查看空间已使用量","id",42l));
+            menu4.add(Map.of("name","我的空间人员管理","id",43l));
+            menu4.add(Map.of("name","申请加入其他人的空间","id",44l));
+            menu4.add(Map.of("name","邀请其他人加入我的空间","id",45l));
             menu.add(Map.of("name","空间信息","id",4l,"child",menu4));
             menu.add(Map.of("name","分享管理","id",5l));
         }else {//未登录时使用的菜单
