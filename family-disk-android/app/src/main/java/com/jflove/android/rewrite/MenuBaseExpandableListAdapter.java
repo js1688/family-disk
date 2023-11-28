@@ -120,19 +120,14 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
      */
     @Override
     public View getGroupView(final int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-        ParentHolder parentHolder;
-        if (convertView == null) {
-            convertView = LayoutInflater.from(context).inflate(R.layout.listview_item, null);
-            parentHolder = new ParentHolder();
-            parentHolder.tvParent = convertView.findViewById(R.id.listView_menu_item);
-            convertView.setTag(parentHolder);
-        } else {
-            parentHolder = (ParentHolder) convertView.getTag();
-        }
+        convertView = LayoutInflater.from(context).inflate(R.layout.listview_item, null);//必须每次重建对象,否则会发生刷新菜单的时候,菜单事件等信息不刷新,仅仅是改了个名称
+        ParentHolder parentHolder = new ParentHolder();
+        parentHolder.tvParent = convertView.findViewById(R.id.listView_menu_item);
         parentHolder.tvParent.setText((CharSequence) getGroup(groupPosition));
         if(getChildrenCount(groupPosition) == 0) {//没有子菜单,则给当前按钮增加事件回调
             parentHolder.tvParent.setOnClickListener(clickListener);
         }
+        convertView.setTag(parentHolder);
         return convertView;
     }
 
@@ -141,21 +136,16 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
      */
     @Override
     public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-        final ChildrenHolder childrenHolder;
-        if (convertView == null) {
-            convertView = LayoutInflater.from(context).inflate(R.layout.listview_item, null);
-            childrenHolder = new ChildrenHolder();
-            childrenHolder.tvChild = convertView.findViewById(R.id.listView_menu_item);
-            convertView.setTag(childrenHolder);
-        } else {
-            childrenHolder = (ChildrenHolder) convertView.getTag();
-        }
+        convertView = LayoutInflater.from(context).inflate(R.layout.listview_item, null);//必须每次重建对象,否则会发生刷新菜单的时候,菜单事件等信息不刷新,仅仅是改了个名称
+        ChildrenHolder childrenHolder = new ChildrenHolder();
+        childrenHolder.tvChild = convertView.findViewById(R.id.listView_menu_item);
         childrenHolder.tvChild.setText((CharSequence) ((Map)getChild(groupPosition,childPosition)).get("name"));
         Map map = (Map) getChild(groupPosition,childPosition);
         List child = (List) map.get("child");
         if(child == null || child.size() == 0) {//没有子菜单,则给当前按钮增加事件回调
             childrenHolder.tvChild.setOnClickListener(clickListener);
         }
+        convertView.setTag(childrenHolder);
         return convertView;
     }
 
@@ -189,10 +179,10 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
 
     /**
      * 用于刷新更新后的数据
+     * @param list
      */
     public void reFreshData(List<Map<String,Object>> list) {
         this.list = list;
         notifyDataSetChanged();
-        //todo 子菜单没刷新
     }
 }
