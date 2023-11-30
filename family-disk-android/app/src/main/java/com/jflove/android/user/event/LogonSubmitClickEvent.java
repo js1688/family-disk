@@ -53,7 +53,7 @@ public class LogonSubmitClickEvent implements View.OnClickListener{
                     if(r.getBool("result")) {
                         adapter.reFreshData(createMenu());//刷新菜单
                         new LinearLayoutCloseClickEvent(parentView,R.id.linearLayout_logon).onClick(null);
-                        ((TextView) parentView.findViewById(R.id.textView_name)).setText(r.getStr("name"));
+                        ((TextView) parentView.findViewById(R.id.textView_name)).setText(r.getJSONObject("data").getStr("name"));
                         logonEmail.setText("");
                         logonPassword.setText("");
                     }else{
