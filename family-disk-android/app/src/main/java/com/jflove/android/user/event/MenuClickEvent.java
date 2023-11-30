@@ -2,8 +2,10 @@ package com.jflove.android.user.event;
 
 import static android.content.Context.CLIPBOARD_SERVICE;
 import static com.jflove.android.api.HttpApi.DEL_SHARELINK_URL;
+import static com.jflove.android.api.HttpApi.EXIT_SPACE_REL;
 import static com.jflove.android.api.HttpApi.GET_SHARELINK_URL;
 import static com.jflove.android.api.HttpApi.REGISTER_URL;
+import static com.jflove.android.api.HttpApi.SWITCH_SPACE;
 
 import android.app.AlertDialog;
 import android.content.ClipData;
@@ -26,6 +28,7 @@ import com.jflove.android.rewrite.MenuBaseExpandableListAdapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.util.StrUtil;
@@ -72,19 +75,26 @@ public class MenuClickEvent implements View.OnClickListener{
                 parentView.findViewById(R.id.linearLayout_logon).setVisibility(View.VISIBLE);
                 break;
             case "exitLogon":
-                SettingsStorageApi.delete(SettingsStorageApi.Authorization);
-                SettingsStorageApi.delete(SettingsStorageApi.USER_NAME);
-                SettingsStorageApi.delete(SettingsStorageApi.USER_EMAIL);
-                SettingsStorageApi.delete(SettingsStorageApi.USER_ID);
-                SettingsStorageApi.delete(SettingsStorageApi.USE_SPACE_ROLE);
-                SettingsStorageApi.delete(SettingsStorageApi.USER_ALL_SPACE_ROLE);
-                SettingsStorageApi.delete(SettingsStorageApi.USE_SPACE_ID);
-                ((TextView)parentView.findViewById(R.id.textView_name)).setText("请先登录");
-                adapter.reFreshData(createMenu());//刷新菜单
+                new AlertDialog.Builder(context)
+                        .setTitle("提示")
+                        .setMessage("是否退出登录")
+                        .setPositiveButton("确定", (dialog1, which1) -> {
+                            SettingsStorageApi.delete(SettingsStorageApi.Authorization);
+                            SettingsStorageApi.delete(SettingsStorageApi.USER_NAME);
+                            SettingsStorageApi.delete(SettingsStorageApi.USER_EMAIL);
+                            SettingsStorageApi.delete(SettingsStorageApi.USER_ID);
+                            SettingsStorageApi.delete(SettingsStorageApi.USE_SPACE_ROLE);
+                            SettingsStorageApi.delete(SettingsStorageApi.USER_ALL_SPACE_ROLE);
+                            SettingsStorageApi.delete(SettingsStorageApi.USE_SPACE_ID);
+                            ((TextView)parentView.findViewById(R.id.textView_name)).setText("请先登录");
+                            adapter.reFreshData(createMenu());//刷新菜单
+                        })
+                        .setNegativeButton("取消",null)
+                        .create().show();
                 break;
             case "shareRel":
                 //弹出分享信息面板
-                parentView.findViewById(R.id.linearLayout_shareRel).setVisibility(View.VISIBLE);
+                parentView.findViewById(R.id.linearLayout_publiclist).setVisibility(View.VISIBLE);
                 //调用接口获取分享列表
                 ((HttpApi) shareLink -> {
                     if(shareLink.getBool("result")){
@@ -114,7 +124,7 @@ public class MenuClickEvent implements View.OnClickListener{
                             switch ((String)selectd.get("code")){
                                 case "remove":
                                     new AlertDialog.Builder(context)
-                                            .setTitle("删除")
+                                            .setTitle("提示")
                                             .setMessage("是否删除分享:" + rowData.get("keyword") + ",删除后不可恢复!")
                                             .setPositiveButton("确定", (dialog1, which1) -> {
                                                 ((HttpApi) delLink ->{
@@ -160,6 +170,68 @@ public class MenuClickEvent implements View.OnClickListener{
                     }
                 }).get(GET_SHARELINK_URL,parentView);
                 break;
+            case "iSpaceRel"://我加入的空间
+                //弹出面板我加入的空间面板
+                parentView.findViewById(R.id.linearLayout_publiclist).setVisibility(View.VISIBLE);
+                //从缓存中拿到这个数据
+                Set<String> datas = SettingsStorageApi.get(SettingsStorageApi.USER_ALL_SPACE_ROLE);
+                List list = datas.stream().map(e->{
+                    JSONObject jo = JSONUtil.parseObj(e);
+                    jo.putOpt("name",jo.getStr("title") + (jo.getInt("spaceId") == SettingsStorageApi.get(SettingsStorageApi.USE_SPACE_ID) ? "(当前空间)" : ""));
+                    jo.putOpt("code",jo.getInt("spaceId").toString());
+                    jo.putOpt("id",jo.getInt("spaceId").longValue());
+                    return jo.toBean(Map.class);
+                }).collect(Collectors.toList());
+                //组装列表数据,以及对象
+                ExpandableListView expandableListView = parentView.findViewById(R.id.listView_share);
+                MenuBaseExpandableListAdapter adapter = new MenuBaseExpandableListAdapter(context, list);
+                List select = new ArrayList();
+                select.add(Map.of("name", "切换", "code", "switch"));
+                select.add(Map.of("name", "退出", "code", "exit"));
+                LongClickButtonEvent lcbe = new LongClickButtonEvent(select,context);
+                //添加触发确定按钮的事件
+                lcbe.setOkOnClickListener((dialog, which) -> {
+                    Map<String,Object> selectd = lcbe.getSelectd();//选中的操作按钮
+                    Map<String,Object> rowData = adapter.getDataById(lcbe.getView().getId());//需要操作的行数据
+                    switch ((String)selectd.get("code")){
+                        case "exit":
+                            new AlertDialog.Builder(context)
+                                    .setTitle("提示")
+                                    .setMessage("确定退出空间:" + rowData.get("title") + "?")
+                                    .setPositiveButton("确定", (dialog1, which1) -> {
+                                        ((HttpApi) exitRel ->{
+                                            if(exitRel.getBool("result")){
+                                                //退出空间后重新刷新一下用户信息
+                                                ((HttpApi) r -> {
+                                                    new LinearLayoutCloseClickEvent(parentView,R.id.linearLayout_publiclist).onClick(null);
+                                                }).getUserInfo(parentView);
+                                            }else {
+                                                Toast.makeText(context, exitRel.getStr("message"), Toast.LENGTH_SHORT).show();
+                                            }
+                                        }).post(EXIT_SPACE_REL, JSONUtil.createObj().putOpt("spaceId",rowData.get("id")),parentView);
+                                    })
+                                    .setNegativeButton("取消",null)
+                                    .create().show();
+                            break;
+                        case "switch":
+                            ((HttpApi) response ->{
+                                if(response.getBool("result")){
+                                    ((HttpApi) r -> {
+                                        if(r.getBool("result")) {
+                                            new LinearLayoutCloseClickEvent(parentView,R.id.linearLayout_publiclist).onClick(null);
+                                        }else{
+                                            Toast.makeText(context, r.getStr("message"), Toast.LENGTH_SHORT).show();
+                                        }
+                                    }).getUserInfo(parentView);
+                                }
+                                Toast.makeText(context, response.getStr("message"), Toast.LENGTH_SHORT).show();
+                            }).post(SWITCH_SPACE,JSONUtil.createObj().putOpt("targetSpaceId",rowData.get("id")),parentView);
+                            break;
+                    }
+                });
+                adapter.setOnLongClickListener(lcbe);//当列表被长按后触发的事件处理
+                expandableListView.setAdapter(adapter);
+                break;
             default:
                 break;
         }
@@ -174,7 +246,7 @@ public class MenuClickEvent implements View.OnClickListener{
         if(SettingsStorageApi.isExist(SettingsStorageApi.Authorization)){//已登录时使用的菜单
             menu.add(Map.of("name","退出登录","id",3l,"code","exitLogon"));
             List<Map> menu4 = new ArrayList<>();
-            menu4.add(Map.of("name","加入我的空间","id",41l,"code","joinI"));
+            menu4.add(Map.of("name","我加入的空间","id",41l,"code","iSpaceRel"));
             menu4.add(Map.of("name","查看空间已使用量","id",42l,"code","useSpace"));
             menu4.add(Map.of("name","我的空间人员管理","id",43l,"code","spaceUserRel"));
             menu4.add(Map.of("name","申请加入其他人的空间","id",44l,"code","joinOther"));

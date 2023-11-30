@@ -38,16 +38,15 @@ public class UserFragment extends Fragment {
 
         //设置登陆弹框,关闭按钮点击监听事件
         Button logonExit =  view.findViewById(R.id.logon_exit);
-        LinearLayoutCloseClickEvent lece = new LinearLayoutCloseClickEvent(view,R.id.linearLayout_logon);
-        logonExit.setOnClickListener(lece);
+        logonExit.setOnClickListener(new LinearLayoutCloseClickEvent(view,R.id.linearLayout_logon));
 
         //设置登陆按钮点击事件
         Button logonSubmit = view.findViewById(R.id.logon_submit);
-        logonSubmit.setOnClickListener(new LogonSubmitClickEvent(getActivity(),adapter,lece,view));
+        logonSubmit.setOnClickListener(new LogonSubmitClickEvent(getActivity(),adapter,view));
 
-        //设置我的空间信息弹框,关闭按钮点击监听事件
-        Button spaceInfoExit = view.findViewById(R.id.shareRel_exit);
-        spaceInfoExit.setOnClickListener(new LinearLayoutCloseClickEvent(view,R.id.linearLayout_shareRel));
+        //设置公共列表弹出面板,关闭按钮点击监听事件
+        Button publicListExit = view.findViewById(R.id.publiclist_exit);
+        publicListExit.setOnClickListener(new LinearLayoutCloseClickEvent(view,R.id.linearLayout_publiclist));
 
         return view;
     }

@@ -9,7 +9,6 @@ import com.google.android.material.textview.MaterialTextView;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author: tanjun
@@ -29,7 +28,7 @@ public class LongClickButtonEvent implements View.OnLongClickListener{
     private DialogInterface.OnClickListener okOnClickListener;
     private Context context;
 
-    private Integer selectd;
+    private int selectd;
 
     private View view;
 
@@ -49,8 +48,11 @@ public class LongClickButtonEvent implements View.OnLongClickListener{
         new AlertDialog.Builder(context)
                 .setTitle(((MaterialTextView) view).getText())
                 .setSingleChoiceItems(select, 0, (dialogInterface, i) -> selectd = i)
-                .setPositiveButton("确定",okOnClickListener)
-                .setNegativeButton("取消",null)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    okOnClickListener.onClick(dialog,which);
+                    selectd = 0;
+                })
+                .setNegativeButton("取消", (dialog, which) -> selectd = 0)
                 .create().show();
         return true;
     }
@@ -68,6 +70,6 @@ public class LongClickButtonEvent implements View.OnLongClickListener{
      * @return
      */
     public Map<String,Object> getSelectd() {
-        return list.get(Optional.ofNullable(selectd).orElse(0));
+        return list.get(selectd);
     }
 }

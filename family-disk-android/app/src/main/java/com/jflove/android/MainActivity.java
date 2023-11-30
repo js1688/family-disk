@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.jflove.android.api.HttpApi;
 import com.jflove.android.api.SettingsStorageApi;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
         //设置默认打开的业务面板
         //如果未登录就默认打开用户登录面板,否则打开网盘
         if(SettingsStorageApi.isExist(SettingsStorageApi.Authorization)) {
+            //每次重新打开APP都刷新一下用户信息
+            ((HttpApi) r->{}).getUserInfo(null);
             switchFragment(diskFragment);
         }else{
             switchFragment(userFragment);

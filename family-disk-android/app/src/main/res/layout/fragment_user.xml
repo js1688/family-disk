@@ -86,9 +86,9 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 分享信息面板 -->
+    <!-- 公共列表面板 -->
     <LinearLayout
-        android:id="@+id/linearLayout_shareRel"
+        android:id="@+id/linearLayout_publiclist"
         android:gravity="bottom"
         android:layout_width="match_parent"
         android:visibility="invisible"
@@ -107,7 +107,7 @@
             android:paddingRight="16dp"
             >
             <Button
-                android:id="@+id/shareRel_exit"
+                android:id="@+id/publiclist_exit"
                 android:layout_gravity="end"
                 android:layout_width="80dp"
                 android:layout_height="50dp"
