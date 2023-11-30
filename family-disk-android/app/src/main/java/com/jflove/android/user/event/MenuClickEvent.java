@@ -253,6 +253,7 @@ public class MenuClickEvent implements View.OnClickListener{
             menu4.add(Map.of("name","邀请其他人加入我的空间","id",45l,"code","inviteJoin"));
             menu.add(Map.of("name","空间信息","id",4l,"child",menu4,"code","spaceInfo"));
             menu.add(Map.of("name","分享管理","id",5l,"code","shareRel"));
+            menu.add(Map.of("name","同步设置","id",6l,"code","sync"));
         }else {//未登录时使用的菜单
             menu.add(Map.of("name","登录","id",1l,"code","logon"));
             menu.add(Map.of("name","注册","id",2l,"code","register"));
