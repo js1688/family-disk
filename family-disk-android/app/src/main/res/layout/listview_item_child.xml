@@ -5,6 +5,7 @@
     android:layout_height="wrap_content"
     android:textAppearance="?android:attr/textAppearanceLarge"
     style="@style/globalStyle"
+    android:background="@drawable/border_bottom"
     android:gravity="center_vertical"
     android:paddingLeft="32dp"
     android:paddingRight="16dp"
