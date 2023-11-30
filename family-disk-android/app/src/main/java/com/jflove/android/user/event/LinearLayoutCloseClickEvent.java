@@ -4,18 +4,18 @@ import android.content.Context;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
-import com.jflove.android.R;
-
 /**
  * @author: tanjun
  * @date: 2023/11/28 5:33 PM
- * @desc: 用户模块,退出登录点击事件
+ * @desc: 关闭面板点击事件, 通用类
  */
-public class LogonExitClickEvent implements View.OnClickListener{
+public class LinearLayoutCloseClickEvent implements View.OnClickListener{
     private View parentView;
+    private int id;
 
-    public LogonExitClickEvent(View parentView) {
+    public LinearLayoutCloseClickEvent(View parentView,int id) {
         this.parentView = parentView;
+        this.id = id;
     }
 
     @Override
@@ -25,6 +25,6 @@ public class LogonExitClickEvent implements View.OnClickListener{
         if (inputMethodManager != null) {
             inputMethodManager.hideSoftInputFromWindow(parentView.getWindowToken(), 0);
         }
-        parentView.findViewById(R.id.linearLayout_logon).setVisibility(View.INVISIBLE);
+        parentView.findViewById(id).setVisibility(View.INVISIBLE);
     }
 }

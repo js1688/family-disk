@@ -7,6 +7,7 @@ import static com.jflove.android.user.event.MenuClickEvent.createMenu;
 import android.content.Context;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jflove.android.R;
@@ -31,11 +32,11 @@ public class LogonSubmitClickEvent implements View.OnClickListener{
     private Context context;
     private MenuBaseExpandableListAdapter adapter;
 
-    private LogonExitClickEvent lece;
+    private LinearLayoutCloseClickEvent lece;
 
     private View parentView;
 
-    public LogonSubmitClickEvent(Context context, MenuBaseExpandableListAdapter adapter, LogonExitClickEvent lece, View parentView) {
+    public LogonSubmitClickEvent(Context context, MenuBaseExpandableListAdapter adapter, LinearLayoutCloseClickEvent lece, View parentView) {
         this.context = context;
         this.adapter = adapter;
         this.lece = lece;
@@ -70,6 +71,7 @@ public class LogonSubmitClickEvent implements View.OnClickListener{
                         SettingsStorageApi.put(SettingsStorageApi.USER_ALL_SPACE_ROLE, spaces.stream().map(JSONUtil::toJsonStr).collect(Collectors.toSet()));
                         adapter.reFreshData(createMenu());//刷新菜单
                         lece.onClick(parentView);
+                        ((TextView)parentView.findViewById(R.id.textView_name)).setText(data.getStr("name"));
                         logonEmail.setText("");
                         logonPassword.setText("");
                     }else {

@@ -21,6 +21,11 @@ public interface HttpApi {
     String API_HOST = "https://api.jflove.cn";
 
     /**
+     * 网页版主站地址
+     */
+    String WWW_HOST = "https://www.jflove.cn";
+
+    /**
      * 注册地址
      */
     String REGISTER_URL = "https://m.jflove.cn";
@@ -32,6 +37,10 @@ public interface HttpApi {
      * 获取当前登录账号的用户信息
      */
     String GET_USERINFO_URL = API_HOST + "/user/info/getUserInfo";
+    /**
+     * 获取分享列表
+     */
+    String GET_SHARELINK_URL = API_HOST + "/share/admin/getLinkList";
 
     /**
      * 调用接口后的回调处理

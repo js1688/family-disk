@@ -1,21 +1,33 @@
 package com.jflove.android.user.event;
 
+import static android.content.Context.CLIPBOARD_SERVICE;
+import static com.jflove.android.api.HttpApi.GET_SHARELINK_URL;
 import static com.jflove.android.api.HttpApi.REGISTER_URL;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.View;
+import android.widget.ExpandableListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.textview.MaterialTextView;
 import com.jflove.android.R;
+import com.jflove.android.api.HttpApi;
 import com.jflove.android.api.SettingsStorageApi;
 import com.jflove.android.rewrite.MenuBaseExpandableListAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 
 /**
  * @author: tanjun
@@ -28,27 +40,35 @@ public class MenuClickEvent implements View.OnClickListener{
 
     private View parentView;
 
-    public MenuClickEvent(Fragment fragment, MenuBaseExpandableListAdapter adapter, View parentView) {
+    private Context context;
+
+    private ClipboardManager mClipboardManager;
+
+    public MenuClickEvent(Fragment fragment, MenuBaseExpandableListAdapter adapter, View parentView, Context context) {
         this.fragment = fragment;
         this.adapter = adapter;
         this.parentView = parentView;
+        this.context = context;
+        this.mClipboardManager = (ClipboardManager) context.getSystemService(CLIPBOARD_SERVICE);
     }
 
     @Override
     public void onClick(View view) {
-        String name = ((MaterialTextView) view).getText().toString();
-        switch (name){
-            case "注册":
+        Map<String,Object> mapData = adapter.getDataById(view.getId());
+        String code = mapData.get("code").toString();
+        switch (code){
+            case "register":
                 //不重复开发了,注册时直接弹到网页版去注册
                 Uri uri = Uri.parse(REGISTER_URL);
                 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                 fragment.startActivity(intent);
                 break;
-            case "登录":
+            case "logon":
                 //弹出登录面板
                 parentView.findViewById(R.id.linearLayout_logon).setVisibility(View.VISIBLE);
                 break;
-            case "退出登录":
+            case "exitLogon":
+
                 SettingsStorageApi.delete(SettingsStorageApi.Authorization);
                 SettingsStorageApi.delete(SettingsStorageApi.USER_NAME);
                 SettingsStorageApi.delete(SettingsStorageApi.USER_EMAIL);
@@ -56,7 +76,68 @@ public class MenuClickEvent implements View.OnClickListener{
                 SettingsStorageApi.delete(SettingsStorageApi.USE_SPACE_ROLE);
                 SettingsStorageApi.delete(SettingsStorageApi.USER_ALL_SPACE_ROLE);
                 SettingsStorageApi.delete(SettingsStorageApi.USE_SPACE_ID);
+                ((TextView)parentView.findViewById(R.id.textView_name)).setText("请先登录");
                 adapter.reFreshData(createMenu());//刷新菜单
+                break;
+            case "shareRel":
+                //弹出分享信息面板
+                parentView.findViewById(R.id.linearLayout_shareRel).setVisibility(View.VISIBLE);
+                //调用接口获取分享列表
+                ((HttpApi) shareLink -> {
+                    if(shareLink.getBool("result")){
+                        JSONArray datas = shareLink.getJSONArray("datas");
+                        List list = datas.stream().map(e->{
+                            JSONObject jo = (JSONObject) e;
+                            jo.putOpt("name",jo.getStr("keyword"));
+                            jo.putOpt("code",jo.getInt("id").toString());
+                            jo.putOpt("id",jo.getInt("id").longValue());
+                            return jo.toBean(Map.class);
+                        }).collect(Collectors.toList());
+                        //组装列表数据,以及对象
+                        ExpandableListView expandableListView = parentView.findViewById(R.id.listView_share);
+                        MenuBaseExpandableListAdapter adapter = new MenuBaseExpandableListAdapter(context, list);
+                        List select = new ArrayList();
+                        select.add(Map.of("name", "复制密码", "code", "copyPassword"));
+                        select.add(Map.of("name", "复制地址", "code", "copyUrl"));
+                        //有写的权限,才出现移除功能
+                        if("WRITE".equals(SettingsStorageApi.get(SettingsStorageApi.USE_SPACE_ROLE))){
+                            select.add(Map.of("name", "移除", "code", "remove"));
+                        }
+                        LongClickButtonEvent lcbe = new LongClickButtonEvent(select,context);
+                        //添加触发确定按钮的事件
+                        lcbe.setOkOnClickListener((dialog, which) -> {
+                            Map<String,Object> selectd = lcbe.getSelectd();//选中的操作按钮
+                            Map<String,Object> rowData = adapter.getDataById(lcbe.getView().getId());//需要操作的行数据
+                            switch ((String)selectd.get("code")){
+                                case "remove":
+                                    adapter.removeRowById(lcbe.getView().getId());
+                                    break;
+                                case "copyPassword":
+                                    mClipboardManager.setPrimaryClip(ClipData.newPlainText("Simple text",rowData.get("password").toString()));
+                                    Toast.makeText(context, "复制密码成功！",Toast.LENGTH_SHORT).show();
+                                    break;
+                                case "copyUrl":
+                                    String link = HttpApi.WWW_HOST;
+                                    switch ((String)rowData.get("bodyType")){
+                                        case "NOTE":
+                                            link += "/#/share/notepad/?";
+                                            break;
+                                        case "NETDISK":
+                                            link += "#/share/netdisk/?";
+                                            break;
+                                    }
+                                    link += rowData.get("url");
+                                    mClipboardManager.setPrimaryClip(ClipData.newPlainText("Simple text",link));
+                                    Toast.makeText(context, "复制地址成功！",Toast.LENGTH_SHORT).show();
+                                    break;
+                            }
+                        });
+                        adapter.setOnLongClickListener(lcbe);//当列表被长按后触发的事件处理
+                        expandableListView.setAdapter(adapter);
+                    }else {
+                        Toast.makeText(context, shareLink.getStr("message"), Toast.LENGTH_SHORT).show();
+                    }
+                }).get(GET_SHARELINK_URL,parentView);
                 break;
             default:
                 break;
@@ -70,18 +151,18 @@ public class MenuClickEvent implements View.OnClickListener{
     public static List<Map<String,Object>> createMenu(){
         List<Map<String,Object>> menu = new ArrayList<>();
         if(SettingsStorageApi.isExist(SettingsStorageApi.Authorization)){//已登录时使用的菜单
-            menu.add(Map.of("name","退出登录","id",3l));
+            menu.add(Map.of("name","退出登录","id",3l,"code","exitLogon"));
             List<Map> menu4 = new ArrayList<>();
-            menu4.add(Map.of("name","加入我的空间","id",41l));
-            menu4.add(Map.of("name","查看空间已使用量","id",42l));
-            menu4.add(Map.of("name","我的空间人员管理","id",43l));
-            menu4.add(Map.of("name","申请加入其他人的空间","id",44l));
-            menu4.add(Map.of("name","邀请其他人加入我的空间","id",45l));
-            menu.add(Map.of("name","空间信息","id",4l,"child",menu4));
-            menu.add(Map.of("name","分享管理","id",5l));
+            menu4.add(Map.of("name","加入我的空间","id",41l,"code","joinI"));
+            menu4.add(Map.of("name","查看空间已使用量","id",42l,"code","useSpace"));
+            menu4.add(Map.of("name","我的空间人员管理","id",43l,"code","spaceUserRel"));
+            menu4.add(Map.of("name","申请加入其他人的空间","id",44l,"code","joinOther"));
+            menu4.add(Map.of("name","邀请其他人加入我的空间","id",45l,"code","inviteJoin"));
+            menu.add(Map.of("name","空间信息","id",4l,"child",menu4,"code","spaceInfo"));
+            menu.add(Map.of("name","分享管理","id",5l,"code","shareRel"));
         }else {//未登录时使用的菜单
-            menu.add(Map.of("name","登录","id",1l));
-            menu.add(Map.of("name","注册","id",2l));
+            menu.add(Map.of("name","登录","id",1l,"code","logon"));
+            menu.add(Map.of("name","注册","id",2l,"code","register"));
         }
         return menu;
     }

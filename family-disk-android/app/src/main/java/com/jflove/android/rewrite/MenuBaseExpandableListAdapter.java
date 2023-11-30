@@ -9,30 +9,42 @@ import android.widget.TextView;
 
 import com.jflove.android.R;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author: tanjun
  * @date: 2023/11/27 2:52 PM
- * @desc: 折叠列表,2层折叠
+ * @desc: 折叠列表,2层折叠, 通用的类
  */
 public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
     private Context context;
-    private View.OnClickListener clickListener;//菜单点击事件回调
+    private View.OnClickListener onClickListener;//菜单点击事件回调
+
+    private View.OnLongClickListener onLongClickListener;//长按事件回调
     /**
      * json 结构
-     * [{name:'',id:0,child:[]}]
+     * [{name:'',id:0,code:'',child:[]}]
      */
     private List<Map<String,Object>> list;
+    /**
+     * 以控件ID的方式存储数据
+     * 这样控件在触发点击事件的时候,可以通过控件ID找到对应的数据
+     */
+    private Map<Integer,Map<String,Object>> mapData = new HashMap<>();
 
     public MenuBaseExpandableListAdapter(Context context,List<Map<String,Object>> list) {
         this.context = context;
         this.list = list;
     }
 
-    public void setClickListener(View.OnClickListener clickListener) {
-        this.clickListener = clickListener;
+    public void setOnClickListener(View.OnClickListener onClickListener) {
+        this.onClickListener = onClickListener;
+    }
+
+    public void setOnLongClickListener(View.OnLongClickListener onLongClickListener) {
+        this.onLongClickListener = onLongClickListener;
     }
 
     /**
@@ -124,8 +136,13 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
         ParentHolder parentHolder = new ParentHolder();
         parentHolder.tvParent = convertView.findViewById(R.id.listView_menu_item);
         parentHolder.tvParent.setText((CharSequence) getGroup(groupPosition));
-        if(getChildrenCount(groupPosition) == 0) {//没有子菜单,则给当前按钮增加事件回调
-            parentHolder.tvParent.setOnClickListener(clickListener);
+        parentHolder.tvParent.setId((int)getGroupId(groupPosition));
+        mapData.put(parentHolder.tvParent.getId(),list.get(groupPosition));
+        if(getChildrenCount(groupPosition) == 0 && onClickListener != null) {//没有子菜单,则给当前按钮增加事件回调
+            parentHolder.tvParent.setOnClickListener(onClickListener);
+        }
+        if(onLongClickListener != null){
+            parentHolder.tvParent.setOnLongClickListener(onLongClickListener);
         }
         convertView.setTag(parentHolder);
         return convertView;
@@ -136,14 +153,19 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
      */
     @Override
     public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-        convertView = LayoutInflater.from(context).inflate(R.layout.listview_item, null);//必须每次重建对象,否则会发生刷新菜单的时候,菜单事件等信息不刷新,仅仅是改了个名称
+        convertView = LayoutInflater.from(context).inflate(R.layout.listview_item_child, null);//必须每次重建对象,否则会发生刷新菜单的时候,菜单事件等信息不刷新,仅仅是改了个名称
         ChildrenHolder childrenHolder = new ChildrenHolder();
-        childrenHolder.tvChild = convertView.findViewById(R.id.listView_menu_item);
-        childrenHolder.tvChild.setText((CharSequence) ((Map)getChild(groupPosition,childPosition)).get("name"));
-        Map map = (Map) getChild(groupPosition,childPosition);
+        childrenHolder.tvChild = convertView.findViewById(R.id.listView_menu_item_child);
+        Map map = ((Map)getChild(groupPosition,childPosition));
+        childrenHolder.tvChild.setText((CharSequence) map.get("name"));
+        childrenHolder.tvChild.setId((int)getChildId(groupPosition,childPosition));
+        mapData.put(childrenHolder.tvChild.getId(),map);
         List child = (List) map.get("child");
-        if(child == null || child.size() == 0) {//没有子菜单,则给当前按钮增加事件回调
-            childrenHolder.tvChild.setOnClickListener(clickListener);
+        if((child == null || child.size() == 0) && onClickListener != null) {//没有子菜单,则给当前按钮增加事件回调
+            childrenHolder.tvChild.setOnClickListener(onClickListener);
+        }
+        if(onLongClickListener != null){
+            childrenHolder.tvChild.setOnLongClickListener(onLongClickListener);
         }
         convertView.setTag(childrenHolder);
         return convertView;
@@ -172,11 +194,11 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
      * @param list
      */
     public void reFreshData(List<Map<String,Object>> list) {
+        mapData.clear();
         this.list = list;
         notifyDataSetChanged();
     }
 
-    //todo 这两个行的样式还得调一下
     class ParentHolder {
         TextView tvParent;
     }
@@ -184,5 +206,24 @@ public class MenuBaseExpandableListAdapter extends BaseExpandableListAdapter {
 
     class ChildrenHolder {
         TextView tvChild;
+    }
+
+    /**
+     * 根据控件ID获取对应的数据
+     * @param id
+     * @return
+     */
+    public Map<String,Object> getDataById(int id) {
+        return mapData.get(id);
+    }
+
+    /**
+     * 根据控件ID移除这行数据
+     * @param id
+     */
+    public void removeRowById(int id){
+        Map r = mapData.remove(id);
+        list.remove(r);
+        notifyDataSetChanged();
     }
 }

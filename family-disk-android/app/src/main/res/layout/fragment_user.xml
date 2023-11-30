@@ -15,7 +15,7 @@
         android:src="@drawable/ic_action_logon0" />
 
     <TextView
-        android:id="@+id/textView_email"
+        android:id="@+id/textView_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
@@ -83,6 +83,45 @@
                 android:layout_height="50dp"
                 style="@style/bottomStyle"
                 android:text="登录" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 分享信息面板 -->
+    <LinearLayout
+        android:id="@+id/linearLayout_shareRel"
+        android:gravity="bottom"
+        android:layout_width="match_parent"
+        android:visibility="invisible"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@color/translucent"
+        android:focusableInTouchMode="true"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:gravity="bottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/globalStyle"
+            android:orientation="vertical"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            >
+            <Button
+                android:id="@+id/shareRel_exit"
+                android:layout_gravity="end"
+                android:layout_width="80dp"
+                android:layout_height="50dp"
+                style="@style/bottomStyle"
+                android:background="@android:color/transparent"
+                android:text="关闭"
+                />
+
+            <ExpandableListView
+                android:id="@+id/listView_share"
+                android:layout_width="match_parent"
+                android:choiceMode="singleChoice"
+                android:groupIndicator="@null"
+                android:layout_height="match_parent" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
