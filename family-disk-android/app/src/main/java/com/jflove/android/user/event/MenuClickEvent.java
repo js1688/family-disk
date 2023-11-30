@@ -1,9 +1,11 @@
 package com.jflove.android.user.event;
 
 import static android.content.Context.CLIPBOARD_SERVICE;
+import static com.jflove.android.api.HttpApi.DEL_SHARELINK_URL;
 import static com.jflove.android.api.HttpApi.GET_SHARELINK_URL;
 import static com.jflove.android.api.HttpApi.REGISTER_URL;
 
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -26,8 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 
 /**
  * @author: tanjun
@@ -68,7 +72,6 @@ public class MenuClickEvent implements View.OnClickListener{
                 parentView.findViewById(R.id.linearLayout_logon).setVisibility(View.VISIBLE);
                 break;
             case "exitLogon":
-
                 SettingsStorageApi.delete(SettingsStorageApi.Authorization);
                 SettingsStorageApi.delete(SettingsStorageApi.USER_NAME);
                 SettingsStorageApi.delete(SettingsStorageApi.USER_EMAIL);
@@ -110,11 +113,29 @@ public class MenuClickEvent implements View.OnClickListener{
                             Map<String,Object> rowData = adapter.getDataById(lcbe.getView().getId());//需要操作的行数据
                             switch ((String)selectd.get("code")){
                                 case "remove":
-                                    adapter.removeRowById(lcbe.getView().getId());
+                                    new AlertDialog.Builder(context)
+                                            .setTitle("删除")
+                                            .setMessage("是否删除分享:" + rowData.get("keyword") + ",删除后不可恢复!")
+                                            .setPositiveButton("确定", (dialog1, which1) -> {
+                                                ((HttpApi) delLink ->{
+                                                    if(delLink.getBool("result")){
+                                                        adapter.removeRowById(lcbe.getView().getId());
+                                                    }else {
+                                                        Toast.makeText(context, delLink.getStr("message"), Toast.LENGTH_SHORT).show();
+                                                    }
+                                                }).post(DEL_SHARELINK_URL, JSONUtil.createObj().putOpt("bodyId",rowData.get("id")),parentView);
+                                            })
+                                            .setNegativeButton("取消",null)
+                                            .create().show();
                                     break;
                                 case "copyPassword":
-                                    mClipboardManager.setPrimaryClip(ClipData.newPlainText("Simple text",rowData.get("password").toString()));
-                                    Toast.makeText(context, "复制密码成功！",Toast.LENGTH_SHORT).show();
+                                    Object password = rowData.get("password");
+                                    if(StrUtil.isEmptyIfStr(password)){
+                                        Toast.makeText(context, "该链接没有设置密码",Toast.LENGTH_SHORT).show();
+                                    }else {
+                                        mClipboardManager.setPrimaryClip(ClipData.newPlainText("Simple text",password.toString()));
+                                        Toast.makeText(context, "复制密码成功！", Toast.LENGTH_SHORT).show();
+                                    }
                                     break;
                                 case "copyUrl":
                                     String link = HttpApi.WWW_HOST;

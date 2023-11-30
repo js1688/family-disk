@@ -41,6 +41,11 @@ public interface HttpApi {
      * 获取分享列表
      */
     String GET_SHARELINK_URL = API_HOST + "/share/admin/getLinkList";
+    /**
+     * 删除分享链接
+     */
+    String DEL_SHARELINK_URL = API_HOST + "/share/admin/delLink";
+
 
     /**
      * 调用接口后的回调处理
